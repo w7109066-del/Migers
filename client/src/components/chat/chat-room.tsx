@@ -51,19 +51,19 @@ export function ChatRoom({ onUserClick }: ChatRoomProps) {
   // Fetch available rooms first
   const { data: availableRooms } = useQuery<any[]>({
     queryKey: ["/api/rooms"],
-    enabled: isConnected,
+    enabled: Boolean(isConnected),
   });
 
   // Fetch room messages
   const { data: roomMessages } = useQuery<Message[]>({
     queryKey: ["/api/rooms", currentRoom?.id, "messages"],
-    enabled: isConnected && currentRoom?.id,
+    enabled: Boolean(isConnected && currentRoom?.id),
   });
 
   // Fetch room members
   const { data: roomMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", currentRoom?.id, "members"],
-    enabled: isConnected && currentRoom?.id,
+    enabled: Boolean(isConnected && currentRoom?.id),
   });
 
   // Set up default room or create one if needed

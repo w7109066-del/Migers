@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { UserAvatar } from "@/components/user/user-avatar";
-import { UserStatus } from "@/components/user/user-status";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Friend extends User {
   friendshipStatus: string;
@@ -14,8 +14,11 @@ interface FriendsListProps {
 }
 
 export function FriendsList({ onUserClick }: FriendsListProps) {
+  const { user } = useAuth();
+  
   const { data: friends, isLoading } = useQuery<Friend[]>({
     queryKey: ["/api/friends"],
+    enabled: Boolean(user),
   });
 
   const handleUserClick = (friend: Friend) => {
@@ -94,16 +97,16 @@ export function FriendsList({ onUserClick }: FriendsListProps) {
                 <UserAvatar
                   username={friend.username}
                   size="md"
-                  isOnline={friend.isOnline}
+                  isOnline={friend.isOnline || false}
                 />
                 <div>
                   <div className="font-semibold text-gray-800">{friend.username}</div>
                   <div className="text-sm text-gray-500">
-                    {getLastSeenText(friend.lastSeen, friend.isOnline)}
+                    {getLastSeenText(friend.lastSeen ? friend.lastSeen.toString() : null, friend.isOnline || false)}
                   </div>
                 </div>
               </div>
-              <UserStatus isOnline={friend.isOnline} />
+              <div className={`w-3 h-3 rounded-full ${friend.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
             </div>
           </CardContent>
         </Card>
