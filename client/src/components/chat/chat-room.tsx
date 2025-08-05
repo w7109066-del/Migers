@@ -45,22 +45,33 @@ interface RoomMember {
 export function ChatRoom({ onUserClick }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
+  const [currentRoom, setCurrentRoom] = useState<any>(null);
   const { sendChatMessage, joinRoom, isConnected } = useWebSocket();
-  
-  // For demo purposes, using a default room ID
-  const roomId = "general-chat";
+
+  // Fetch available rooms first
+  const { data: availableRooms } = useQuery<any[]>({
+    queryKey: ["/api/rooms"],
+    enabled: isConnected,
+  });
 
   // Fetch room messages
   const { data: roomMessages } = useQuery<Message[]>({
-    queryKey: ["/api/rooms", roomId, "messages"],
-    enabled: isConnected,
+    queryKey: ["/api/rooms", currentRoom?.id, "messages"],
+    enabled: isConnected && currentRoom?.id,
   });
 
   // Fetch room members
   const { data: roomMembers } = useQuery<RoomMember[]>({
-    queryKey: ["/api/rooms", roomId, "members"],
-    enabled: isConnected,
+    queryKey: ["/api/rooms", currentRoom?.id, "members"],
+    enabled: isConnected && currentRoom?.id,
   });
+
+  // Set up default room or create one if needed
+  useEffect(() => {
+    if (availableRooms && availableRooms.length > 0) {
+      setCurrentRoom(availableRooms[0]);
+    }
+  }, [availableRooms]);
 
   useEffect(() => {
     if (roomMessages) {
@@ -69,16 +80,16 @@ export function ChatRoom({ onUserClick }: ChatRoomProps) {
   }, [roomMessages]);
 
   useEffect(() => {
-    if (isConnected) {
-      joinRoom(roomId);
+    if (isConnected && currentRoom?.id) {
+      joinRoom(currentRoom.id);
     }
-  }, [isConnected, joinRoom, roomId]);
+  }, [isConnected, joinRoom, currentRoom?.id]);
 
   useEffect(() => {
     // Listen for new messages
     const handleNewMessage = (event: CustomEvent) => {
       const newMessage = event.detail;
-      if (newMessage.roomId === roomId) {
+      if (newMessage.roomId === currentRoom?.id) {
         setMessages(prev => [...prev, newMessage]);
       }
     };
@@ -88,10 +99,12 @@ export function ChatRoom({ onUserClick }: ChatRoomProps) {
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
     };
-  }, [roomId]);
+  }, [currentRoom?.id]);
 
   const handleSendMessage = (content: string) => {
-    sendChatMessage(content, roomId);
+    if (currentRoom?.id) {
+      sendChatMessage(content, currentRoom.id);
+    }
   };
 
   const handleUserClick = (user: any) => {
@@ -104,6 +117,19 @@ export function ChatRoom({ onUserClick }: ChatRoomProps) {
     });
   };
 
+  // If no rooms available, show message
+  if (!currentRoom) {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 items-center justify-center">
+        <div className="text-center p-8">
+          <Hash className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-600 mb-2">No Chat Rooms Available</h3>
+          <p className="text-gray-500">Chat rooms will appear here when available.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Chat Room Header */}
@@ -113,7 +139,7 @@ export function ChatRoom({ onUserClick }: ChatRoomProps) {
             <Hash className="text-white text-sm" />
           </div>
           <div>
-            <div className="font-semibold text-gray-800">General Chat</div>
+            <div className="font-semibold text-gray-800">{currentRoom.name}</div>
             <div className="text-xs text-gray-500">
               {roomMembers?.length || 0} members online
             </div>
