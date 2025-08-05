@@ -1,0 +1,182 @@
+import { useState, useEffect } from "react";
+import { MessageList } from "./message-list";
+import { MessageInput } from "./message-input";
+import { UserAvatar } from "@/components/user/user-avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { useQuery } from "@tanstack/react-query";
+import { 
+  Users, 
+  Gift, 
+  Settings, 
+  X, 
+  Hash 
+} from "lucide-react";
+
+interface ChatRoomProps {
+  onUserClick: (profile: any) => void;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    username: string;
+    level: number;
+    isOnline: boolean;
+  };
+}
+
+interface RoomMember {
+  user: {
+    id: string;
+    username: string;
+    level: number;
+    isOnline: boolean;
+  };
+}
+
+export function ChatRoom({ onUserClick }: ChatRoomProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isUserListOpen, setIsUserListOpen] = useState(false);
+  const { sendChatMessage, joinRoom, isConnected } = useWebSocket();
+  
+  // For demo purposes, using a default room ID
+  const roomId = "general-chat";
+
+  // Fetch room messages
+  const { data: roomMessages } = useQuery<Message[]>({
+    queryKey: ["/api/rooms", roomId, "messages"],
+    enabled: isConnected,
+  });
+
+  // Fetch room members
+  const { data: roomMembers } = useQuery<RoomMember[]>({
+    queryKey: ["/api/rooms", roomId, "members"],
+    enabled: isConnected,
+  });
+
+  useEffect(() => {
+    if (roomMessages) {
+      setMessages(roomMessages);
+    }
+  }, [roomMessages]);
+
+  useEffect(() => {
+    if (isConnected) {
+      joinRoom(roomId);
+    }
+  }, [isConnected, joinRoom, roomId]);
+
+  useEffect(() => {
+    // Listen for new messages
+    const handleNewMessage = (event: CustomEvent) => {
+      const newMessage = event.detail;
+      if (newMessage.roomId === roomId) {
+        setMessages(prev => [...prev, newMessage]);
+      }
+    };
+
+    window.addEventListener('newMessage', handleNewMessage as EventListener);
+    
+    return () => {
+      window.removeEventListener('newMessage', handleNewMessage as EventListener);
+    };
+  }, [roomId]);
+
+  const handleSendMessage = (content: string) => {
+    sendChatMessage(content, roomId);
+  };
+
+  const handleUserClick = (user: any) => {
+    onUserClick({
+      id: user.id,
+      username: user.username,
+      level: user.level,
+      status: "Available for chat",
+      isOnline: user.isOnline,
+    });
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Chat Room Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <Hash className="text-white text-sm" />
+          </div>
+          <div>
+            <div className="font-semibold text-gray-800">General Chat</div>
+            <div className="text-xs text-gray-500">
+              {roomMembers?.length || 0} members online
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Sheet open={isUserListOpen} onOpenChange={setIsUserListOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-2 text-gray-600">
+                <Users className="w-4 h-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80">
+              <SheetHeader>
+                <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-3">
+                {roomMembers?.map((member) => (
+                  <div
+                    key={member.user.id}
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleUserClick(member.user)}
+                  >
+                    <UserAvatar 
+                      username={member.user.username}
+                      size="sm"
+                      isOnline={member.user.isOnline}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-800">{member.user.username}</span>
+                        <Badge variant="secondary" className="bg-warning text-white text-xs">
+                          {member.user.level}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {member.user.isOnline ? "Online" : "Offline"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+          
+          <Button variant="ghost" size="sm" className="p-2 text-gray-600">
+            <Gift className="w-4 h-4" />
+          </Button>
+          
+          <Button variant="ghost" size="sm" className="p-2 text-gray-600">
+            <Settings className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+      
+      {/* Messages */}
+      <div className="flex-1 overflow-hidden">
+        <MessageList messages={messages} onUserClick={handleUserClick} />
+      </div>
+      
+      {/* Message Input */}
+      <MessageInput onSendMessage={handleSendMessage} />
+    </div>
+  );
+}

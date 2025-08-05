@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(267, 84%, 65%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(282, 85%, 68%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(158, 65%, 50%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --warning: hsl(45, 93%, 47%);
+  --warning-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(267, 84%, 65%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(282, 85%, 68%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(158, 65%, 50%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --warning: hsl(45, 93%, 47%);
+  --warning-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Custom scrollbar styles */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+  
+  /* Hide scrollbar for swipe containers */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Animation classes */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease;
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0; 
+      transform: translateY(10px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+  
+  .animate-pulse-dot {
+    animation: pulseDot 2s infinite;
+  }
+  
+  @keyframes pulseDot {
+    0%, 100% { 
+      opacity: 1; 
+    }
+    50% { 
+      opacity: 0.5; 
+    }
+  }
+  
+  /* Mobile-specific styles */
+  @media (max-width: 640px) {
+    body {
+      overflow-x: hidden;
+    }
+  }
+}
+
+/* Custom component styles */
+.warning {
+  --warning: hsl(45, 93%, 47%);
+  --warning-foreground: hsl(0, 0%, 100%);
+}
