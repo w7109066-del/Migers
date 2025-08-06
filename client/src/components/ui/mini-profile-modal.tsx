@@ -2,10 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { UserStatus } from "@/components/user/user-status";
-import { X, MessageCircle, UserPlus } from "lucide-react";
+import { GiftSendModal } from "@/components/ui/gift-send-modal";
+import { X, MessageCircle, UserPlus, Gift } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface MiniProfileModalProps {
   profile: {
@@ -23,6 +25,7 @@ interface MiniProfileModalProps {
 export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfileModalProps) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
+  const [showGiftModal, setShowGiftModal] = useState(false);
 
   const handleSendMessage = () => {
     onMessageClick(profile);
@@ -143,18 +146,27 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           </div>
 
           {/* Action buttons */}
-          <div className="flex space-x-3">
-            <Button 
-              onClick={handleSendMessage}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Message
-            </Button>
+          <div className="space-y-3">
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleSendMessage}
+                className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Message
+              </Button>
+              <Button 
+                onClick={() => setShowGiftModal(true)}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white border-0"
+              >
+                <Gift className="w-4 h-4 mr-2" />
+                Send Gift
+              </Button>
+            </div>
             <Button 
               onClick={handleAddFriend}
               variant="outline"
-              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <UserPlus className="w-4 h-4 mr-2" />
               Add Friend
@@ -162,6 +174,16 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           </div>
         </div>
       </div>
+      
+      {/* Gift Send Modal */}
+      <GiftSendModal
+        isOpen={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        recipient={{
+          id: profile.id,
+          username: profile.username
+        }}
+      />
     </div>
   );
 }

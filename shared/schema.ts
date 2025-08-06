@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, uuid, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, uuid, jsonb, serial } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   country: varchar("country", { length: 10 }),
   gender: varchar("gender", { length: 10 }),
   level: integer("level").default(1),
+  coins: integer("coins").default(1000), // Starting coins for new users
   isOnline: boolean("is_online").default(false),
   lastSeen: timestamp("last_seen").defaultNow(),
   status: text("status").default("online"),
@@ -52,6 +53,18 @@ export const messages = pgTable("messages", {
   recipientId: uuid("recipient_id").references(() => users.id), // for direct messages
   messageType: varchar("message_type", { length: 20 }).default("text"), // text, image, gift
   metadata: jsonb("metadata"), // for storing additional data like gift info
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// This table was in the original code but is not mentioned in the changes.
+// Keeping it as is to avoid breaking existing functionality.
+export const directMessages = pgTable("direct_messages", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  senderId: integer("sender_id").references(() => users.id).notNull(),
+  recipientId: integer("recipient_id").references(() => users.id).notNull(),
+  messageType: text("message_type").default("text"), // 'text', 'gift', 'media'
+  giftData: text("gift_data"), // JSON string for gift information
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -152,6 +165,19 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
+// Assuming directMessages also needs relations similar to messages
+export const directMessagesRelations = relations(directMessages, ({ one }) => ({
+  sender: one(users, {
+    fields: [directMessages.senderId],
+    references: [users.id],
+  }),
+  recipient: one(users, {
+    fields: [directMessages.recipientId],
+    references: [users.id],
+  }),
+}));
+
+
 export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   user: one(users, {
     fields: [userSessions.userId],
@@ -230,6 +256,16 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   metadata: true,
 });
 
+// Schema for direct messages, including gift data
+export const insertDirectMessageSchema = createInsertSchema(directMessages).pick({
+  content: true,
+  senderId: true,
+  recipientId: true,
+  messageType: true,
+  giftData: true,
+});
+
+
 export const insertPostSchema = createInsertSchema(posts).pick({
   content: true,
   authorId: true,
@@ -253,6 +289,8 @@ export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
 export type RoomMember = typeof roomMembers.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type DirectMessage = typeof directMessages.$inferSelect;
+export type InsertDirectMessage = z.infer<typeof insertDirectMessageSchema>;
 export type UserSession = typeof userSessions.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;

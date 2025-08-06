@@ -7,6 +7,9 @@ import path from "path";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { directMessages, users } from "@shared/schema";
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
@@ -42,586 +45,72 @@ export function registerRoutes(app: Express): Server {
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
-  // Friends API
-  app.get("/api/friends", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
+  // Gift endpoints
+  app.post("/api/gifts/send", requireAuth, async (req, res) => {
     try {
-      const friends = await storage.getFriends(req.user!.id);
-      res.json(friends);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch friends" });
-    }
-  });
+      const { recipientId, giftId, giftName, price, quantity = 1, totalCost, emoji, category } = req.body;
+      const senderId = req.user!.id;
 
-  app.post("/api/friends/refresh", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+      if (!recipientId || !giftId || !giftName || !price) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
 
-    try {
-      // Refresh friends list with updated status
-      const friends = await storage.refreshFriendsList(req.user!.id);
+      // Check if sender has enough coins (assuming user has coins field)
+      const sender = await db.query.users.findFirst({
+        where: eq(users.id, senderId),
+      });
+
+      if (!sender) {
+        return res.status(404).json({ message: "Sender not found" });
+      }
+
+      // For now, just create a direct message with gift info
+      // In a real app, you'd also handle coin deduction and gift inventory
+      const giftMessage = `🎁 ${giftName} x${quantity} (${totalCost} coins)`;
+
+      const result = await db
+        .insert(directMessages)
+        .values({
+          content: giftMessage,
+          senderId,
+          recipientId,
+          messageType: 'gift',
+          giftData: JSON.stringify({
+            giftId,
+            name: giftName,
+            price,
+            quantity,
+            totalCost,
+            emoji,
+            category,
+            lottie: null // You can add lottie data here if needed
+          }),
+        })
+        .returning();
+
+      const message = result[0];
+
+      // Get sender info for the message
+      const messageWithSender = await db.query.directMessages.findFirst({
+        where: eq(directMessages.id, message.id),
+        with: {
+          sender: true,
+        },
+      });
 
       res.json({
-        message: "Friends list refreshed successfully",
-        friends: friends,
-        timestamp: new Date().toISOString()
+        success: true,
+        message: "Gift sent successfully",
+        data: messageWithSender
       });
     } catch (error) {
-      console.error('Refresh friends error:', error);
-      res.status(500).json({ message: "Failed to refresh friends list" });
+      console.error("Failed to send gift:", error);
+      res.status(500).json({ message: "Failed to send gift" });
     }
   });
 
-  app.post("/api/friends", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { friendId } = insertFriendshipSchema.parse(req.body);
-      const friendship = await storage.addFriend(req.user!.id, friendId);
-      res.status(201).json(friendship);
-    } catch (error) {
-      res.status(400).json({ message: "Failed to add friend" });
-    }
-  });
-
-  app.post("/api/friends/accept", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { userId } = req.body;
-
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(userId)) {
-        return res.status(400).json({ message: "Invalid user ID format" });
-      }
-
-      await storage.acceptFriendRequest(req.user!.id, userId);
-      res.sendStatus(200);
-    } catch (error) {
-      console.error('Accept friend request error:', error);
-      res.status(400).json({ message: "Failed to accept friend request" });
-    }
-  });
-
-  app.post("/api/friends/reject", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { userId } = req.body;
-
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(userId)) {
-        return res.status(400).json({ message: "Invalid user ID format" });
-      }
-
-      await storage.rejectFriendRequest(req.user!.id, userId);
-      res.sendStatus(200);
-    } catch (error) {
-      console.error('Reject friend request error:', error);
-      res.status(400).json({ message: "Failed to reject friend request" });
-    }
-  });
-
-  // Routes
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
-  });
-
-  // Send friend request
-  app.post("/api/friends/request", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { userId } = req.body;
-
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(userId)) {
-        return res.status(400).json({ message: "Invalid user ID format" });
-      }
-
-      // Check if user exists
-      const targetUser = await storage.getUser(userId);
-      if (!targetUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Check if they're trying to add themselves
-      if (userId === req.user!.id) {
-        return res.status(400).json({ message: "Cannot add yourself as friend" });
-      }
-
-      // Check if friendship already exists
-      const existingFriendship = await storage.getFriendshipStatus(req.user!.id, userId);
-      if (existingFriendship) {
-        return res.status(400).json({ message: "Friend request already exists or you are already friends" });
-      }
-
-      // Create friend request
-      await storage.createFriendRequest(req.user!.id, userId);
-
-      // Broadcast friend request notification to target user
-      broadcastToUser(userId, {
-        type: 'friend_request_received',
-        fromUser: {
-          id: req.user!.id,
-          username: req.user!.username,
-        },
-      });
-
-      res.json({ message: "Friend request sent successfully" });
-    } catch (error) {
-      console.error('Friend request error:', error);
-      res.status(500).json({ message: "Failed to send friend request" });
-    }
-  });
-
-
-  // Chat rooms API
-  app.get("/api/rooms", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      // Get actual member counts for mock rooms
-      const getRoomMemberCount = (roomId: string) => {
-        if (['1', '2', '3', '4'].includes(roomId)) {
-          const roomMembers = mockRoomMembers.get(roomId);
-          return roomMembers ? roomMembers.size : 0;
-        }
-        return 0;
-      };
-
-      const rooms = [
-        {
-          id: "1",
-          name: "MeChat",
-          description: "Official main chat room",
-          memberCount: getRoomMemberCount("1"),
-          capacity: 25,
-          isOfficial: true,
-          category: "official",
-          isPrivate: false
-        },
-        {
-          id: "2", 
-          name: "Indonesia",
-          description: "Chat for Indonesian users",
-          memberCount: getRoomMemberCount("2"),
-          capacity: 25,
-          isOfficial: false,
-          category: "recent",
-          isPrivate: false
-        },
-        {
-          id: "3",
-          name: "MeChat",
-          description: "Your favorite chat room",
-          memberCount: getRoomMemberCount("3"),
-          capacity: 25,
-          isOfficial: true,
-          category: "favorite", 
-          isPrivate: false
-        },
-        {
-          id: "4",
-          name: "lowcard",
-          description: "Card game room",
-          memberCount: getRoomMemberCount("4"),
-          capacity: 25,
-          isOfficial: false,
-          category: "game",
-          isPrivate: false
-        }
-      ];
-
-      console.log('Returning rooms with member counts:', rooms.map(r => ({ id: r.id, name: r.name, memberCount: r.memberCount })));
-      res.json(rooms);
-    } catch (error) {
-      console.error('Error fetching rooms:', error);
-      res.status(500).json({ message: "Failed to fetch chat rooms" });
-    }
-  });
-
-  app.post("/api/rooms", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const roomData = insertChatRoomSchema.parse({
-        ...req.body,
-        createdBy: req.user!.id,
-      });
-      const room = await storage.createChatRoom(roomData);
-
-      // Auto-join the creator to the room
-      await storage.joinRoom(room.id, req.user!.id);
-
-      res.status(201).json(room);
-    } catch (error) {
-      res.status(400).json({ message: "Failed to create chat room" });
-    }
-  });
-
-  app.post("/api/rooms/:roomId/join", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { roomId } = req.params;
-
-      // For mock rooms (1-4), just return success without database operation
-      if (['1', '2', '3', '4'].includes(roomId)) {
-        res.json({ 
-          success: true, 
-          message: "Successfully joined room",
-          roomId: roomId 
-        });
-        return;
-      }
-
-      // For real rooms, use storage
-      await storage.joinRoom(roomId, req.user!.id);
-      res.json({ 
-        success: true, 
-        message: "Successfully joined room",
-        roomId: roomId 
-      });
-    } catch (error) {
-      console.error('Join room error:', error);
-      res.status(400).json({ message: "Failed to join room" });
-    }
-  });
-
-  app.post("/api/rooms/:roomId/leave", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      await storage.leaveRoom(req.params.roomId, req.user!.id);
-      res.sendStatus(200);
-    } catch (error) {
-      res.status(400).json({ message: "Failed to leave room" });
-    }
-  });
-
-  app.get("/api/rooms/:roomId/members", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { roomId } = req.params;
-
-      // For mock rooms (1-4), return actual users in room
-      if (['1', '2', '3', '4'].includes(roomId)) {
-        const roomMembers = mockRoomMembers.get(roomId) || new Map();
-        const memberIds = Array.from(roomMembers.keys());
-        
-        if (memberIds.length === 0) {
-          res.json([]);
-          return;
-        }
-
-        // Get user details for all members
-        const users = await Promise.all(
-          memberIds.map(async (userId) => {
-            const user = await storage.getUser(userId);
-            return user ? {
-              user: {
-                id: user.id,
-                username: user.username,
-                level: user.level,
-                isOnline: user.isOnline,
-              }
-            } : null;
-          })
-        );
-
-        // Filter out null users and return
-        res.json(users.filter(Boolean));
-        return;
-      }
-
-      // For real rooms, get actual members
-      const members = await storage.getRoomMembers(roomId);
-      res.json(members);
-    } catch (error) {
-      console.error('Get room members error:', error);
-      res.status(500).json({ message: "Failed to fetch room members" });
-    }
-  });
-
-  app.get("/api/rooms/:roomId/messages", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const messages = await storage.getRoomMessages(req.params.roomId);
-      res.json(messages);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch messages" });
-    }
-  });
-
-  app.post("/api/rooms/:roomId/kick", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { roomId } = req.params;
-      const { userId } = req.body;
-      const currentUser = req.user!;
-
-      // Check if current user has admin privileges (level 5+)
-      if (currentUser.level < 5) {
-        return res.status(403).json({ message: "Insufficient privileges to kick users" });
-      }
-
-      // For mock rooms (1-4), remove user from memory tracking
-      if (['1', '2', '3', '4'].includes(roomId)) {
-        if (mockRoomMembers.has(roomId)) {
-          mockRoomMembers.get(roomId)!.delete(userId);
-        }
-
-        // Get user info for system message
-        const kickedUser = await storage.getUser(userId);
-
-        // Broadcast kick message to room
-        broadcastToRoom(roomId, {
-          type: 'new_message',
-          message: {
-            id: `system-kick-${Date.now()}`,
-            content: `${kickedUser?.username || 'User'} has been kicked from the room`,
-            senderId: 'system',
-            roomId: roomId,
-            recipientId: null,
-            messageType: 'system',
-            createdAt: new Date().toISOString(),
-            sender: {
-              id: 'system',
-              username: 'System',
-              level: 0,
-              isOnline: true,
-            }
-          }
-        });
-
-        // Force disconnect the kicked user
-        const kickedUserConnection = userConnections.get(userId);
-        if (kickedUserConnection) {
-          kickedUserConnection.send(JSON.stringify({
-            type: 'kicked_from_room',
-            roomId: roomId,
-            message: `You have been kicked from ${roomId} by an administrator`
-          }));
-        }
-
-        res.json({ success: true, message: "User kicked successfully" });
-        return;
-      }
-
-      // For real rooms, remove from database
-      await storage.leaveRoom(roomId, userId);
-      res.json({ success: true, message: "User kicked successfully" });
-    } catch (error) {
-      console.error('Kick user error:', error);
-      res.status(500).json({ message: "Failed to kick user" });
-    }
-  });
-
-  app.post("/api/rooms/:roomId/close", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { roomId } = req.params;
-      const currentUser = req.user!;
-
-      // Check if current user has admin privileges (level 5+)
-      if (currentUser.level < 5) {
-        return res.status(403).json({ message: "Insufficient privileges to close room" });
-      }
-
-      // Cannot close official rooms (1-4)
-      if (['1', '2', '3', '4'].includes(roomId)) {
-        return res.status(403).json({ message: "Cannot close official rooms" });
-      }
-
-      // For custom rooms, close the room
-      await storage.closeRoom(roomId);
-
-      // Broadcast room closure to all members
-      broadcastToRoom(roomId, {
-        type: 'room_closed',
-        roomId: roomId,
-        message: 'This room has been closed by an administrator'
-      });
-
-      res.json({ success: true, message: "Room closed successfully" });
-    } catch (error) {
-      console.error('Close room error:', error);
-      res.status(500).json({ message: "Failed to close room" });
-    }
-  });
-
-  // Direct messages API
-  app.get("/api/messages/:userId", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { userId } = req.params;
-
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(userId)) {
-        return res.status(400).json({ message: "Invalid user ID format" });
-      }
-
-      const messages = await storage.getDirectMessages(req.user!.id, userId);
-      res.json(messages);
-    } catch (error) {
-      console.error('Direct messages error:', error);
-      res.status(500).json({ message: "Failed to fetch direct messages" });
-    }
-  });
-
-  // Get all DM conversations for current user
-  app.get("/api/messages/conversations", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.sendStatus(401);
-    }
-
-    if (!req.user?.id) {
-      return res.status(400).json({ message: "User ID not found in session" });
-    }
-
-    try {
-      const conversations = await storage.getDirectMessageConversations(req.user.id);
-      res.json(conversations);
-    } catch (error) {
-      console.error('Get conversations error:', error);
-      res.status(500).json({ message: "Failed to fetch conversations" });
-    }
-  });
-
-  // Direct message routes
-  app.get("/api/messages/direct/:recipientId", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    const { recipientId } = req.params;
-    const messages = await storage.getDirectMessages(req.user!.id, recipientId);
-    res.json(messages);
-  });
-
-  app.post("/api/messages/direct", upload.single('media'), async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { content, recipientId } = req.body;
-      let messageType = 'text';
-      let mediaUrl = null;
-
-      if (req.file) {
-        mediaUrl = `/uploads/${req.file.filename}`;
-        messageType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
-      }
-
-      // Validate required fields
-      if (!recipientId) {
-        return res.status(400).json({ message: "Recipient ID is required" });
-      }
-
-      if (!content?.trim() && !req.file) {
-        return res.status(400).json({ message: "Message must have content or media" });
-      }
-
-      const message = await storage.createDirectMessage({
-        content: content?.trim() || '',
-        senderId: req.user!.id,
-        recipientId,
-        messageType
-      });
-
-      // Only broadcast to recipient - sender will get their message through API response
-      broadcastToUser(recipientId, {
-        type: 'new_direct_message',
-        message: message,
-      });
-
-      res.status(201).json(message);
-    } catch (error) {
-      console.error('Direct message error:', error);
-      res.status(400).json({ message: "Failed to send message" });
-    }
-  });
-
-  // User search API
-  app.get("/api/users/search", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { q } = req.query;
-
-      if (!q || typeof q !== 'string' || q.trim().length < 2) {
-        return res.status(400).json({ message: "Search query must be at least 2 characters" });
-      }
-
-      const users = await storage.searchUsers(q.trim(), req.user!.id);
-      res.json(users);
-    } catch (error) {
-      console.error('User search error:', error);
-      res.status(500).json({ message: "Failed to search users" });
-    }
-  });
-
-  // User status API
-  app.patch("/api/user/status", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { status } = req.body;
-
-      // Validate status values
-      const validStatuses = ['online', 'offline', 'away', 'busy'];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: "Invalid status value" });
-      }
-
-      // Update both status and online status based on the new status
-      const isOnline = status !== 'offline';
-      await storage.updateUserStatus(req.user!.id, status);
-      await storage.updateUserOnlineStatus(req.user!.id, isOnline);
-
-      res.json({ status, isOnline });
-    } catch (error) {
-      console.error('Status update error:', error);
-      res.status(400).json({ message: "Failed to update status" });
-    }
-  });
-
-  // Update user status message
-  app.patch("/api/user/status-message", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    try {
-      const { statusMessage } = req.body;
-
-      if (!statusMessage || typeof statusMessage !== 'string') {
-        return res.status(400).json({ message: "Status message is required" });
-      }
-
-      if (statusMessage.length > 200) {
-        return res.status(400).json({ message: "Status message is too long (max 200 characters)" });
-      }
-
-      await storage.updateUserStatusMessage(req.user!.id, statusMessage.trim());
-
-      res.json({ statusMessage: statusMessage.trim() });
-    } catch (error) {
-      console.error('Status message update error:', error);
-      res.status(400).json({ message: "Failed to update status message" });
-    }
-  });
-
-  // Feed posts API
-  app.get("/api/feed", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
+  // Feed endpoints
+  app.get("/api/feed", requireAuth, async (req, res) => {
     try {
       const posts = await storage.getFeedPosts();
       res.json(posts);
@@ -720,7 +209,7 @@ export function registerRoutes(app: Express): Server {
 
   // Track users in mock rooms with detailed user info
   const mockRoomMembers = new Map<string, Map<string, any>>();
-  
+
   // Track websocket connections by user ID
   const userConnections = new Map<string, WebSocket>();
 
@@ -743,7 +232,7 @@ export function registerRoutes(app: Express): Server {
               userId = message.userId;
               userSession = await storage.createUserSession(userId, generateSocketId());
               await storage.updateUserOnlineStatus(userId, true);
-              
+
               // Track this user's connection
               userConnections.set(userId, ws);
 
@@ -779,7 +268,7 @@ export function registerRoutes(app: Express): Server {
                   isOnline: true
                 });
                 currentRoomId = message.roomId;
-                
+
                 console.log(`User ${currentUser?.username} joined room ${message.roomId}. Total members:`, mockRoomMembers.get(message.roomId)!.size);
               } else {
                 await storage.joinRoom(message.roomId, userId);
@@ -1015,7 +504,7 @@ export function registerRoutes(app: Express): Server {
       if (userId) {
         // Remove from user connections tracking
         userConnections.delete(userId);
-        
+
         await storage.updateUserOnlineStatus(userId, false);
         if (userSession) {
           await storage.removeUserSession(userSession.socketId);
@@ -1026,7 +515,7 @@ export function registerRoutes(app: Express): Server {
           if (mockRoomMembers.has(currentRoomId)) {
             const user = await storage.getUser(userId);
             mockRoomMembers.get(currentRoomId)!.delete(userId);
-            
+
             console.log(`User ${user?.username} left room ${currentRoomId}. Remaining members:`, mockRoomMembers.get(currentRoomId)!.size);
 
             // Broadcast system message about user leaving

@@ -454,18 +454,23 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                     : "bg-white text-gray-800"
                 )}>
                   {message.messageType === 'gift' && message.giftData ? (
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-16 h-16">
-                        <Lottie
-                          loop
-                          animationData={message.giftData.lottie}
-                          play
-                          style={{ width: 64, height: 64 }}
-                        />
+                    <div className="flex flex-col items-center space-y-2 p-3 bg-gradient-to-br from-orange-100 to-pink-100 rounded-lg border border-orange-200">
+                      <div className="w-12 h-12 flex items-center justify-center text-2xl bg-white rounded-full shadow-sm">
+                        {typeof message.giftData === 'string' ? 
+                          JSON.parse(message.giftData)?.emoji || '🎁' : 
+                          message.giftData?.emoji || '🎁'}
                       </div>
                       <div className="text-center">
-                        <p className="text-sm font-semibold">{message.giftData.name}</p>
-                        <p className="text-xs opacity-80">{message.giftData.value} coins</p>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {typeof message.giftData === 'string' ? 
+                            JSON.parse(message.giftData)?.name || 'Gift' : 
+                            message.giftData?.name || 'Gift'}
+                        </p>
+                        <p className="text-xs text-orange-600 font-medium">
+                          {typeof message.giftData === 'string' ? 
+                            `${JSON.parse(message.giftData)?.totalCost || JSON.parse(message.giftData)?.price || 0} coins` : 
+                            `${message.giftData?.totalCost || message.giftData?.price || 0} coins`}
+                        </p>
                       </div>
                     </div>
                   ) : (
