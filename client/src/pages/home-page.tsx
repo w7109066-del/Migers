@@ -40,6 +40,7 @@ interface MiniProfileData {
   level: number;
   status: string;
   isOnline: boolean;
+  country?: string;
 }
 
 export default function HomePage() {
@@ -297,8 +298,9 @@ export default function HomePage() {
                           id: post.author?.id || 'unknown',
                           username: post.author?.username || 'Unknown',
                           level: post.author?.level || 1,
-                          status: "",
+                          status: post.author?.status || "",
                           isOnline: post.author?.isOnline || false,
+                          country: post.author?.country || "ID",
                         })}
                       />
                       <div className="flex-1">
@@ -581,6 +583,10 @@ export default function HomePage() {
           <MiniProfileModal
             profile={selectedProfile}
             onClose={closeMiniProfile}
+            onMessageClick={(user) => {
+              setSelectedDMUser(user);
+              setActiveTab(3); // Switch to DM tab
+            }}
           />
         )}
       </div>

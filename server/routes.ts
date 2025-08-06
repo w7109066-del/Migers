@@ -77,6 +77,46 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Routes
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    res.json(req.user);
+  });
+
+  // Send friend request
+  app.post("/api/friends/request", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const { userId } = req.body;
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+
+      // Check if user exists
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if they're trying to add themselves
+      if (userId === req.user!.id) {
+        return res.status(400).json({ message: "Cannot add yourself as friend" });
+      }
+
+      // TODO: Implement friend request logic in storage
+      // For now, just return success
+      res.json({ message: "Friend request sent successfully" });
+    } catch (error) {
+      console.error('Friend request error:', error);
+      res.status(500).json({ message: "Failed to send friend request" });
+    }
+  });
+
+
   // Chat rooms API
   app.get("/api/rooms", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -158,7 +198,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { userId } = req.params;
-      
+
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(userId)) {

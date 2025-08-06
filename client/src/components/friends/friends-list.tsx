@@ -89,7 +89,10 @@ export function FriendsList({ onUserClick }: FriendsListProps) {
         <Card 
           key={friend.id} 
           className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleUserClick(friend)}
+          onClick={() => handleUserClick({
+          ...friend,
+          country: friend.country || "ID"
+        })}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
