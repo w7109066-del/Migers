@@ -338,10 +338,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDirectMessages(userId: string, otherUserId: string, limit = 50) {
-    const messageList = await db
+    const messageList = await this.db
       .select({
         id: messages.id,
         content: messages.content,
+        senderId: messages.senderId,
+        recipientId: messages.recipientId,
         messageType: messages.messageType,
         metadata: messages.metadata,
         createdAt: messages.createdAt,
@@ -349,6 +351,7 @@ export class DatabaseStorage implements IStorage {
           id: users.id,
           username: users.username,
           level: users.level,
+          isOnline: users.isOnline,
         },
       })
       .from(messages)
@@ -370,32 +373,17 @@ export class DatabaseStorage implements IStorage {
 
   async getDirectMessageConversations(userId: string) {
     try {
-      // Get all unique conversations for the user
-      const conversations = await db
+      // First, get all messages where user is involved
+      const allMessages = await this.db
         .select({
-          otherUserId: sql<string>`CASE 
-            WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId}
-            ELSE ${messages.senderId}
-          END`,
-          otherUsername: sql<string>`CASE 
-            WHEN ${messages.senderId} = ${userId} THEN sender.username
-            ELSE recipient.username
-          END`,
-          otherUserLevel: sql<number>`CASE 
-            WHEN ${messages.senderId} = ${userId} THEN sender.level
-            ELSE recipient.level
-          END`,
-          otherUserIsOnline: sql<boolean>`CASE 
-            WHEN ${messages.senderId} = ${userId} THEN sender.is_online
-            ELSE recipient.is_online
-          END`,
-          lastMessage: messages.content,
-          lastMessageType: messages.messageType,
-          lastMessageTime: messages.createdAt,
+          id: messages.id,
+          content: messages.content,
+          senderId: messages.senderId,
+          recipientId: messages.recipientId,
+          messageType: messages.messageType,
+          createdAt: messages.createdAt,
         })
         .from(messages)
-        .innerJoin(users, eq(messages.senderId, users.id), { alias: 'sender' })
-        .innerJoin(users, eq(messages.recipientId, users.id), { alias: 'recipient' })
         .where(
           and(
             isNull(messages.roomId), // Direct messages only
@@ -407,24 +395,53 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(desc(messages.createdAt));
 
-      // Group by other user and get the latest message for each conversation
+      // Group by conversation and get the latest message for each
       const conversationMap = new Map();
 
-      for (const conv of conversations) {
-        if (!conversationMap.has(conv.otherUserId)) {
-          conversationMap.set(conv.otherUserId, {
-            id: conv.otherUserId,
-            username: conv.otherUsername,
-            level: conv.otherUserLevel,
-            isOnline: conv.otherUserIsOnline,
-            lastMessage: conv.lastMessage,
-            lastMessageType: conv.lastMessageType,
-            lastMessageTime: conv.lastMessageTime,
+      for (const msg of allMessages) {
+        const otherUserId = msg.senderId === userId ? msg.recipientId : msg.senderId;
+        
+        if (!conversationMap.has(otherUserId)) {
+          conversationMap.set(otherUserId, {
+            otherUserId,
+            lastMessage: msg.content,
+            lastMessageType: msg.messageType,
+            lastMessageTime: msg.createdAt,
           });
         }
       }
 
-      return Array.from(conversationMap.values()).sort((a, b) => 
+      // Now get user details for each conversation
+      const conversationIds = Array.from(conversationMap.keys());
+      if (conversationIds.length === 0) {
+        return [];
+      }
+
+      const userDetails = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+        })
+        .from(users)
+        .where(inArray(users.id, conversationIds));
+
+      // Combine conversation data with user details
+      const conversations = userDetails.map(user => {
+        const convData = conversationMap.get(user.id);
+        return {
+          id: user.id,
+          username: user.username,
+          level: user.level,
+          isOnline: user.isOnline,
+          lastMessage: convData.lastMessage,
+          lastMessageType: convData.lastMessageType,
+          lastMessageTime: convData.lastMessageTime,
+        };
+      });
+
+      return conversations.sort((a, b) => 
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
     } catch (error) {
@@ -531,6 +548,7 @@ export class DatabaseStorage implements IStorage {
           id: users.id,
           username: users.username,
           level: users.level,
+          isOnline: users.isOnline,
         },
       })
       .from(messages)
