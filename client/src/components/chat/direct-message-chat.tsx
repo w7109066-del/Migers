@@ -24,6 +24,13 @@ interface DirectMessage {
   senderId: string;
   recipientId: string;
   createdAt: string;
+  messageType?: string;
+  giftData?: {
+    name: string;
+    emoji: string;
+    value: number;
+    lottie: any;
+  };
   sender: {
     id: string;
     username: string;
@@ -173,6 +180,48 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const handleSendGift = async (gift: any) => {
+    try {
+      const giftMessage = `🎁 ${gift.name} (${gift.value} coins)`;
+      
+      const response = await fetch('/api/messages/direct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          content: giftMessage,
+          recipientId: recipient.id,
+          messageType: 'gift',
+          giftData: {
+            name: gift.name,
+            emoji: gift.emoji,
+            value: gift.value,
+            lottie: gift.lottie
+          }
+        }),
+      });
+
+      if (response.ok) {
+        const sentMessage = await response.json();
+        // Add message for sender immediately
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg.id === sentMessage.id);
+          if (messageExists) {
+            return prev;
+          }
+          return [...prev, sentMessage];
+        });
+        setShowGifts(false);
+      } else {
+        console.error('Failed to send gift');
+      }
+    } catch (error) {
+      console.error('Failed to send gift:', error);
     }
   };
 
@@ -894,7 +943,24 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                     ? "bg-primary text-white" 
                     : "bg-white text-gray-800"
                 )}>
-                  <p className="text-sm">{message.content}</p>
+                  {message.messageType === 'gift' && message.giftData ? (
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-16 h-16">
+                        <Lottie
+                          loop
+                          animationData={message.giftData.lottie}
+                          play
+                          style={{ width: 64, height: 64 }}
+                        />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold">{message.giftData.name}</p>
+                        <p className="text-xs opacity-80">{message.giftData.value} coins</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm">{message.content}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -936,10 +1002,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                     variant="ghost"
                     size="sm"
                     className="flex flex-col items-center p-2 h-auto hover:bg-gray-100 transition-colors"
-                    onClick={() => {
-                      setNewMessage(prev => prev + gift.emoji);
-                      setShowGifts(false);
-                    }}
+                    onClick={() => handleSendGift(gift)}
                   >
                     <div className="w-8 h-8 mb-1">
                       <Lottie
