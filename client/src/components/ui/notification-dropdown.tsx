@@ -68,7 +68,7 @@ export function NotificationDropdown() {
             className="fixed inset-0 z-10" 
             onClick={() => setIsOpen(false)}
           />
-          <Card className="absolute right-0 top-full mt-2 w-80 z-20 max-h-96 overflow-hidden">
+          <Card className="absolute right-0 top-full mt-2 w-80 sm:w-80 w-screen max-w-sm z-20 max-h-96 overflow-hidden shadow-lg border transform sm:transform-none -translate-x-4 sm:translate-x-0">
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-gray-800">Notifications</h3>
@@ -123,6 +123,56 @@ export function NotificationDropdown() {
                                 <span className="text-xs text-gray-500">
                                   from {notification.fromUser.username}
                                 </span>
+                              </div>
+                            )}
+                            
+                            {notification.type === 'friend_request' && notification.fromUser && (
+                              <div className="flex items-center space-x-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const response = await fetch('/api/friends/accept', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({ userId: notification.fromUser?.id }),
+                                      });
+                                      if (response.ok) {
+                                        removeNotification(notification.id);
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to accept friend request:', error);
+                                    }
+                                  }}
+                                >
+                                  Accept
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-300 text-red-600 hover:bg-red-50 px-3 py-1 text-xs"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const response = await fetch('/api/friends/reject', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({ userId: notification.fromUser?.id }),
+                                      });
+                                      if (response.ok) {
+                                        removeNotification(notification.id);
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to reject friend request:', error);
+                                    }
+                                  }}
+                                >
+                                  Reject
+                                </Button>
                               </div>
                             )}
                           </div>

@@ -14,6 +14,7 @@ interface Notification {
   data?: any;
   isRead: boolean;
   createdAt: string;
+  actionRequired?: boolean;
 }
 
 interface NotificationContextType {
