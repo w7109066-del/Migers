@@ -74,43 +74,47 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   const [roomMemberCounts, setRoomMemberCounts] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
 
-  // Listen for real-time member count updates
-  useEffect(() => {
-    const handleRoomMemberCountUpdate = (event: CustomEvent) => {
-      const { roomId, memberCount } = event.detail;
-      setRoomMemberCounts(prev => ({
-        ...prev,
-        [roomId]: memberCount
-      }));
-    };
+  // Real-time updates disabled for debugging
+  // useEffect(() => {
+  //   const handleRoomMemberCountUpdate = (event: CustomEvent) => {
+  //     const { roomId, memberCount } = event.detail;
+  //     setRoomMemberCounts(prev => ({
+  //       ...prev,
+  //       [roomId]: memberCount
+  //     }));
+  //   };
 
-    window.addEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
+  //   window.addEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
 
-    return () => {
-      window.removeEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
+  //   };
+  // }, []);
 
-  const { data: rooms = mockRoomsFallback, isLoading } = useQuery<Room[]>({
+  const { data: rooms = mockRoomsFallback, isLoading, error } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/rooms', {
-          credentials: 'include',
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch rooms');
-        }
-        return response.json();
-      } catch (error) {
-        console.warn('Failed to fetch rooms, using fallback:', error);
-        return mockRoomsFallback;
+      console.log('Fetching rooms from API...');
+      const response = await fetch('/api/rooms', {
+        credentials: 'include',
+      });
+      
+      console.log('API Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Failed to fetch rooms: ${response.status} - ${errorText}`);
       }
+      
+      const data = await response.json();
+      console.log('API Response data:', data);
+      return data;
     },
     enabled: true,
-    refetchInterval: 5000,
-    staleTime: 1000,
-    retry: 1
+    refetchInterval: false, // Disable auto-refresh
+    staleTime: Infinity, // Keep data fresh
+    retry: false // Disable retry to see errors immediately
   });
 
   const joinRoomMutation = useMutation({
@@ -131,8 +135,19 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     },
   });
 
-  // Always use rooms data or fallback
+  // Log any errors for debugging
+  if (error) {
+    console.error('Room fetch error:', error);
+  }
+  
+  // Show actual data or fallback, but log what we're using
   const displayRooms = rooms && rooms.length > 0 ? rooms : mockRoomsFallback;
+  console.log('Using rooms data:', { 
+    hasRoomsData: !!rooms, 
+    roomsLength: rooms?.length, 
+    usingFallback: !rooms || rooms.length === 0,
+    error: error?.message 
+  });
 
   const filteredRooms = displayRooms.filter((room: Room) =>
     room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -163,10 +178,12 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   const handleBackToRoomList = () => {
+    console.log('Returning to room list...');
     // Reset selected room immediately
     setSelectedRoom(null);
     
-    // Refresh room data
+    // Refresh room data manually (no auto-refresh)
+    console.log('Manually refreshing room data...');
     queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
   };
 
@@ -314,6 +331,27 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
             <p className="text-gray-600">Loading rooms...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state for debugging
+  if (error) {
+    return (
+      <div className="h-full w-full bg-white flex flex-col">
+        <div className="flex-1 flex items-center justify-center bg-red-50">
+          <div className="text-center p-4">
+            <div className="text-red-500 mb-2">⚠️ Error Loading Rooms</div>
+            <p className="text-red-600 text-sm mb-4">{error.message}</p>
+            <Button 
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/rooms"] })}
+              variant="outline"
+              size="sm"
+            >
+              Retry
+            </Button>
           </div>
         </div>
       </div>
