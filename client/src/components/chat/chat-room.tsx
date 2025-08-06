@@ -10,7 +10,6 @@ import { useWebSocket } from "@/hooks/use-websocket";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Users, 
-  Gift, 
   Settings, 
   X, 
   Hash 
@@ -325,10 +324,6 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
               </div>
             </SheetContent>
           </Sheet>
-
-          <Button variant="ghost" size="sm" className="p-2 text-gray-600">
-            <Gift className="w-4 h-4" />
-          </Button>
 
           <Button variant="ghost" size="sm" className="p-2 text-gray-600">
             <Settings className="w-4 h-4" />
