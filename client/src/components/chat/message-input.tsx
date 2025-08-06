@@ -34,8 +34,10 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
   const [showGifts, setShowGifts] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     if (message.trim()) {
       onSendMessage(message);
       setMessage("");
@@ -127,13 +129,13 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       )}
 
       {/* Input Form */}
-      <div className="p-4">
-        <form onSubmit={handleSubmit} className="flex items-center space-x-2">
+      <div className="p-4 bg-white sticky bottom-0">
+        <div className="flex items-center space-x-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="text-orange-600 p-2"
+            className="text-orange-600 p-2 flex-shrink-0"
             onClick={() => {
               setShowGifts(!showGifts);
               setShowEmojis(false);
@@ -145,7 +147,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             type="button"
             variant="ghost"
             size="sm"
-            className="text-yellow-600 p-2"
+            className="text-yellow-600 p-2 flex-shrink-0"
             onClick={() => {
               setShowEmojis(!showEmojis);
               setShowGifts(false);
@@ -159,16 +161,26 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             placeholder="Type a message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (message.trim()) {
+                  handleSubmit();
+                }
+              }
+            }}
+            className="flex-1 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+            autoComplete="off"
           />
           <Button
-            type="submit"
+            type="button"
+            onClick={() => handleSubmit()}
             disabled={!message.trim()}
-            className="bg-primary hover:bg-primary/90 text-white px-4"
+            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-full flex-shrink-0"
           >
             <Send className="w-4 h-4" />
           </Button>
-        </form>
+        </div>
       </div>
     </div>
   );

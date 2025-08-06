@@ -558,15 +558,15 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         </div>
       )}
 
-      {/* Message Input */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+      {/* Message Input - Fixed positioning */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 z-10">
+        <div className="flex items-center space-x-2">
           {/* Gift Button */}
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="text-orange-600 p-2"
+            className="text-orange-600 p-2 flex-shrink-0"
             onClick={() => {
               setShowGifts(!showGifts);
               setShowEmojis(false);
@@ -580,7 +580,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
             type="button"
             variant="ghost" 
             size="sm"
-            className="text-yellow-600 p-2"
+            className="text-yellow-600 p-2 flex-shrink-0"
             onClick={() => {
               setShowEmojis(!showEmojis);
               setShowGifts(false);
@@ -589,52 +589,34 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
             <Smile className="w-5 h-5" />
           </Button>
 
-          {/* Photo Upload */}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoUpload}
-            className="hidden"
-            id="photo-upload"
-          />
-          <label htmlFor="photo-upload">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-blue-600 p-2"
-              asChild
-            >
-              <span className="cursor-pointer">
-                <Image className="w-5 h-5" />
-              </span>
-            </Button>
-          </label>
-
           {/* Text Input */}
-          <div className="flex-1 relative">
+          <div className="flex-1 flex items-center space-x-2">
             <Input
               type="text"
               placeholder="Type a message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSendMessage();
+                  if (newMessage.trim() || selectedMedia) {
+                    handleSendMessage();
+                  }
                 }
               }}
-              className="pr-12 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+              className="flex-1 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+              autoComplete="off"
             />
             <Button
-              type="submit"
+              type="button"
+              onClick={handleSendMessage}
               disabled={!newMessage.trim() && !selectedMedia}
-              className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
+              className="bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 flex-shrink-0"
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
