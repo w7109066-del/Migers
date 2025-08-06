@@ -14,6 +14,7 @@ interface Room {
   name: string;
   description: string;
   memberCount: number;
+  capacity: number;
   isOfficial: boolean;
   category: "official" | "recent" | "favorite" | "game";
   isPrivate: boolean;
@@ -29,7 +30,8 @@ const mockRooms: Room[] = [
     id: "1",
     name: "MeChat",
     description: "Official main chat room",
-    memberCount: 1250,
+    memberCount: 0,
+    capacity: 25,
     isOfficial: true,
     category: "official",
     isPrivate: false
@@ -38,7 +40,8 @@ const mockRooms: Room[] = [
     id: "2", 
     name: "Indonesia",
     description: "Chat for Indonesian users",
-    memberCount: 856,
+    memberCount: 0,
+    capacity: 25,
     isOfficial: false,
     category: "recent",
     isPrivate: false
@@ -47,7 +50,8 @@ const mockRooms: Room[] = [
     id: "3",
     name: "MeChat",
     description: "Your favorite chat room",
-    memberCount: 1250,
+    memberCount: 0,
+    capacity: 25,
     isOfficial: true,
     category: "favorite", 
     isPrivate: false
@@ -56,7 +60,8 @@ const mockRooms: Room[] = [
     id: "4",
     name: "lowcard",
     description: "Card game room",
-    memberCount: 45,
+    memberCount: 0,
+    capacity: 25,
     isOfficial: false,
     category: "game",
     isPrivate: false
@@ -70,7 +75,9 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   const { data: rooms = mockRooms, isLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
-    enabled: true // Enable API query
+    enabled: true, // Enable API query
+    refetchInterval: 5000, // Refetch every 5 seconds to update member counts
+    staleTime: 0 // Always consider data stale for fresh updates
   });
 
   const joinRoomMutation = useMutation({
@@ -172,7 +179,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-1 text-gray-500">
                       <Users className="w-4 h-4" />
-                      <span className="text-sm">{room.memberCount}</span>
+                      <span className="text-sm">{room.memberCount}/{room.capacity}</span>
                     </div>
                     {room.isPrivate && (
                       <Badge variant="secondary" className="text-xs">Private</Badge>

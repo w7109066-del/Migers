@@ -263,7 +263,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           <div>
             <div className="font-semibold text-gray-800">{currentRoom.name}</div>
             <div className="text-xs text-gray-500">
-              {roomMembers?.length || 0} users online
+              {roomMembers?.length || 0}/25 users online
             </div>
           </div>
         </div>

@@ -185,13 +185,22 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      // Return mock rooms for now
+      // Get actual member counts for mock rooms
+      const getRoomMemberCount = (roomId: string) => {
+        if (['1', '2', '3', '4'].includes(roomId)) {
+          const roomMembers = mockRoomMembers.get(roomId);
+          return roomMembers ? roomMembers.size : 0;
+        }
+        return 0;
+      };
+
       const mockRooms = [
         {
           id: "1",
           name: "MeChat",
           description: "Official main chat room",
-          memberCount: 1250,
+          memberCount: getRoomMemberCount("1"),
+          capacity: 25,
           isOfficial: true,
           category: "official",
           isPrivate: false
@@ -200,7 +209,8 @@ export function registerRoutes(app: Express): Server {
           id: "2", 
           name: "Indonesia",
           description: "Chat for Indonesian users",
-          memberCount: 856,
+          memberCount: getRoomMemberCount("2"),
+          capacity: 25,
           isOfficial: false,
           category: "recent",
           isPrivate: false
@@ -209,7 +219,8 @@ export function registerRoutes(app: Express): Server {
           id: "3",
           name: "MeChat",
           description: "Your favorite chat room",
-          memberCount: 1250,
+          memberCount: getRoomMemberCount("3"),
+          capacity: 25,
           isOfficial: true,
           category: "favorite", 
           isPrivate: false
@@ -218,7 +229,8 @@ export function registerRoutes(app: Express): Server {
           id: "4",
           name: "lowcard",
           description: "Card game room",
-          memberCount: 45,
+          memberCount: getRoomMemberCount("4"),
+          capacity: 25,
           isOfficial: false,
           category: "game",
           isPrivate: false
