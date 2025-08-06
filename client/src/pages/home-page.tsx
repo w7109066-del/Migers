@@ -11,6 +11,7 @@ import RoomListPage from "@/pages/room-list";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
 import { NotificationDropdown } from "@/components/ui/notification-dropdown";
+import { EditProfileModal } from "@/components/ui/edit-profile-modal";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ export default function HomePage() {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   // Load feed posts when component mounts or when switching to feed tab
   React.useEffect(() => {
@@ -481,7 +483,11 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowEditProfile(true)}
+                >
                   Edit Profile
                 </Button>
               </CardContent>
@@ -594,6 +600,12 @@ export default function HomePage() {
             }}
           />
         )}
+
+        {/* Edit Profile Modal */}
+        <EditProfileModal
+          isOpen={showEditProfile}
+          onClose={() => setShowEditProfile(false)}
+        />
         </div>
         <Toaster />
       </WebSocketProvider>
