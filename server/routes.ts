@@ -599,10 +599,43 @@ export function registerRoutes(app: Express): Server {
 
           case 'join_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
+              // Check room capacity (25 users max)
+              const roomMemberCount = await getRoomMemberCount(message.roomId);
+              if (roomMemberCount >= 25) {
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'Room is full (maximum 25 users)',
+                }));
+                break;
+              }
+
               // For mock rooms (1-4), skip database operation
               if (!['1', '2', '3', '4'].includes(message.roomId)) {
                 await storage.joinRoom(message.roomId, userId);
               }
+
+              // Get user data for system message
+              const user = await storage.getUser(userId);
+              
+              // Broadcast system message about user joining
+              broadcastToRoom(message.roomId, {
+                type: 'new_message',
+                message: {
+                  id: `system-join-${Date.now()}`,
+                  content: `${user?.username || 'User'} has entered`,
+                  senderId: 'system',
+                  roomId: message.roomId,
+                  recipientId: null,
+                  messageType: 'system',
+                  createdAt: new Date().toISOString(),
+                  sender: {
+                    id: 'system',
+                    username: 'System',
+                    level: 0,
+                    isOnline: true,
+                  }
+                }
+              });
 
               // Broadcast to room members
               broadcastToRoom(message.roomId, {
@@ -615,10 +648,33 @@ export function registerRoutes(app: Express): Server {
 
           case 'leave_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
+              // Get user data for system message before leaving
+              const user = await storage.getUser(userId);
+
               // For mock rooms (1-4), skip database operation
               if (!['1', '2', '3', '4'].includes(message.roomId)) {
                 await storage.leaveRoom(message.roomId, userId);
               }
+
+              // Broadcast system message about user leaving
+              broadcastToRoom(message.roomId, {
+                type: 'new_message',
+                message: {
+                  id: `system-leave-${Date.now()}`,
+                  content: `${user?.username || 'User'} has left`,
+                  senderId: 'system',
+                  roomId: message.roomId,
+                  recipientId: null,
+                  messageType: 'system',
+                  createdAt: new Date().toISOString(),
+                  sender: {
+                    id: 'system',
+                    username: 'System',
+                    level: 0,
+                    isOnline: true,
+                  }
+                }
+              });
 
               // Broadcast to room members
               broadcastToRoom(message.roomId, {
@@ -729,6 +785,9 @@ export function registerRoutes(app: Express): Server {
         if (userSession) {
           await storage.removeUserSession(userSession.socketId);
         }
+        
+        // If user was in a room, send leave message
+        // Note: In a real implementation, you'd track which room the user was in
       }
       console.log('WebSocket connection closed');
     });
@@ -737,6 +796,20 @@ export function registerRoutes(app: Express): Server {
   function generateSocketId(): string {
     return Math.random().toString(36).substring(2, 15) + 
            Math.random().toString(36).substring(2, 15);
+  }
+
+  async function getRoomMemberCount(roomId: string): Promise<number> {
+    // For mock rooms, return a mock count
+    if (['1', '2', '3', '4'].includes(roomId)) {
+      return Math.floor(Math.random() * 15) + 5; // Mock count between 5-19
+    }
+    
+    try {
+      const members = await storage.getRoomMembers(roomId);
+      return members?.length || 0;
+    } catch (error) {
+      return 0;
+    }
   }
 
   function broadcastToRoom(roomId: string, message: any, excludeWs?: WebSocket) {

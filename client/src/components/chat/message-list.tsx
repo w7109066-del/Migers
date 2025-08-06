@@ -47,14 +47,23 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
         const isOwnMessage = message.senderId === user?.id;
+        const isSystemMessage = message.senderId === 'system';
+        
+        // System message rendering
+        if (isSystemMessage) {
+          return (
+            <div key={message.id} className="flex justify-center">
+              <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
+                {message.content}
+              </div>
+            </div>
+          );
+        }
         
         return (
           <div
             key={message.id}
-            className={cn(
-              "flex items-start space-x-3 animate-in slide-in-from-bottom-2 duration-300",
-              isOwnMessage && "flex-row-reverse space-x-reverse"
-            )}
+            className="flex items-start space-x-3 animate-in slide-in-from-bottom-2 duration-300"
           >
             <UserAvatar
               username={message.sender.username}
@@ -63,28 +72,20 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
               onClick={() => onUserClick(message.sender)}
               className="cursor-pointer"
             />
-            <div className={cn("flex-1", isOwnMessage && "text-right")}>
-              <div className={cn(
-                "flex items-center space-x-2 mb-1",
-                isOwnMessage && "justify-end"
-              )}>
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-1">
                 <span className="font-semibold text-sm text-gray-800">
                   {isOwnMessage ? "You" : message.sender.username}
                 </span>
-                <Badge variant="secondary" className="bg-warning text-white text-xs">
-                  {message.sender.level}
+                <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-semibold">
+                  Level {message.sender.level}
                 </Badge>
                 <span className="text-xs text-gray-500">
                   {formatTime(message.createdAt)}
                 </span>
               </div>
-              <div className={cn(
-                "p-3 rounded-xl shadow-sm max-w-[80%]",
-                isOwnMessage 
-                  ? "bg-primary text-white ml-auto" 
-                  : "bg-white text-gray-800"
-              )}>
-                <p className="text-sm">{message.content}</p>
+              <div className="text-sm text-gray-800 break-words">
+                {message.content}
               </div>
             </div>
           </div>
