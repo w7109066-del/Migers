@@ -53,6 +53,108 @@ export function registerRoutes(app: Express): Server {
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
+  // Rooms API endpoints
+  app.get("/api/rooms", requireAuth, async (req, res) => {
+    try {
+      // Return mock rooms data that matches the frontend expectations
+      const mockRooms = [
+        {
+          id: "1",
+          name: "MeChat",
+          description: "Official main chat room",
+          memberCount: 0,
+          capacity: 25,
+          isOfficial: true,
+          category: "official",
+          isPrivate: false
+        },
+        {
+          id: "2", 
+          name: "Indonesia",
+          description: "Chat for Indonesian users",
+          memberCount: 0,
+          capacity: 25,
+          isOfficial: false,
+          category: "recent",
+          isPrivate: false
+        },
+        {
+          id: "3",
+          name: "MeChat",
+          description: "Your favorite chat room",
+          memberCount: 0,
+          capacity: 25,
+          isOfficial: true,
+          category: "favorite", 
+          isPrivate: false
+        },
+        {
+          id: "4",
+          name: "lowcard",
+          description: "Card game room",
+          memberCount: 0,
+          capacity: 25,
+          isOfficial: false,
+          category: "game",
+          isPrivate: false
+        }
+      ];
+
+      res.json(mockRooms);
+    } catch (error) {
+      console.error("Failed to fetch rooms:", error);
+      res.status(500).json({ message: "Failed to fetch rooms" });
+    }
+  });
+
+  app.post("/api/rooms/:roomId/join", requireAuth, async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const userId = req.user!.id;
+
+      // For mock rooms, just return success
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        res.json({ 
+          success: true, 
+          message: "Successfully joined room",
+          roomId 
+        });
+      } else {
+        // For real rooms, use storage
+        await storage.joinRoom(roomId, userId);
+        res.json({ 
+          success: true, 
+          message: "Successfully joined room",
+          roomId 
+        });
+      }
+    } catch (error) {
+      console.error("Failed to join room:", error);
+      res.status(500).json({ message: "Failed to join room" });
+    }
+  });
+
+  app.get("/api/rooms/:roomId/members", requireAuth, async (req, res) => {
+    try {
+      const { roomId } = req.params;
+
+      // For mock rooms, return members from memory
+      if (['1', '2', '3', '4'].includes(roomId) && mockRoomMembers.has(roomId)) {
+        const members = Array.from(mockRoomMembers.get(roomId)!.values()).map(userData => ({
+          user: userData
+        }));
+        res.json(members);
+      } else {
+        // For real rooms, use storage
+        const members = await storage.getRoomMembers(roomId);
+        res.json(members || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch room members:", error);
+      res.status(500).json({ message: "Failed to fetch room members" });
+    }
+  });
+
   // Gift endpoints
   app.post("/api/gifts/send", requireAuth, async (req, res) => {
     try {
