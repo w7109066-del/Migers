@@ -46,7 +46,9 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
     const diff = startXRef.current - endX;
     const threshold = 50;
 
-    if (Math.abs(diff) > threshold) {
+    // Check if the touch event is primarily for horizontal swipe
+    // and not for vertical scrolling of the content within the tab
+    if (Math.abs(diff) > Math.abs(e.changedTouches[0].pageY - e.touches[0].pageY)) {
       if (diff > 0 && activeTab < tabs.length - 1) {
         // Swipe left - next tab
         switchTab(activeTab + 1);
@@ -75,7 +77,7 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Tab Content */}
-      <div className="flex-1 relative overflow-hidden pb-16">
+      <div className="flex-1 relative overflow-hidden">
         <div
           ref={containerRef}
           className="flex h-full overflow-x-hidden"
@@ -90,7 +92,7 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
           {tabs.map((tab, index) => (
             <div
               key={tab.id}
-              className="w-full h-full flex-shrink-0"
+              className="w-full h-full flex-shrink-0 relative" // Added relative positioning
               style={{ scrollSnapAlign: "start" }}
             >
               {tab.content}
@@ -104,7 +106,7 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
         <div className="flex items-center justify-around relative">
           {/* Tab Indicator */}
           <div
-            className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-transform duration-300"
+            className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-transform duration-500 ease-out"
             style={{
               width: `${100 / tabs.length}%`,
               transform: `translateX(${activeTab * 100}%)`,

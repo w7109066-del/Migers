@@ -137,7 +137,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     };
 
     window.addEventListener('newMessage', handleNewMessage as EventListener);
-    
+
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
     };
@@ -187,7 +187,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Sheet open={isUserListOpen} onOpenChange={setIsUserListOpen}>
             <SheetTrigger asChild>
@@ -224,7 +224,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
                     </div>
                   </div>
                 ))}
-                
+
                 {/* Show message if no members found */}
                 {(!roomMembers || roomMembers.length === 0) && (
                   <div className="text-center text-gray-500 py-4">
@@ -236,22 +236,22 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
               </div>
             </SheetContent>
           </Sheet>
-          
+
           <Button variant="ghost" size="sm" className="p-2 text-gray-600">
             <Gift className="w-4 h-4" />
           </Button>
-          
+
           <Button variant="ghost" size="sm" className="p-2 text-gray-600">
             <Settings className="w-4 h-4" />
           </Button>
         </div>
       </div>
-      
+
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
         <MessageList messages={messages} onUserClick={handleUserClick} />
       </div>
-      
+
       {/* Message Input */}
       <MessageInput onSendMessage={handleSendMessage} />
     </div>

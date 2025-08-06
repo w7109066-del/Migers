@@ -384,6 +384,10 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
     { emoji: '💤', name: 'Zzz' }
   ];
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.target.files?.[0] && handleMediaSelect(e.target.files[0])
+  }
+
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Chat Header */}
@@ -425,7 +429,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
             <div
               key={message.id}
               className={cn(
-                "flex items-start space-x-3 animate-in slide-in-from-bottom-2 duration-300",
+                "flex items-start space-x-3 animate-in slide-in-from-bottom-2 duration-500", // Increased duration for slower animation
                 isOwnMessage && "flex-row-reverse space-x-reverse"
               )}
             >
@@ -555,8 +559,8 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
       )}
 
       {/* Message Input */}
-      <div className="bg-white border-t border-gray-200 p-4">
-        <div className="flex items-center space-x-2">
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
           {/* Gift Button */}
           <Button
             type="button"
@@ -574,7 +578,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
           {/* Emoji Button */}
           <Button
             type="button"
-            variant="ghost"
+            variant="ghost" 
             size="sm"
             className="text-yellow-600 p-2"
             onClick={() => {
@@ -589,7 +593,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => e.target.files?.[0] && handleMediaSelect(e.target.files[0])}
+            onChange={handlePhotoUpload}
             className="hidden"
             id="photo-upload"
           />
@@ -622,18 +626,15 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
               }}
               className="pr-12 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
             />
+            <Button
+              type="submit"
+              disabled={!newMessage.trim() && !selectedMedia}
+              className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
-
-          {/* Send Button */}
-          <Button
-            type="button"
-            onClick={handleSendMessage}
-            disabled={!newMessage.trim() && !selectedMedia}
-            className="bg-primary hover:bg-primary/90 text-white p-3 rounded-full"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+        </form>
       </div>
     </div>
   );
