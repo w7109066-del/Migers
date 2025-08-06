@@ -183,7 +183,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     // Listen for user join/leave events
     const handleUserJoin = (event: CustomEvent) => {
       const { username, roomId } = event.detail;
-      if (roomId === currentRoom?.id) {
+      if (roomId === currentRoom?.id && username && username !== 'undefined') {
         const joinMessage = {
           id: `join-${Date.now()}-${username}`,
           content: `${username} has entered`,
@@ -198,7 +198,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
 
     const handleUserLeave = (event: CustomEvent) => {
       const { username, roomId } = event.detail;
-      if (roomId === currentRoom?.id) {
+      if (roomId === currentRoom?.id && username && username !== 'undefined') {
         const leaveMessage = {
           id: `leave-${Date.now()}-${username}`,
           content: `${username} has left`,
