@@ -9,7 +9,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { RefreshCw, Search, Bell } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { NotificationDropdown } from "./notification-dropdown";
+import { NotificationDropdown } from "../ui/notification-dropdown";
 
 interface Friend extends User {
   friendshipStatus: string;
