@@ -43,11 +43,54 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
     });
   };
 
+  const isGiftMessage = (content: string) => {
+    return content.includes('sent a') && content.includes('gift to');
+  };
+
+  const parseGiftMessage = (content: string, senderUsername: string) => {
+    // Parse messages like "chatme sent a Golden Crown gift to tester"
+    const giftRegex = /sent a (.+) gift to (.+)/;
+    const match = content.match(giftRegex);
+
+    if (match) {
+      const giftName = match[1];
+      const recipient = match[2];
+      return { giftName, recipient };
+    }
+    return null;
+  };
+
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
         const isOwnMessage = message.senderId === user?.id;
         const isSystemMessage = message.senderId === 'system';
+        const isGift = isGiftMessage(message.content);
+
+        // Gift message rendering
+        if (isGift) {
+          const giftData = parseGiftMessage(message.content, message.sender.username);
+
+          return (
+            <div key={message.id} className="flex justify-center mb-4">
+              <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-300 rounded-lg p-3 max-w-md">
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-2xl">🎁</span>
+                  <div className="text-center">
+                    <span className="text-blue-600 font-semibold">{message.sender.username}</span>
+                    <span className="text-gray-700"> sent a </span>
+                    <span className="text-orange-600 font-bold">
+                      {giftData?.giftName || 'Gift'}
+                    </span>
+                    <span className="text-gray-700"> gift to </span>
+                    <span className="text-blue-600 font-semibold">{giftData?.recipient}</span>
+                  </div>
+                  <span className="text-2xl">✨</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
 
         // System message rendering
         if (isSystemMessage) {

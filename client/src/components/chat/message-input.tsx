@@ -5,7 +5,9 @@ import { Send, Plus, Smile, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Lottie from "react-lottie-player";
 
-// Dummy data for emoticons and gifts (replace with actual data fetching)
+import { gifts } from "@/animations/gifts";
+
+// Dummy data for emoticons (replace with actual data fetching)
 const emojis = [
   { emoji: "😊", name: "Smile", price: 10 },
   { emoji: "😂", name: "Laugh", price: 15 },
@@ -15,13 +17,6 @@ const emojis = [
   { emoji: "🎉", name: "Party Popper", price: 18 },
   { emoji: "🤔", name: "Thinking", price: 12 },
   { emoji: "🔥", name: "Fire", price: 22 },
-];
-
-const gifts = [
-  { name: "Rose", value: 50, lottie: "/lotties/rose.json" }, // Placeholder for Lottie animation JSON
-  { name: "Cake", value: 100, lottie: "/lotties/cake.json" },
-  { name: "Gift Box", value: 75, lottie: "/lotties/giftbox.json" },
-  { name: "Crown", value: 150, lottie: "/lotties/crown.json" },
 ];
 
 interface MessageInputProps {
@@ -49,7 +44,9 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
   const handleSendGift = async (gift: any) => {
     try {
       // For room messages, we'll send gift through the regular message system
-      onSendMessage(`🎁 ${gift.emoji || gift.name} (${gift.value} coins)`);
+      // Format: "user sent a GiftName gift to target_user"
+      // Since this is a room, we'll use a generic format
+      onSendMessage(`sent a ${gift.name} gift to everyone`);
       setShowGifts(false);
     } catch (error) {
       console.error('Failed to send gift:', error);
@@ -105,16 +102,12 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
                     onClick={() => handleSendGift(gift)}
                   >
                     <div className="w-8 h-8 mb-1 flex items-center justify-center">
-                      {gift.lottie ? (
-                        <Lottie
-                          loop
-                          animationData={gift.lottie}
-                          play
-                          style={{ width: 32, height: 32 }}
-                        />
-                      ) : (
-                        <span className="text-2xl">{gift.emoji}</span>
-                      )}
+                      <Lottie
+                        loop
+                        animationData={gift.lottie}
+                        play
+                        style={{ width: 32, height: 32 }}
+                      />
                     </div>
                     <span className="text-xs font-medium text-gray-700">{gift.name}</span>
                     <span className="text-xs text-primary font-bold">{gift.value}</span>
