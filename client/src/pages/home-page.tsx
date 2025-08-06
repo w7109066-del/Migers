@@ -238,7 +238,7 @@ export default function HomePage() {
       icon: <MessageCircle className="w-5 h-5" />,
       content: (
         <div className="h-full">
-          <RoomListPage />
+          <RoomListPage onUserClick={showMiniProfile} />
         </div>
       ),
     },

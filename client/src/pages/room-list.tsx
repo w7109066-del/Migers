@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Plus, Users, Crown, Star, Gamepad2 } from "lucide-react";
 import { UserAvatar } from "@/components/user/user-avatar";
+import { ChatRoom } from "@/components/chat/chat-room";
 
 interface Room {
   id: string;
@@ -16,6 +17,10 @@ interface Room {
   isOfficial: boolean;
   category: "official" | "recent" | "favorite" | "game";
   isPrivate: boolean;
+}
+
+interface RoomListPageProps {
+  onUserClick?: (profile: any) => void;
 }
 
 // Mock data untuk menampilkan struktur kategori
@@ -58,18 +63,47 @@ const mockRooms: Room[] = [
   }
 ];
 
-export default function RoomListPage() {
+export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: rooms = mockRooms, isLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
     enabled: false // Use mock data for now
   });
 
+  const joinRoomMutation = useMutation({
+    mutationFn: async (roomId: string) => {
+      const response = await fetch(`/api/rooms/${roomId}/join`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to join room');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    },
+  });
+
   const filteredRooms = (rooms as Room[]).filter((room: Room) =>
     room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     room.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleRoomClick = async (room: Room) => {
+    try {
+      await joinRoomMutation.mutateAsync(room.id);
+      setSelectedRoom(room);
+    } catch (error) {
+      console.error('Failed to join room:', error);
+    }
+  };
 
   const categorizedRooms = {
     official: filteredRooms.filter((room: Room) => room.category === "official"),
@@ -99,7 +133,11 @@ export default function RoomListPage() {
         </div>
         <div className="space-y-2">
           {rooms.map((room) => (
-            <Card key={room.id} className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card 
+              key={room.id} 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleRoomClick(room)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -152,6 +190,39 @@ export default function RoomListPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-gray-600">Loading rooms...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show chat room if a room is selected
+  if (selectedRoom) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSelectedRoom(null)}
+            className="text-gray-600"
+          >
+            ← Back to Rooms
+          </Button>
+          <div className="flex items-center space-x-2">
+            <UserAvatar 
+              username={selectedRoom.name}
+              size="sm"
+              isOnline={true}
+            />
+            <span className="font-semibold text-gray-800">{selectedRoom.name}</span>
+          </div>
+        </div>
+        <div className="flex-1">
+          <ChatRoom 
+            roomId={selectedRoom.id}
+            roomName={selectedRoom.name}
+            onUserClick={onUserClick}
+          />
         </div>
       </div>
     );

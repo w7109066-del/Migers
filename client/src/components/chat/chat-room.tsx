@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 
 interface ChatRoomProps {
+  roomId?: string;
+  roomName?: string;
   onUserClick: (profile: any) => void;
 }
 
@@ -42,7 +44,7 @@ interface RoomMember {
   };
 }
 
-export function ChatRoom({ onUserClick }: ChatRoomProps) {
+export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<any>(null);
@@ -66,12 +68,14 @@ export function ChatRoom({ onUserClick }: ChatRoomProps) {
     enabled: Boolean(isConnected && currentRoom?.id),
   });
 
-  // Set up default room or create one if needed
+  // Set up room from props or use first available room
   useEffect(() => {
-    if (availableRooms && availableRooms.length > 0) {
+    if (roomId && roomName) {
+      setCurrentRoom({ id: roomId, name: roomName });
+    } else if (availableRooms && availableRooms.length > 0) {
       setCurrentRoom(availableRooms[0]);
     }
-  }, [availableRooms]);
+  }, [roomId, roomName, availableRooms]);
 
   useEffect(() => {
     if (roomMessages) {

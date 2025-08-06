@@ -22,10 +22,10 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
 
   const switchTab = (tabIndex: number) => {
     if (tabIndex < 0 || tabIndex >= tabs.length) return;
-    
+
     setActiveTab(tabIndex);
     onTabChange?.(tabIndex);
-    
+
     if (containerRef.current) {
       const tabWidth = containerRef.current.clientWidth;
       containerRef.current.scrollLeft = tabIndex * tabWidth;
@@ -34,18 +34,18 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!containerRef.current) return;
-    
+
     startXRef.current = e.touches[0].pageX;
     scrollLeftRef.current = containerRef.current.scrollLeft;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!containerRef.current) return;
-    
+
     const endX = e.changedTouches[0].pageX;
     const diff = startXRef.current - endX;
     const threshold = 50;
-    
+
     if (Math.abs(diff) > threshold) {
       if (diff > 0 && activeTab < tabs.length - 1) {
         // Swipe left - next tab
@@ -110,7 +110,7 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
               transform: `translateX(${activeTab * 100}%)`,
             }}
           />
-          
+
           {tabs.map((tab, index) => (
             <button
               key={tab.id}
