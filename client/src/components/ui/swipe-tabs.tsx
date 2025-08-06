@@ -75,7 +75,7 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Tab Content */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden pb-16"></div>
         <div
           ref={containerRef}
           className="flex h-full overflow-x-hidden"
@@ -100,7 +100,7 @@ export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
       </div>
 
       {/* Bottom Tab Bar */}
-      <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom">
+      <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-50"></div>
         <div className="flex items-center justify-around relative">
           {/* Tab Indicator */}
           <div
