@@ -152,9 +152,6 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   const handleBackToRoomList = () => {
-    // Navigate back to room list
-    navigate('/rooms');
-    
     // Reset selected room immediately
     setSelectedRoom(null);
     

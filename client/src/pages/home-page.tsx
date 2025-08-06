@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -48,6 +47,7 @@ import {
   X,
   ChevronDown
 } from "lucide-react";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 
 interface MiniProfileData {
   id: string;
@@ -60,6 +60,8 @@ interface MiniProfileData {
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
   const [selectedDMUser, setSelectedDMUser] = useState<MiniProfileData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,124 +210,21 @@ export default function HomePage() {
     }
   };
 
+  const handleUserClick = (user: MiniProfileData) => {
+    setSelectedProfile(user);
+  };
+
   const tabs = [
     {
       id: "home",
       label: "Home",
       icon: <Home className="w-5 h-5" />,
       content: (
-        <div className="h-full overflow-y-auto bg-gray-50">
-          <div className="p-4">
-            {/* Header Section with User Profile */}
-            <div className="mb-6 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              {/* Top Row: Avatar, Info, Actions */}
-              <div className="flex items-center space-x-4 mb-4">
-                {/* User Avatar with Level Badge */}
-                <div className="relative">
-                  <div className="relative">
-                    <UserAvatar
-                      username={user.username}
-                      size="lg"
-                      isOnline={user.isOnline || false}
-                      onClick={() => setShowEditProfile(true)}
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                    />
-                    {/* Level Badge */}
-                    <Badge 
-                      variant="secondary" 
-                      className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-2 border-white text-xs font-bold min-w-[24px] h-6 rounded-full flex items-center justify-center"
-                    >
-                      {user.level || 1}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* User Info and Status Dropdown */}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold text-gray-800 truncate">{user.username}</h2>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800 h-auto p-1 rounded-full"
-                        >
-                          <div className={`w-2 h-2 rounded-full ${getStatusColor(userStatus)}`} />
-                          <span className="max-w-[100px] truncate">{getStatusText(userStatus)}</span>
-                          <ChevronDown className="w-3 h-3 flex-shrink-0" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-32">
-                        <DropdownMenuItem onClick={() => handleStatusChange('online')}>
-                          <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-                          Online
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange('away')}>
-                          <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
-                          Away
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange('busy')}>
-                          <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
-                          Busy
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange('offline')}>
-                          <div className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
-                          Offline
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
-                {/* Action Icons */}
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowUserSearch(true)}
-                    className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100"
-                  >
-                    <Search className="w-5 h-5" />
-                  </Button>
-                  <div className="relative">
-                    <NotificationDropdown />
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Message Input */}
-              <div className="mt-3">
-                <div className="relative">
-                  <Input
-                    placeholder="What's on your mind? Set your status message..."
-                    value={userStatus !== 'online' && userStatus !== 'offline' && userStatus !== 'away' && userStatus !== 'busy' ? userStatus : ''}
-                    onChange={(e) => {
-                      const newStatus = e.target.value.trim();
-                      if (newStatus.length === 0) {
-                        handleStatusChange('online');
-                      } else if (newStatus.length <= 100) {
-                        handleStatusChange(newStatus);
-                      }
-                    }}
-                    className="bg-gray-50 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm pr-12 transition-all duration-200"
-                    maxLength={100}
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">
-                    {userStatus && userStatus !== 'online' && userStatus !== 'offline' && userStatus !== 'away' && userStatus !== 'busy' 
-                      ? `${userStatus.length}/100` 
-                      : ''}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Friends Section */}
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Friends</h3>
-            </div>
-            <FriendsList onUserClick={showMiniProfile} showRefreshButton={true} />
-          </div>
+        <div className="h-full">
+          <Routes>
+            <Route path="/" element={<RoomListPage onUserClick={handleUserClick} />} />
+            <Route path="/rooms" element={<RoomListPage onUserClick={handleUserClick} />} />
+          </Routes>
         </div>
       ),
     },
@@ -335,7 +234,7 @@ export default function HomePage() {
       icon: <MessageCircle className="w-5 h-5" />,
       content: (
         <div className="h-full">
-          <RoomListPage onUserClick={showMiniProfile} />
+          <RoomListPage onUserClick={handleUserClick} />
         </div>
       ),
     },
