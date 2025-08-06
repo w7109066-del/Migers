@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -93,7 +94,6 @@ export default function HomePage() {
 
       if (response.ok) {
         setUserStatus(newStatus);
-        // Update user object if needed
         console.log(`Status changed to: ${newStatus}`);
       } else {
         console.error('Failed to update status');
@@ -119,7 +119,7 @@ export default function HomePage() {
       case 'away': return 'Away';
       case 'busy': return 'Busy';
       case 'offline': return 'Offline';
-      default: return 'Online';
+      default: return status.length > 20 ? status.substring(0, 20) + '...' : status;
     }
   };
 
@@ -197,7 +197,6 @@ export default function HomePage() {
         setPostContent('');
         setSelectedMedia(null);
         setMediaPreview(null);
-        // Refresh the feed to show the new post
         await loadFeedPosts();
         console.log('Post created successfully');
       } else {
@@ -217,42 +216,47 @@ export default function HomePage() {
       content: (
         <div className="h-full overflow-y-auto bg-gray-50">
           <div className="p-4">
-            {/* Header Section */}
-            <div className="mb-6 bg-white rounded-lg p-4 shadow-sm">
+            {/* Header Section with User Profile */}
+            <div className="mb-6 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              {/* Top Row: Avatar, Info, Actions */}
               <div className="flex items-center space-x-4 mb-4">
-                {/* User Avatar and Level */}
+                {/* User Avatar with Level Badge */}
                 <div className="relative">
-                  <UserAvatar
-                    username={user.username}
-                    size="lg"
-                    isOnline={user.isOnline || false}
-                    onClick={() => setShowEditProfile(true)}
-                  />
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute -bottom-1 -right-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-2 border-white"
-                  >
-                    {user.level}
-                  </Badge>
+                  <div className="relative">
+                    <UserAvatar
+                      username={user.username}
+                      size="lg"
+                      isOnline={user.isOnline || false}
+                      onClick={() => setShowEditProfile(true)}
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                    />
+                    {/* Level Badge */}
+                    <Badge 
+                      variant="secondary" 
+                      className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-2 border-white text-xs font-bold min-w-[24px] h-6 rounded-full flex items-center justify-center"
+                    >
+                      {user.level || 1}
+                    </Badge>
+                  </div>
                 </div>
 
-                {/* User Info and Status */}
-                <div className="flex-1">
-                  <h2 className="text-lg font-bold text-gray-800">{user.username}</h2>
+                {/* User Info and Status Dropdown */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold text-gray-800 truncate">{user.username}</h2>
                   <div className="flex items-center space-x-2 mt-1">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800 h-auto p-1"
+                          className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800 h-auto p-1 rounded-full"
                         >
                           <div className={`w-2 h-2 rounded-full ${getStatusColor(userStatus)}`} />
-                          <span>{getStatusText(userStatus)}</span>
-                          <ChevronDown className="w-3 h-3" />
+                          <span className="max-w-[100px] truncate">{getStatusText(userStatus)}</span>
+                          <ChevronDown className="w-3 h-3 flex-shrink-0" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
+                      <DropdownMenuContent align="start" className="w-32">
                         <DropdownMenuItem onClick={() => handleStatusChange('online')}>
                           <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
                           Online
@@ -280,30 +284,39 @@ export default function HomePage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowUserSearch(true)}
-                    className="text-gray-600 p-2"
+                    className="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100"
                   >
                     <Search className="w-5 h-5" />
                   </Button>
-                  <NotificationDropdown />
+                  <div className="relative">
+                    <NotificationDropdown />
+                  </div>
                 </div>
               </div>
 
               {/* Status Message Input */}
               <div className="mt-3">
-                <Input
-                  placeholder="What's on your mind? Set your status message..."
-                  value={user.status && user.status !== 'online' && user.status !== 'offline' && user.status !== 'away' && user.status !== 'busy' ? user.status : ''}
-                  onChange={(e) => {
-                    const newStatus = e.target.value.trim();
-                    if (newStatus.length === 0) {
-                      handleStatusChange('online');
-                    } else {
-                      handleStatusChange(newStatus);
-                    }
-                  }}
-                  className="bg-gray-50 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary text-sm"
-                  maxLength={100}
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="What's on your mind? Set your status message..."
+                    value={userStatus !== 'online' && userStatus !== 'offline' && userStatus !== 'away' && userStatus !== 'busy' ? userStatus : ''}
+                    onChange={(e) => {
+                      const newStatus = e.target.value.trim();
+                      if (newStatus.length === 0) {
+                        handleStatusChange('online');
+                      } else if (newStatus.length <= 100) {
+                        handleStatusChange(newStatus);
+                      }
+                    }}
+                    className="bg-gray-50 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm pr-12 transition-all duration-200"
+                    maxLength={100}
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">
+                    {userStatus && userStatus !== 'online' && userStatus !== 'offline' && userStatus !== 'away' && userStatus !== 'busy' 
+                      ? `${userStatus.length}/100` 
+                      : ''}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -630,47 +643,45 @@ export default function HomePage() {
     <NotificationProvider>
       <WebSocketProvider>
         <div className="h-full w-full bg-white flex flex-col">
-        
+          {/* Swipe Tabs Content */}
+          <div className="flex-1">
+            <SwipeTabs tabs={tabs} onTabChange={setActiveTab} />
+          </div>
 
-        {/* Swipe Tabs Content */}
-        <div className="flex-1">
-          <SwipeTabs tabs={tabs} onTabChange={setActiveTab} />
-        </div>
+          {/* Mini Profile Modal */}
+          {selectedProfile && (
+            <MiniProfileModal
+              profile={selectedProfile}
+              onClose={closeMiniProfile}
+              onMessageClick={(user) => {
+                setSelectedDMUser(user);
+                setActiveTab(3); // Switch to DM tab
+              }}
+            />
+          )}
 
-        {/* Mini Profile Modal */}
-        {selectedProfile && (
-          <MiniProfileModal
-            profile={selectedProfile}
-            onClose={closeMiniProfile}
+          {/* Edit Profile Modal */}
+          <EditProfileModal
+            isOpen={showEditProfile}
+            onClose={() => setShowEditProfile(false)}
+          />
+
+          {/* User Search Modal */}
+          <UserSearchModal
+            isOpen={showUserSearch}
+            onClose={() => setShowUserSearch(false)}
+            onUserSelect={showMiniProfile}
             onMessageClick={(user) => {
               setSelectedDMUser(user);
               setActiveTab(3); // Switch to DM tab
             }}
           />
-        )}
 
-        {/* Edit Profile Modal */}
-        <EditProfileModal
-          isOpen={showEditProfile}
-          onClose={() => setShowEditProfile(false)}
-        />
-
-        {/* User Search Modal */}
-        <UserSearchModal
-          isOpen={showUserSearch}
-          onClose={() => setShowUserSearch(false)}
-          onUserSelect={showMiniProfile}
-          onMessageClick={(user) => {
-            setSelectedDMUser(user);
-            setActiveTab(3); // Switch to DM tab
-          }}
-        />
-
-        {/* Status Update Modal */}
-        <StatusUpdateModal
-          isOpen={showStatusUpdate}
-          onClose={() => setShowStatusUpdate(false)}
-        />
+          {/* Status Update Modal */}
+          <StatusUpdateModal
+            isOpen={showStatusUpdate}
+            onClose={() => setShowStatusUpdate(false)}
+          />
         </div>
         <Toaster />
       </WebSocketProvider>
