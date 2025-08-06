@@ -42,6 +42,7 @@ export default function HomePage() {
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState(0);
+  const [postContent, setPostContent] = useState("");
 
   if (!user) return null;
 
@@ -89,7 +90,55 @@ export default function HomePage() {
       content: (
         <div className="h-full overflow-y-auto bg-gray-50">
           <div className="p-4 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Activity Feed</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Activity Feed</h3>
+            </div>
+
+            {/* Create Post Card */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-3">
+                  <UserAvatar 
+                    username={user.username} 
+                    size="md"
+                    isOnline={user.isOnline || false}
+                  />
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Input
+                        placeholder="What's on your mind?"
+                        value={postContent}
+                        onChange={(e) => setPostContent(e.target.value)}
+                        className="pr-12 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && postContent.trim()) {
+                            // Handle post creation here
+                            console.log('Creating post:', postContent);
+                            setPostContent('');
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1 text-primary p-2 hover:bg-primary/10"
+                        onClick={() => {
+                          if (postContent.trim()) {
+                            // Handle post creation here
+                            console.log('Creating post:', postContent);
+                            setPostContent('');
+                          }
+                        }}
+                        disabled={!postContent.trim()}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardContent className="p-4">
