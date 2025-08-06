@@ -337,7 +337,12 @@ export class DatabaseStorage implements IStorage {
   async createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }) {
     const [post] = await this.db
       .insert(posts)
-      .values(postData)
+      .values({
+        content: postData.content || null,
+        authorId: postData.authorId,
+        mediaType: postData.mediaType || 'text',
+        mediaUrl: postData.mediaUrl || null
+      })
       .returning();
     return post;
   }
