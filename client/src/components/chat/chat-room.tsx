@@ -554,7 +554,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
       {/* Message Input */}
       <div className="flex-shrink-0">
-        <MessageInput onSendMessage={handleSendMessage} />
+        <MessageInput onSendMessage={handleSendMessage} roomId={roomId} />
       </div>
 
       {/* Mini Profile Modal */}

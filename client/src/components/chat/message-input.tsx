@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Plus, Smile } from "lucide-react";
+import { Send, Plus, Smile, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Lottie from "react-lottie-player";
 
@@ -90,7 +90,42 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
         </div>
       )}
 
-      
+      {/* Gift Picker */}
+      {showGifts && (
+        <div className="px-4 pb-2">
+          <Card>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-4 gap-2">
+                {gifts.map((gift, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="sm"
+                    className="flex flex-col items-center p-2 h-auto hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSendGift(gift)}
+                  >
+                    <div className="w-8 h-8 mb-1 flex items-center justify-center">
+                      {gift.lottie ? (
+                        <Lottie
+                          loop
+                          animationData={gift.lottie}
+                          play
+                          style={{ width: 32, height: 32 }}
+                        />
+                      ) : (
+                        <span className="text-2xl">{gift.emoji}</span>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium text-gray-700">{gift.name}</span>
+                    <span className="text-xs text-primary font-bold">{gift.value}</span>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
 
       {/* Input Form */}
       <div className="p-4 bg-white sticky bottom-0">
@@ -99,14 +134,28 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             type="button"
             variant="ghost"
             size="sm"
-            className="text-yellow-600 p-2 flex-shrink-0"
             onClick={() => {
               setShowEmojis(!showEmojis);
               setShowGifts(false);
             }}
+            className="text-gray-500 hover:text-gray-700"
           >
-            <Smile className="w-5 h-5" />
+            <Smile className="w-4 h-4" />
           </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setShowGifts(!showGifts);
+              setShowEmojis(false);
+            }}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <Gift className="w-4 h-4" />
+          </Button>
+
           <Input
             ref={inputRef}
             type="text"
@@ -125,7 +174,6 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             autoComplete="off"
           />
           <Button
-            type="button"
             onClick={() => handleSubmit()}
             disabled={!message.trim()}
             className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-full flex-shrink-0"

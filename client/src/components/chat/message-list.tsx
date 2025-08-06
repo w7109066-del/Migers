@@ -48,14 +48,14 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
       {messages.map((message) => {
         const isOwnMessage = message.senderId === user?.id;
         const isSystemMessage = message.senderId === 'system';
-        
+
         // System message rendering
         if (isSystemMessage) {
           const isWelcomeMessage = message.content.includes('Welcome to');
           const isCurrentlyInRoom = message.content.includes('Currently in the room:');
           const isRoomManaged = message.content.includes('This room is managed by');
           const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left');
-          
+
           return (
             <div key={message.id} className="mb-2">
               <div className="text-sm">
@@ -87,7 +87,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
             </div>
           );
         }
-        
+
         return (
           <div
             key={message.id}
@@ -101,7 +101,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
               className="cursor-pointer"
             />
             <div className="flex-1">
-              <div className="text-sm text-gray-800 break-words">
+              <div className="flex items-center space-x-2 mb-1">
                 <span 
                   className="font-semibold" 
                   style={{ 
@@ -111,11 +111,19 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
                   {message.sender.username}
                 </span>
                 <span className="text-gray-500 ml-1">
-                  [{formatTime(message.createdAt)}]:
+                  [{formatTime(message.createdAt)}]
                 </span>
-                <span className="ml-1">
-                  {message.content}
-                </span>
+              </div>
+              <div className="text-gray-700 text-sm break-words">
+                {message.content.includes('🎁 sent') ? (
+                  <div className="flex items-center space-x-2 p-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-lg border border-orange-200">
+                    <span className="text-sm font-medium text-orange-700">
+                      {message.content}
+                    </span>
+                  </div>
+                ) : (
+                  message.content
+                )}
               </div>
             </div>
           </div>
