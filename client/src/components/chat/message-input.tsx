@@ -40,9 +40,29 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       
       if (match) {
         const [, giftName, recipientName] = match;
-        // Send formatted gift message
-        const giftMessage = `🎁 sent ${giftName.trim()} gift to ${recipientName.trim()} ✨`;
-        onSendMessage(giftMessage);
+        
+        // Find matching gift from animations
+        const matchedGift = gifts.find(gift => 
+          gift.name.toLowerCase().includes(giftName.toLowerCase()) ||
+          giftName.toLowerCase().includes(gift.name.toLowerCase())
+        );
+        
+        if (matchedGift) {
+          // Send formatted gift message with animation data
+          const giftMessage = `🎁GIFT:${JSON.stringify({
+            senderName: 'You',
+            giftName: matchedGift.name,
+            recipientName: recipientName.trim(),
+            emoji: matchedGift.emoji,
+            value: matchedGift.value,
+            lottie: matchedGift.lottie
+          })}`;
+          onSendMessage(giftMessage);
+        } else {
+          // Fallback for unknown gifts
+          const giftMessage = `🎁 sent ${giftName.trim()} gift to ${recipientName.trim()} ✨`;
+          onSendMessage(giftMessage);
+        }
       } else {
         onSendMessage(message);
       }

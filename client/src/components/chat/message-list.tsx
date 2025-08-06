@@ -3,6 +3,8 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { ChevronDown, MoreVertical, Reply, Forward, Copy } from "lucide-react";
+import Lottie from "react-lottie-player";
 
 interface Message {
   id: string;
@@ -68,16 +70,37 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
     return content.includes('🎁 sent a') && content.includes('gift to');
   };
 
-  const parseGiftMessage = (content: string, senderUsername: string) => {
-    // Parse messages like "🎁 sent a Rose gift to everyone in the room ✨"
-    const giftRegex = /🎁 sent a (.+) gift to (.+) ✨/;
-    const match = content.match(giftRegex);
-
-    if (match) {
-      const giftName = match[1];
-      const recipient = match[2];
-      return { giftName, recipient };
+  const parseGiftMessage = (content: string) => {
+    // Parse new format with JSON data: "🎁GIFT:{json data}"
+    const jsonMatch = content.match(/🎁GIFT:(.+)$/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[1]);
+      } catch (e) {
+        console.error('Failed to parse gift JSON:', e);
+      }
     }
+
+    // Parse old gift messages like "🎁 sent Rose x1 (10 coins)"
+    const match = content.match(/🎁\s*(.+?)\s*sent\s+(.+?)\s+gift\s+to\s+(.+?)\s*✨/i);
+    if (match) {
+      return {
+        senderName: match[1],
+        giftName: match[2],
+        recipient: match[3]
+      };
+    }
+
+    // Alternative format: "🎁 sent {gift} gift to {user} ✨"
+    const altMatch = content.match(/🎁\s*sent\s+(.+?)\s+gift\s+to\s+(.+?)\s*✨/i);
+    if (altMatch) {
+      return {
+        senderName: "Someone",
+        giftName: altMatch[1],
+        recipient: altMatch[2]
+      };
+    }
+
     return null;
   };
 
@@ -90,7 +113,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
 
         // Gift message rendering with auto-hide after 3 seconds
         if (isGift) {
-          const giftData = parseGiftMessage(message.content, message.sender.username);
+          const giftData = parseGiftMessage(message.content);
           const isHidden = hiddenGiftMessages.has(message.id);
 
           return (
@@ -122,6 +145,14 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
                   </div>
                   <div className="text-3xl animate-spin" style={{animationDuration: '2s'}}>✨</div>
                 </div>
+                {giftData && giftData.animationUrl && (
+                  <Lottie
+                    loop
+                    animationData={giftData.animationUrl}
+                    play
+                    style={{ width: 100, height: 100 }}
+                  />
+                )}
               </div>
             </div>
           );
