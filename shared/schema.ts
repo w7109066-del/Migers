@@ -154,6 +154,7 @@ export const insertChatRoomSchema = createInsertSchema(chatRooms).pick({
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
+  senderId: true,
   roomId: true,
   recipientId: true,
   messageType: true,

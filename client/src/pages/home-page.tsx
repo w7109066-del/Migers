@@ -4,6 +4,7 @@ import { WebSocketProvider } from "@/hooks/use-websocket";
 import { SwipeTabs } from "@/components/ui/swipe-tabs";
 import { FriendsList } from "@/components/friends/friends-list";
 import { ChatRoom } from "@/components/chat/chat-room";
+import RoomListPage from "@/pages/room-list";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
 import { Button } from "@/components/ui/button";
@@ -72,7 +73,11 @@ export default function HomePage() {
       id: "chatroom",
       label: "Chatroom",
       icon: <MessageCircle className="w-5 h-5" />,
-      content: <ChatRoom onUserClick={showMiniProfile} />,
+      content: (
+        <div className="h-full">
+          <RoomListPage />
+        </div>
+      ),
     },
     {
       id: "feed",

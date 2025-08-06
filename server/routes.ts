@@ -179,7 +179,7 @@ export function registerRoutes(app: Express): Server {
             break;
 
           case 'join_room':
-            if (userId && message.roomId) {
+            if (userId && message.roomId && typeof message.roomId === 'string') {
               await storage.joinRoom(message.roomId, userId);
               
               // Broadcast to room members
@@ -192,7 +192,7 @@ export function registerRoutes(app: Express): Server {
             break;
 
           case 'leave_room':
-            if (userId && message.roomId) {
+            if (userId && message.roomId && typeof message.roomId === 'string') {
               await storage.leaveRoom(message.roomId, userId);
               
               // Broadcast to room members
@@ -209,8 +209,8 @@ export function registerRoutes(app: Express): Server {
               const messageData = insertMessageSchema.parse({
                 content: message.content,
                 senderId: userId,
-                roomId: message.roomId || undefined,
-                recipientId: message.recipientId || undefined,
+                roomId: message.roomId || null,
+                recipientId: message.recipientId || null,
                 messageType: message.messageType || 'text',
                 metadata: message.metadata || null,
               });
