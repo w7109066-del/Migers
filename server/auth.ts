@@ -33,7 +33,7 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "migme-chat-secret-key",
+    secret: process.env.SESSION_SECRET || "chatme-chat-secret-key",
     resave: false,
     saveUninitialized: false,
     store: new PostgresSessionStore({ 

@@ -85,7 +85,7 @@ export default function AuthPage() {
           <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
             <MessageCircle className="h-10 w-10 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Migme Chatroom</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">ChatMe Chatroom</h1>
           <p className="text-purple-100">Connect with friends worldwide</p>
         </div>
 

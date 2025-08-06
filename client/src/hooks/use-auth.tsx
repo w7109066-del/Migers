@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Account created!",
-        description: "Welcome to Migme Chatroom!",
+        description: "Welcome to ChatMe Chatroom!",
       });
     },
     onError: (error: Error) => {
