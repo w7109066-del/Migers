@@ -60,7 +60,7 @@ interface MiniProfileData {
 }
 
 export default function HomePage() {
-  const { user, logoutMutation } = useAuth();
+  const { user, logoutMutation, isDarkMode, toggleDarkMode } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
@@ -221,9 +221,9 @@ export default function HomePage() {
       label: "Home",
       icon: <Home className="w-5 h-5" />,
       content: (
-        <div className="h-full flex flex-col bg-gray-50">
+        <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
           {/* Header with user info, notifications, and search */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+          <div className={cn("border-b px-4 py-3 flex-shrink-0", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
                 {/* User Avatar and Info */}
@@ -234,9 +234,9 @@ export default function HomePage() {
                     isOnline={user.isOnline || false}
                   />
                   <div>
-                    <div className="font-semibold text-gray-800">{user.username}</div>
+                    <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>
                     <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs">
+                      <Badge variant="secondary" className={cn("text-white border-0 text-xs", isDarkMode ? "bg-gradient-to-r from-yellow-600 to-orange-700" : "bg-gradient-to-r from-yellow-400 to-orange-500")}>
                         Level {user.level || 1}
                       </Badge>
                       {/* Status Dropdown */}
@@ -283,7 +283,7 @@ export default function HomePage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowUserSearch(true)}
-                  className="text-gray-600 p-2"
+                  className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
                 >
                   <Search className="w-5 h-5" />
                 </Button>
@@ -296,7 +296,7 @@ export default function HomePage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowEditProfile(true)}
-                  className="text-gray-600 p-2"
+                  className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
                 >
                   <Edit className="w-5 h-5" />
                 </Button>
@@ -316,7 +316,7 @@ export default function HomePage() {
       label: "Chatroom",
       icon: <MessageCircle className="w-5 h-5" />,
       content: (
-        <div className="h-full">
+        <div className={cn("h-full", isDarkMode && "dark")}>
           <RoomListPage onUserClick={handleUserClick} />
         </div>
       ),
@@ -326,10 +326,10 @@ export default function HomePage() {
       label: "Feed",
       icon: <Newspaper className="w-5 h-5" />,
       content: (
-        <div className="h-full overflow-y-auto bg-gray-50">
+        <div className={cn("h-full overflow-y-auto", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
           <div className="p-4 space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Activity Feed</h3>
+              <h3 className={cn("text-lg font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>Activity Feed</h3>
             </div>
 
             {/* Create Post Card */}
@@ -347,7 +347,7 @@ export default function HomePage() {
                         placeholder="What's on your mind?"
                         value={postContent}
                         onChange={(e) => setPostContent(e.target.value)}
-                        className="pr-20 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+                        className={cn("pr-20 border-0 focus:ring-2 focus:ring-primary", isDarkMode ? "focus:bg-gray-700 bg-gray-900" : "focus:bg-white bg-gray-100")}
                         onKeyPress={(e) => {
                           if (e.key === 'Enter' && (postContent.trim() || selectedMedia)) {
                             handleCreatePost();
@@ -434,7 +434,7 @@ export default function HomePage() {
             {/* Dynamic Feed Posts */}
             {isLoadingFeed ? (
               <div className="flex items-center justify-center py-8">
-                <div className="text-gray-500">Loading feed...</div>
+                <div className={isDarkMode ? "text-gray-400" : "text-gray-500"}>Loading feed...</div>
               </div>
             ) : feedPosts.length > 0 ? (
               feedPosts.map((post) => (
@@ -456,18 +456,18 @@ export default function HomePage() {
                       />
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <span className="font-semibold text-gray-800">
+                          <span className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
                             {post.author?.username || 'Unknown'}
                           </span>
                           {post.author?.level && (
-                            <Badge variant="secondary" className="bg-warning text-white text-xs">
+                            <Badge variant="secondary" className={cn("text-white text-xs", isDarkMode ? "bg-yellow-700" : "bg-warning")}>
                               {post.author.level}
                             </Badge>
                           )}
                         </div>
 
                         {post.content && (
-                          <div className="text-sm text-gray-600 mb-2">{post.content}</div>
+                          <div className={cn("text-sm", isDarkMode ? "text-gray-300" : "text-gray-600")}>{post.content}</div>
                         )}
 
                         {/* Media content */}
@@ -489,7 +489,7 @@ export default function HomePage() {
                           </div>
                         )}
 
-                        <div className="text-xs text-gray-400 mb-2">
+                        <div className={cn("text-xs mb-2", isDarkMode ? "text-gray-400" : "text-gray-400")}>
                           {new Date(post.createdAt).toLocaleDateString()} at {new Date(post.createdAt).toLocaleTimeString()}
                         </div>
 
@@ -510,7 +510,7 @@ export default function HomePage() {
               ))
             ) : (
               <div className="flex items-center justify-center py-8">
-                <div className="text-gray-500">No posts yet. Be the first to post!</div>
+                <div className={isDarkMode ? "text-gray-400" : "text-gray-500"}>No posts yet. Be the first to post!</div>
               </div>
             )}
           </div>
@@ -535,9 +535,9 @@ export default function HomePage() {
       label: "Settings",
       icon: <Settings className="w-5 h-5" />,
       content: (
-        <div className="h-full overflow-y-auto bg-gray-50">
+        <div className={cn("h-full overflow-y-auto", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
           <div className="p-4 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Settings</h3>
+            <h3 className={cn("text-lg font-semibold mb-4", isDarkMode ? "text-gray-200" : "text-gray-800")}>Settings</h3>
 
             {/* Profile Section */}
             <Card>
@@ -549,10 +549,10 @@ export default function HomePage() {
                     isOnline={user.isOnline || false}
                   />
                   <div>
-                    <div className="font-semibold text-gray-800">{user.username}</div>
-                    <div className="text-sm text-gray-600">{user.email}</div>
+                    <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>
+                    <div className={cn("text-sm", isDarkMode ? "text-gray-300" : "text-gray-600")}>{user.email}</div>
                     <div className="flex items-center space-x-2 mt-1">
-                      <Badge variant="secondary" className="bg-warning text-white">
+                      <Badge variant="secondary" className={cn("text-white text-xs", isDarkMode ? "bg-yellow-700" : "bg-warning")}>
                         Level {user.level}
                       </Badge>
                       <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
@@ -575,11 +575,11 @@ export default function HomePage() {
             {/* Settings Options */}
             <Card>
               <CardContent className="p-0">
-                <div className="divide-y divide-gray-100">
+                <div className={cn("divide-y", isDarkMode ? "divide-gray-700" : "divide-gray-100")}>
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Bell className="h-5 w-5 text-primary" />
-                      <span className="font-medium text-gray-800">Notifications</span>
+                      <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Notifications</span>
                     </div>
                     <Switch defaultChecked />
                   </div>
@@ -587,28 +587,28 @@ export default function HomePage() {
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Moon className="h-5 w-5 text-primary" />
-                      <span className="font-medium text-gray-800">Dark Mode</span>
+                      <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Dark Mode</span>
                     </div>
-                    <Switch />
+                    <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
                   </div>
 
-                  <button className="w-full p-4 text-left flex items-center space-x-3 hover:bg-gray-50">
+                  <button className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                     <Shield className="h-5 w-5 text-primary" />
-                    <span className="font-medium text-gray-800">Privacy & Security</span>
+                    <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Privacy & Security</span>
                   </button>
 
-                  <button className="w-full p-4 text-left flex items-center space-x-3 hover:bg-gray-50">
+                  <button className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                     <HelpCircle className="h-5 w-5 text-primary" />
-                    <span className="font-medium text-gray-800">Help & Support</span>
+                    <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Help & Support</span>
                   </button>
 
                   <button
-                    className="w-full p-4 text-left flex items-center space-x-3 text-red-600 hover:bg-red-50"
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "text-red-400 hover:bg-red-700" : "text-red-600 hover:bg-red-50")}
                     onClick={() => logoutMutation.mutate()}
                     disabled={logoutMutation.isPending}
                   >
                     <LogOut className="h-5 w-5" />
-                    <span className="font-medium">
+                    <span className={cn("font-medium", isDarkMode ? "text-red-400" : "text-red-600")}>
                       {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
                     </span>
                   </button>
@@ -624,21 +624,22 @@ export default function HomePage() {
   return (
     <NotificationProvider>
       <WebSocketProvider>
-        <div className="h-full w-full bg-white flex flex-col">
+        <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
           {/* Main Content Area */}
           <div className="flex-1 overflow-hidden">
             {tabs[activeTab]?.content}
           </div>
 
           {/* Fixed Tab Bar */}
-          <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom">
+          <div className={cn("border-t px-4 py-2 flex-shrink-0 safe-area-inset-bottom", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
             <div className="flex items-center justify-around relative">
               {/* Tab Indicator */}
               <div
-                className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-transform duration-300"
+                className="absolute top-0 h-1 bg-primary rounded-full transition-transform duration-300"
                 style={{
                   width: `${100 / tabs.length}%`,
                   transform: `translateX(${activeTab * 100}%)`,
+                  left: 0, // Ensure left is set for translateX to work correctly
                 }}
               />
 
@@ -650,7 +651,7 @@ export default function HomePage() {
                     "flex flex-col items-center py-2 px-3 transition-colors",
                     activeTab === index
                       ? "text-primary"
-                      : "text-gray-400 hover:text-gray-600"
+                      : isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-400 hover:text-gray-600"
                   )}
                 >
                   {tab.icon}

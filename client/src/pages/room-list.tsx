@@ -373,11 +373,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   return (
-    <div className="h-full w-full bg-white flex flex-col">
+    <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-gray-800">Chat Rooms</h1>
+          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">Chat Rooms</h1>
           <Button size="sm" className="bg-primary hover:bg-primary/90">
             <Plus className="w-4 h-4 mr-1" />
             New Room
@@ -396,7 +396,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       </div>
       
       {/* Room Categories */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
+      <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
         <div className="p-4 space-y-6">
           <CategorySection
             title="Room Official"
