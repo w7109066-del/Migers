@@ -416,6 +416,240 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to fetch conversations');
     }
   }
+
+  // User session methods for WebSocket
+  async createUserSession(userId: string, socketId: string): Promise<UserSession> {
+    const [session] = await this.db
+      .insert(userSessions)
+      .values({
+        userId,
+        socketId,
+        isActive: true
+      })
+      .returning();
+    return session;
+  }
+
+  async updateUserSession(sessionId: string, socketId: string): Promise<void> {
+    await this.db
+      .update(userSessions)
+      .set({
+        socketId,
+        updatedAt: new Date()
+      })
+      .where(eq(userSessions.id, sessionId));
+  }
+
+  async removeUserSession(socketId: string): Promise<void> {
+    await this.db
+      .update(userSessions)
+      .set({ isActive: false })
+      .where(eq(userSessions.socketId, socketId));
+  }
+
+  async getUserBySocketId(socketId: string): Promise<User | undefined> {
+    const result = await this.db
+      .select({
+        user: users
+      })
+      .from(userSessions)
+      .innerJoin(users, eq(userSessions.userId, users.id))
+      .where(
+        and(
+          eq(userSessions.socketId, socketId),
+          eq(userSessions.isActive, true)
+        )
+      );
+
+    return result[0]?.user;
+  }
+
+  async createMessage(messageData: InsertMessage) {
+    const [message] = await this.db
+      .insert(messages)
+      .values(messageData)
+      .returning();
+
+    // Get the message with sender info
+    const messageWithSender = await this.db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        senderId: messages.senderId,
+        roomId: messages.roomId,
+        recipientId: messages.recipientId,
+        messageType: messages.messageType,
+        metadata: messages.metadata,
+        createdAt: messages.createdAt,
+        sender: users,
+      })
+      .from(messages)
+      .innerJoin(users, eq(messages.senderId, users.id))
+      .where(eq(messages.id, message.id));
+
+    return messageWithSender[0];
+  }
+
+  async createDirectMessage(messageData: { content: string; senderId: string; recipientId: string; messageType: string }) {
+    const [message] = await this.db
+      .insert(messages)
+      .values({
+        content: messageData.content,
+        senderId: messageData.senderId,
+        recipientId: messageData.recipientId,
+        messageType: messageData.messageType,
+        roomId: null
+      })
+      .returning();
+
+    // Get the message with sender info
+    const messageWithSender = await this.db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        senderId: messages.senderId,
+        recipientId: messages.recipientId,
+        messageType: messages.messageType,
+        createdAt: messages.createdAt,
+        sender: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+        },
+      })
+      .from(messages)
+      .innerJoin(users, eq(messages.senderId, users.id))
+      .where(eq(messages.id, message.id));
+
+    return messageWithSender[0];
+  }
+
+  // Feed posts methods
+  async getFeedPosts(): Promise<
+    (Omit<typeof posts.$inferSelect, "updatedAt"> & {
+      author: Pick<User, "id" | "username" | "level" | "isOnline">;
+    })[]
+  > {
+    const result = await this.db
+      .select({
+        id: posts.id,
+        content: posts.content,
+        authorId: posts.authorId,
+        mediaType: posts.mediaType,
+        mediaUrl: posts.mediaUrl,
+        likesCount: posts.likesCount,
+        commentsCount: posts.commentsCount,
+        createdAt: posts.createdAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+        }
+      })
+      .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
+      .orderBy(desc(posts.createdAt))
+      .limit(50);
+
+    return result;
+  }
+
+  async createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }): Promise<typeof posts.$inferSelect> {
+    const [post] = await this.db
+      .insert(posts)
+      .values({
+        content: postData.content || null,
+        authorId: postData.authorId,
+        mediaType: postData.mediaType || "text",
+        mediaUrl: postData.mediaUrl || null,
+      })
+      .returning();
+
+    return post;
+  }
+
+  async likePost(postId: string, userId: string): Promise<void> {
+    await this.db
+      .insert(postLikes)
+      .values({ postId, userId })
+      .onConflictDoNothing();
+
+    // Update likes count
+    await this.db
+      .update(posts)
+      .set({
+        likesCount: sql`${posts.likesCount} + 1`
+      })
+      .where(eq(posts.id, postId));
+  }
+
+  async unlikePost(postId: string, userId: string): Promise<void> {
+    await this.db
+      .delete(postLikes)
+      .where(
+        and(
+          eq(postLikes.postId, postId),
+          eq(postLikes.userId, userId)
+        )
+      );
+
+    // Update likes count
+    await this.db
+      .update(posts)
+      .set({
+        likesCount: sql`GREATEST(${posts.likesCount} - 1, 0)`
+      })
+      .where(eq(posts.id, postId));
+  }
+
+  async addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect> {
+    const [comment] = await this.db
+      .insert(postComments)
+      .values({
+        postId,
+        content: commentData.content,
+        authorId: commentData.authorId
+      })
+      .returning();
+
+    // Update comments count
+    await this.db
+      .update(posts)
+      .set({
+        commentsCount: sql`${posts.commentsCount} + 1`
+      })
+      .where(eq(posts.id, postId));
+
+    return comment;
+  }
+
+  async getComments(postId: string): Promise<
+    (Omit<typeof postComments.$inferSelect, "updatedAt"> & {
+      author: Pick<User, "id" | "username" | "level" | "isOnline">;
+    })[]
+  > {
+    const result = await this.db
+      .select({
+        id: postComments.id,
+        content: postComments.content,
+        postId: postComments.postId,
+        authorId: postComments.authorId,
+        createdAt: postComments.createdAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+        }
+      })
+      .from(postComments)
+      .innerJoin(users, eq(postComments.authorId, users.id))
+      .where(eq(postComments.postId, postId))
+      .orderBy(asc(postComments.createdAt));
+
+    return result;
+  }
 }
 
 export const storage = new DatabaseStorage();
