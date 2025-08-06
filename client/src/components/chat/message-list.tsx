@@ -102,7 +102,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
             />
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold text-sm text-gray-800">
+                <span className="font-semibold text-sm" style={{ color: '#2f7853' }}>
                   {message.sender.username}
                 </span>
                 <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-semibold">
