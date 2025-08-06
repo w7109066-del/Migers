@@ -59,11 +59,11 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
 
     const endTime = Date.now();
     const duration = endTime - startTime;
-    const threshold = 100; // Increased from 50 to 100
+    const threshold = 150; // Further increased for slower response
     const velocity = Math.abs(translateX) / duration; // pixels per ms
 
-    // Fast swipe or distance threshold - made less sensitive
-    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.5;
+    // Fast swipe or distance threshold - made much less sensitive
+    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.8;
 
     if (shouldSwipe) {
       if (translateX > 0 && activeTab < tabs.length - 1) {
@@ -102,7 +102,7 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
       {/* Tab Content */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-hidden relative touch-pan-y"
+        className="flex-1 overflow-hidden relative touch-pan-y pb-16"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -124,8 +124,8 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
         </div>
       </div>
 
-      {/* Tab Navigation - Moved to bottom */}
-      <div className="flex bg-white border-t border-gray-200">
+      {/* Tab Navigation - Fixed position at bottom */}
+      <div className="flex bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 z-50">
         {tabs.map((tab, index) => (
           <button
             key={tab.id}
