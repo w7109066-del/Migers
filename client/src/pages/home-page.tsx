@@ -218,7 +218,7 @@ export default function HomePage() {
                 <Search className="w-4 h-4" />
               </Button>
             </div>
-            <FriendsList onUserClick={showMiniProfile} />
+            <FriendsList onUserClick={showMiniProfile} showRefreshButton={true} />
           </div>
         </div>
       ),

@@ -54,6 +54,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post("/api/friends/refresh", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      // Refresh friends list with updated status
+      const friends = await storage.refreshFriendsList(req.user!.id);
+      
+      res.json({
+        message: "Friends list refreshed successfully",
+        friends: friends,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Refresh friends error:', error);
+      res.status(500).json({ message: "Failed to refresh friends list" });
+    }
+  });
+
   app.post("/api/friends", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 

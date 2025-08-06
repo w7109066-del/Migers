@@ -38,6 +38,7 @@ export interface IStorage {
 
   // Friends management
   getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]>;
+  refreshFriendsList(userId: string): Promise<(User & { friendshipStatus: string })[]>;
   addFriend(userId: string, friendId: string): Promise<Friendship>;
   getFriendshipStatus(userId: string, friendId: string): Promise<Friendship | undefined>;
   createFriendRequest(userId: string, friendId: string): Promise<Friendship>;
@@ -133,6 +134,14 @@ export class DatabaseStorage implements IStorage {
         lastSeen: new Date()
       })
       .where(eq(users.id, userId));
+  }
+
+  async refreshFriendsList(userId: string): Promise<(User & { friendshipStatus: string })[]> {
+    // Update current user's last activity
+    await this.updateUserOnlineStatus(userId, true);
+    
+    // Get fresh friends data with updated online status
+    return this.getFriends(userId);
   }
 
   async getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]> {

@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { User } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
+import { RefreshCw } from "lucide-react";
+import { useState } from "react";
 
 interface Friend extends User {
   friendshipStatus: string;
@@ -12,16 +15,31 @@ interface Friend extends User {
 
 interface FriendsListProps {
   onUserClick: (profile: any) => void;
+  showRefreshButton?: boolean;
 }
 
-export function FriendsList({ onUserClick }: FriendsListProps) {
+export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsListProps) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { data: friends, isLoading } = useQuery<Friend[]>({
     queryKey: ["/api/friends"],
     enabled: Boolean(user),
   });
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/friends"] });
+    } catch (error) {
+      console.error('Failed to refresh friends:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleUserClick = (friend: Friend) => {
     onUserClick({
@@ -86,8 +104,24 @@ export function FriendsList({ onUserClick }: FriendsListProps) {
   }
 
   return (
-    <div className="space-y-3">
-      {friends.map((friend) => (
+    <>
+      {showRefreshButton && (
+        <div className="mb-4 flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center space-x-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+          </Button>
+        </div>
+      )}
+      
+      <div className="space-y-3">
+        {friends.map((friend) => (
         <Card 
           key={friend.id} 
           className="cursor-pointer hover:shadow-md transition-shadow"
@@ -116,6 +150,7 @@ export function FriendsList({ onUserClick }: FriendsListProps) {
           </CardContent>
         </Card>
       ))}
-    </div>
+      </div>
+    </>
   );
 }
