@@ -11,9 +11,10 @@ interface Tab {
 interface SwipeTabsProps {
   tabs: Tab[];
   className?: string;
+  onTabChange?: (tabIndex: number) => void;
 }
 
-export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
+export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
@@ -23,6 +24,7 @@ export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
     if (tabIndex < 0 || tabIndex >= tabs.length) return;
     
     setActiveTab(tabIndex);
+    onTabChange?.(tabIndex);
     
     if (containerRef.current) {
       const tabWidth = containerRef.current.clientWidth;

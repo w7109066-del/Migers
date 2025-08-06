@@ -41,6 +41,7 @@ export default function HomePage() {
   const { user, logoutMutation } = useAuth();
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState(0);
 
   if (!user) return null;
 
@@ -330,44 +331,46 @@ export default function HomePage() {
   return (
     <WebSocketProvider>
       <div className="h-full w-full bg-white flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <UserAvatar 
-                username={user.username} 
-                size="md"
-                isOnline={user.isOnline || false}
-              />
+        {/* Header - only show for Home tab */}
+        {activeTab === 0 && (
+          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <UserAvatar 
+                  username={user.username} 
+                  size="md"
+                  isOnline={user.isOnline || false}
+                />
 
-              <div>
-                <div className="flex items-center space-x-1">
-                  <span className="font-semibold text-sm text-gray-800">{user.username}</span>
-                  <Badge variant="secondary" className="bg-warning text-white text-xs">
-                    {user.level}
-                  </Badge>
-                </div>
-                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                  <div className={`w-2 h-2 rounded-full mr-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  {user.isOnline ? 'Online' : 'Offline'}
+                <div>
+                  <div className="flex items-center space-x-1">
+                    <span className="font-semibold text-sm text-gray-800">{user.username}</span>
+                    <Badge variant="secondary" className="bg-warning text-white text-xs">
+                      {user.level}
+                    </Badge>
+                  </div>
+                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                    <div className={`w-2 h-2 rounded-full mr-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    {user.isOnline ? 'Online' : 'Offline'}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" className="text-gray-600 p-2">
-              <Edit className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600 p-2">
-              <Search className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button variant="ghost" size="sm" className="text-gray-600 p-2">
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-gray-600 p-2">
+                <Search className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Swipe Tabs Content */}
         <div className="flex-1">
-          <SwipeTabs tabs={tabs} />
+          <SwipeTabs tabs={tabs} onTabChange={setActiveTab} />
         </div>
 
         {/* Mini Profile Modal */}
