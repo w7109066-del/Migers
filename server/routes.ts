@@ -327,8 +327,14 @@ export function registerRoutes(app: Express): Server {
         messageType
       });
 
-      // Broadcast to recipient via WebSocket
+      // Broadcast to both sender and recipient via WebSocket
       broadcastToUser(recipientId, {
+        type: 'new_direct_message',
+        message: message,
+      });
+
+      // Also broadcast to sender for consistent state
+      broadcastToUser(req.user!.id, {
         type: 'new_direct_message',
         message: message,
       });

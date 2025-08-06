@@ -119,8 +119,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         });
 
         if (response.ok) {
-          const sentMessage = await response.json();
-          setMessages(prev => [...prev, sentMessage]);
+          // Don't add to messages here - let WebSocket handler do it
           setNewMessage('');
           setSelectedMedia(null);
           setMediaPreview(null);
@@ -142,8 +141,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         });
 
         if (response.ok) {
-          const sentMessage = await response.json();
-          setMessages(prev => [...prev, sentMessage]);
+          // Don't add to messages here - let WebSocket handler do it
           setNewMessage('');
         } else {
           console.error('Failed to send message');
