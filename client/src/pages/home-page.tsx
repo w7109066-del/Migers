@@ -546,76 +546,7 @@ export default function HomePage() {
     <NotificationProvider>
       <WebSocketProvider>
         <div className="h-full w-full bg-white flex flex-col">
-        {/* Header - only show for Home tab */}
-        {activeTab === 0 && (
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <UserAvatar 
-                  username={user.username} 
-                  size="md"
-                  isOnline={user.isOnline || false}
-                />
-
-                <div>
-                  <div className="flex items-center space-x-1">
-                    <span className="font-semibold text-sm text-gray-800">{user.username}</span>
-                    <Badge variant="secondary" className="bg-warning text-white text-xs">
-                      {user.level}
-                    </Badge>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 hover:bg-gray-200 transition-colors">
-                        <div className={`w-2 h-2 rounded-full mr-1 ${getStatusColor(userStatus)}`} />
-                        {getStatusText(userStatus)}
-                        <ChevronDown className="w-3 h-3 ml-1" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-32">
-                      <DropdownMenuItem onClick={() => handleStatusChange('online')}>
-                        <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-                        Online
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange('away')}>
-                        <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
-                        Away
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange('busy')}>
-                        <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
-                        Busy
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange('offline')}>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
-                        Offline
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-gray-600 p-2"
-                onClick={() => setShowUserSearch(true)}
-              >
-                <Search className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-gray-600 p-2"
-                onClick={() => setShowStatusUpdate(true)}
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-              <NotificationDropdown />
-            </div>
-          </div>
-        )}
+        
 
         {/* Swipe Tabs Content */}
         <div className="flex-1">
