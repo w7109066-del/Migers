@@ -321,271 +321,99 @@ export class DatabaseStorage implements IStorage {
     return result.reverse();
   }
 
-  async getDirectMessages(userId: string, otherUserId: string, limit: number = 50): Promise<(Message & { sender: User })[]> {
-    const result = await this.db
+  async getDirectMessages(userId: string, otherUserId: string, limit = 50) {
+    const messageList = await db
       .select({
         id: messages.id,
         content: messages.content,
-        senderId: messages.senderId,
-        roomId: messages.roomId,
-        recipientId: messages.recipientId,
         messageType: messages.messageType,
         metadata: messages.metadata,
         createdAt: messages.createdAt,
-        sender: users,
+        sender: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+        },
       })
       .from(messages)
       .innerJoin(users, eq(messages.senderId, users.id))
       .where(
         and(
-          eq(messages.roomId, null),
+          isNull(messages.roomId), // Direct messages only
           or(
             and(eq(messages.senderId, userId), eq(messages.recipientId, otherUserId)),
             and(eq(messages.senderId, otherUserId), eq(messages.recipientId, userId))
           )
         )
       )
-      .orderBy(desc(messages.createdAt))
+      .orderBy(asc(messages.createdAt))
       .limit(limit);
 
-    return result.reverse();
-  }
-
-  async createMessage(data: InsertMessage) {
-    const [message] = await this.db.insert(messages).values(data).returning();
-    return message;
-  }
-
-  async createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }) {
-    const [message] = await this.db
-      .insert(messages)
-      .values({
-        content: data.content,
-        senderId: data.senderId,
-        recipientId: data.recipientId,
-        messageType: data.messageType || 'text',
-        roomId: null
-      })
-      .returning();
-
-    // Get the full message with sender info
-    const fullMessage = await this.db
-      .select({
-        id: messages.id,
-        content: messages.content,
-        senderId: messages.senderId,
-        recipientId: messages.recipientId,
-        messageType: messages.messageType,
-        metadata: messages.metadata,
-        createdAt: messages.createdAt,
-        sender: users,
-      })
-      .from(messages)
-      .innerJoin(users, eq(messages.senderId, users.id))
-      .where(eq(messages.id, message.id));
-
-    return fullMessage[0];
-  }
-
-  async createUserSession(userId: string, socketId: string): Promise<UserSession> {
-    const [session] = await this.db
-      .insert(userSessions)
-      .values({ userId, socketId })
-      .returning();
-    return session;
-  }
-
-  async updateUserSession(sessionId: string, socketId: string): Promise<void> {
-    await this.db
-      .update(userSessions)
-      .set({ socketId, updatedAt: new Date() })
-      .where(eq(userSessions.id, sessionId));
-  }
-
-  async removeUserSession(socketId: string): Promise<void> {
-    return this.db.delete(userSessions)
-      .where(eq(userSessions.socketId, socketId));
-  }
-
-  // Feed posts methods
-  async getFeedPosts() {
-    return this.db
-      .select({
-        id: posts.id,
-        content: posts.content,
-        mediaType: posts.mediaType,
-        mediaUrl: posts.mediaUrl,
-        likesCount: posts.likesCount,
-        commentsCount: posts.commentsCount,
-        createdAt: posts.createdAt,
-        author: {
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
-        },
-      })
-      .from(posts)
-      .leftJoin(users, eq(posts.authorId, users.id))
-      .orderBy(desc(posts.createdAt))
-      .limit(50);
-  }
-
-  async createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }) {
-    const [post] = await this.db
-      .insert(posts)
-      .values({
-        content: postData.content || null,
-        authorId: postData.authorId,
-        mediaType: postData.mediaType || 'text',
-        mediaUrl: postData.mediaUrl || null
-      })
-      .returning();
-    return post;
-  }
-
-  async likePost(postId: string, userId: string) {
-    // Check if already liked
-    const existingLike = await this.db
-      .select()
-      .from(postLikes)
-      .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
-
-    if (existingLike.length > 0) {
-      return; // Already liked
-    }
-
-    await this.db.transaction(async (tx) => {
-      // Add like
-      await tx.insert(postLikes).values({ postId, userId });
-
-      // Increment likes count
-      await tx
-        .update(posts)
-        .set({
-          likesCount: sql`${posts.likesCount} + 1`,
-          updatedAt: new Date()
-        })
-        .where(eq(posts.id, postId));
-    });
-  }
-
-  async unlikePost(postId: string, userId: string) {
-    await this.db.transaction(async (tx) => {
-      // Remove like
-      await tx
-        .delete(postLikes)
-        .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
-
-      // Decrement likes count
-      await tx
-        .update(posts)
-        .set({
-          likesCount: sql`GREATEST(${posts.likesCount} - 1, 0)`,
-          updatedAt: new Date()
-        })
-        .where(eq(posts.id, postId));
-    });
-  }
-
-  async addComment(postId: string, commentData: { content: string; authorId: string }) {
-    return this.db.transaction(async (tx) => {
-      // Add comment
-      const [comment] = await tx
-        .insert(postComments)
-        .values({ ...commentData, postId })
-        .returning();
-
-      // Increment comments count
-      await tx
-        .update(posts)
-        .set({
-          commentsCount: sql`${posts.commentsCount} + 1`,
-          updatedAt: new Date()
-        })
-        .where(eq(posts.id, postId));
-
-      return comment;
-    });
-  }
-
-  async getComments(postId: string) {
-    return this.db
-      .select({
-        id: postComments.id,
-        content: postComments.content,
-        createdAt: postComments.createdAt,
-        author: {
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
-        },
-      })
-      .from(postComments)
-      .leftJoin(users, eq(postComments.authorId, users.id))
-      .where(eq(postComments.postId, postId))
-      .orderBy(postComments.createdAt);
-  }
-
-  async getUserBySocketId(socketId: string): Promise<User | undefined> {
-    const result = await this.db
-      .select({ user: users })
-      .from(userSessions)
-      .innerJoin(users, eq(userSessions.userId, users.id))
-      .where(eq(userSessions.socketId, socketId));
-
-    return result[0]?.user;
+    return messageList;
   }
 
   async getDirectMessageConversations(userId: string) {
     try {
-      // Get all users that have had direct message conversations with the current user
-      // with their latest message
-      const subquery = this.db
+      // Get all unique conversations for the user
+      const conversations = await db
         .select({
-          otherUserId: sql`CASE 
+          otherUserId: sql<string>`CASE 
             WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId}
             ELSE ${messages.senderId}
-          END`.as('otherUserId'),
-          lastMessageId: sql`MAX(${messages.id})`.as('lastMessageId')
+          END`,
+          otherUsername: sql<string>`CASE 
+            WHEN ${messages.senderId} = ${userId} THEN sender.username
+            ELSE recipient.username
+          END`,
+          otherUserLevel: sql<number>`CASE 
+            WHEN ${messages.senderId} = ${userId} THEN sender.level
+            ELSE recipient.level
+          END`,
+          otherUserIsOnline: sql<boolean>`CASE 
+            WHEN ${messages.senderId} = ${userId} THEN sender.is_online
+            ELSE recipient.is_online
+          END`,
+          lastMessage: messages.content,
+          lastMessageType: messages.messageType,
+          lastMessageTime: messages.createdAt,
         })
         .from(messages)
+        .innerJoin(users, eq(messages.senderId, users.id), { alias: 'sender' })
+        .innerJoin(users, eq(messages.recipientId, users.id), { alias: 'recipient' })
         .where(
           and(
-            isNotNull(messages.recipientId),
+            isNull(messages.roomId), // Direct messages only
             or(
               eq(messages.senderId, userId),
               eq(messages.recipientId, userId)
             )
           )
         )
-        .groupBy(sql`CASE 
-          WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId}
-          ELSE ${messages.senderId}
-        END`)
-        .as('latest_messages');
-
-      const conversations = await this.db
-        .select({
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
-          status: users.status,
-          lastMessage: messages.content,
-          lastMessageTime: messages.createdAt,
-          unreadCount: sql`0`.as('unreadCount') // Placeholder for unread count
-        })
-        .from(subquery)
-        .innerJoin(users, eq(users.id, subquery.otherUserId))
-        .leftJoin(messages, eq(messages.id, subquery.lastMessageId))
         .orderBy(desc(messages.createdAt));
 
-      return conversations;
+      // Group by other user and get the latest message for each conversation
+      const conversationMap = new Map();
+
+      for (const conv of conversations) {
+        if (!conversationMap.has(conv.otherUserId)) {
+          conversationMap.set(conv.otherUserId, {
+            id: conv.otherUserId,
+            username: conv.otherUsername,
+            level: conv.otherUserLevel,
+            isOnline: conv.otherUserIsOnline,
+            lastMessage: conv.lastMessage,
+            lastMessageType: conv.lastMessageType,
+            lastMessageTime: conv.lastMessageTime,
+          });
+        }
+      }
+
+      return Array.from(conversationMap.values()).sort((a, b) => 
+        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+      );
     } catch (error) {
-      console.error('Error fetching DM conversations:', error);
-      return [];
+      console.error('Error getting DM conversations:', error);
+      throw new Error('Failed to fetch conversations');
     }
   }
 }

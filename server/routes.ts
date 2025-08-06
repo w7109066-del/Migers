@@ -278,10 +278,18 @@ export function registerRoutes(app: Express): Server {
 
   // Get all DM conversations for current user
   app.get("/api/messages/conversations", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!req.isAuthenticated() || !req.user?.id) {
+      return res.status(400).json({ message: "Invalid user ID for conversations" });
+    }
 
     try {
-      const conversations = await storage.getDirectMessageConversations(req.user!.id);
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(req.user.id)) {
+        return res.status(400).json({ message: "Invalid user ID format for conversations" });
+      }
+
+      const conversations = await storage.getDirectMessageConversations(req.user.id);
       res.json(conversations);
     } catch (error) {
       console.error('Get conversations error:', error);
