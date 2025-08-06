@@ -59,11 +59,11 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
 
     const endTime = Date.now();
     const duration = endTime - startTime;
-    const threshold = 50;
+    const threshold = 80;
     const velocity = Math.abs(translateX) / duration; // pixels per ms
 
     // Fast swipe or distance threshold
-    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.3;
+    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.2;
 
     if (shouldSwipe) {
       if (translateX > 0 && activeTab < tabs.length - 1) {
