@@ -69,12 +69,17 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
   // Initialize room and messages
   useEffect(() => {
+    console.log('ChatRoom useEffect:', { isConnected, roomId, roomName });
+    
     if (isConnected && roomId && roomName) {
+      console.log('Initializing chat room:', roomId);
+      
       // Clear previous messages first
       setMessages([]);
       
       // Join room
       joinRoom(roomId);
+      console.log('Joined room:', roomId);
       
       // Set welcome messages
       const welcomeMessages = [
@@ -97,10 +102,14 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       ];
       
       setMessages(welcomeMessages);
+      console.log('Set welcome messages for room:', roomId);
+    } else {
+      console.warn('ChatRoom not initialized - missing requirements:', { isConnected, roomId, roomName });
     }
     
     // Cleanup when roomId changes
     return () => {
+      console.log('Cleaning up chat room:', roomId);
       setMessages([]);
       setIsUserListOpen(false);
     };
@@ -259,6 +268,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
   // Show loading if no room data
   if (!roomId || !roomName) {
+    console.error('ChatRoom: Missing required props:', { roomId, roomName });
     return (
       <div className="h-full flex flex-col bg-gray-50">
         {/* Header placeholder */}
@@ -271,6 +281,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
             <p className="text-gray-600">Loading chat room...</p>
+            <p className="text-xs text-gray-500 mt-2">Room ID: {roomId || 'Missing'}</p>
+            <p className="text-xs text-gray-500">Room Name: {roomName || 'Missing'}</p>
           </div>
         </div>
       </div>

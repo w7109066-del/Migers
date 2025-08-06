@@ -143,12 +143,15 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   const handleRoomClick = async (room: Room) => {
     try {
+      console.log('Attempting to join room:', room.id);
       await joinRoomMutation.mutateAsync(room.id);
-      console.log('Successfully joined room');
+      console.log('Successfully joined room:', room.id);
+      setSelectedRoom(room);
     } catch (error) {
       console.error('Failed to join room:', error);
+      // Still allow entering the room even if join fails
+      setSelectedRoom(room);
     }
-    setSelectedRoom(room);
   };
 
   const handleBackToRoomList = () => {
@@ -242,6 +245,8 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   // Show chat room if selected
   if (selectedRoom) {
+    console.log('Rendering chat room for:', selectedRoom);
+    
     return (
       <div className="h-full w-full bg-white flex flex-col">
         {/* Chat room header */}
@@ -266,13 +271,22 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
         
         {/* Chat room content */}
         <div className="flex-1 overflow-hidden">
-          <ChatRoom 
-            key={selectedRoom.id} 
-            roomId={selectedRoom.id}
-            roomName={selectedRoom.name}
-            onUserClick={onUserClick || (() => {})}
-            onLeaveRoom={handleBackToRoomList}
-          />
+          {selectedRoom.id && selectedRoom.name ? (
+            <ChatRoom 
+              key={`${selectedRoom.id}-${Date.now()}`}
+              roomId={selectedRoom.id}
+              roomName={selectedRoom.name}
+              onUserClick={onUserClick || (() => {})}
+              onLeaveRoom={handleBackToRoomList}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center bg-gray-50">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                <p className="text-gray-600">Loading chat room...</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
