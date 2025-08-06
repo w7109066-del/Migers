@@ -202,14 +202,14 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   if (selectedRoom) {
     return (
       <div className="h-full flex flex-col">
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center relative">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => setSelectedRoom(null)}
-            className="text-gray-600"
+            className="text-gray-600 absolute left-4"
           >
-            ← Back to Rooms
+            ←
           </Button>
           <div className="flex items-center space-x-2">
             <UserAvatar 
