@@ -573,13 +573,13 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center space-x-3">
-              <NotificationDropdown />
-              <Button variant="ghost" size="sm" className="text-gray-600 p-2">
-                <Edit className="w-4 h-4" />
-              </Button>
               <Button variant="ghost" size="sm" className="text-gray-600 p-2">
                 <Search className="w-4 h-4" />
               </Button>
+              <Button variant="ghost" size="sm" className="text-gray-600 p-2">
+                <Edit className="w-4 h-4" />
+              </Button>
+              <NotificationDropdown />
             </div>
           </div>
         )}
