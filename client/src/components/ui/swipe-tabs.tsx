@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface Tab {
@@ -16,101 +16,31 @@ interface SwipeTabsProps {
 
 export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [translateX, setTranslateX] = useState(0);
-  const [startTime, setStartTime] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const animationFrameRef = useRef<number>();
 
   const handleTabClick = useCallback((index: number) => {
     setActiveTab(index);
     onTabChange?.(index);
   }, [onTabChange]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    setIsDragging(true);
-    setStartX(e.touches[0].clientX);
-    setStartTime(Date.now());
-    setTranslateX(0);
-  }, []);
+  
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging) return;
-
-    e.preventDefault(); // Prevent scrolling
-
-    const currentX = e.touches[0].clientX;
-    const diff = startX - currentX;
-
-    // Cancel any pending animation frame
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    // Use requestAnimationFrame for smoother updates
-    animationFrameRef.current = requestAnimationFrame(() => {
-      setTranslateX(-diff);
-    });
-  }, [isDragging, startX]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (!isDragging) return;
-
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-    const threshold = 120;
-    const velocity = Math.abs(translateX) / duration; // pixels per ms
-
-    // Fast swipe or distance threshold - made less sensitive
-    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.15;
-
-    if (shouldSwipe) {
-      if (translateX > 0 && activeTab < tabs.length - 1) {
-        const newTab = activeTab + 1;
-        setActiveTab(newTab);
-        onTabChange?.(newTab);
-      } else if (translateX < 0 && activeTab > 0) {
-        const newTab = activeTab - 1;
-        setActiveTab(newTab);
-        onTabChange?.(newTab);
-      }
-    }
-
-    setIsDragging(false);
-    setTranslateX(0);
-  }, [isDragging, translateX, activeTab, tabs.length, onTabChange, startTime]);
-
-  // Cleanup animation frame on unmount
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
-  // Memoize transform style to prevent unnecessary recalculations
-  const transformStyle = useMemo(() => ({
-    transform: `translateX(${isDragging ? translateX : -activeTab * 100}%)`,
-    width: `${tabs.length * 100}%`,
-    transition: isDragging ? 'none' : 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
-  }), [isDragging, translateX, activeTab, tabs.length]);
+  
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Tab Content */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-hidden relative touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{ touchAction: 'pan-y' }}
+        className="flex-1 overflow-hidden relative"
       >
         <div 
           className="flex h-full will-change-transform"
-          style={transformStyle}
+          style={{
+            transform: `translateX(-${activeTab * 100}%)`,
+            width: `${tabs.length * 100}%`,
+            transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
         >
           {tabs.map((tab, index) => (
             <div
