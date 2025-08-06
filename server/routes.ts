@@ -632,23 +632,52 @@ export function registerRoutes(app: Express): Server {
           case 'send_message':
             if (userId && message.content) {
               if (message.roomId) {
-                // Room message
-                const messageData = insertMessageSchema.parse({
-                  content: message.content,
-                  senderId: userId,
-                  roomId: message.roomId,
-                  recipientId: null,
-                  messageType: message.messageType || 'text',
-                  metadata: message.metadata || null,
-                });
+                // For mock rooms (1-4), create a mock message instead of using database
+                if (['1', '2', '3', '4'].includes(message.roomId)) {
+                  // Get user data for the mock message
+                  const user = await storage.getUser(userId);
+                  
+                  const mockMessage = {
+                    id: `mock-${Date.now()}`,
+                    content: message.content,
+                    senderId: userId,
+                    roomId: message.roomId,
+                    recipientId: null,
+                    messageType: message.messageType || 'text',
+                    metadata: message.metadata || null,
+                    createdAt: new Date().toISOString(),
+                    sender: {
+                      id: userId,
+                      username: user?.username || 'User',
+                      level: user?.level || 1,
+                      isOnline: user?.isOnline || true,
+                    }
+                  };
 
-                const newMessage = await storage.createMessage(messageData);
+                  // Broadcast to room
+                  broadcastToRoom(message.roomId, {
+                    type: 'new_message',
+                    message: mockMessage,
+                  });
+                } else {
+                  // Real room message
+                  const messageData = insertMessageSchema.parse({
+                    content: message.content,
+                    senderId: userId,
+                    roomId: message.roomId,
+                    recipientId: null,
+                    messageType: message.messageType || 'text',
+                    metadata: message.metadata || null,
+                  });
 
-                // Broadcast to room
-                broadcastToRoom(message.roomId, {
-                  type: 'new_message',
-                  message: newMessage,
-                });
+                  const newMessage = await storage.createMessage(messageData);
+
+                  // Broadcast to room
+                  broadcastToRoom(message.roomId, {
+                    type: 'new_message',
+                    message: newMessage,
+                  });
+                }
               } else if (message.recipientId) {
                 // Direct message
                 const directMessage = await storage.createDirectMessage({
