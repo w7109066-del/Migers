@@ -18,8 +18,7 @@ import {
   Info,
   UserMinus,
   X,
-  Shield,
-  ArrowLeft
+  Shield
 } from "lucide-react";
 
 interface ChatRoomProps {
@@ -275,14 +274,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       {/* Chat Room Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleLeaveRoom}
-            className="p-2 text-gray-600 hover:bg-gray-100"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Hash className="text-white text-sm" />
           </div>
