@@ -66,14 +66,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch("/api/friends/:friendId/accept", async (req, res) => {
+  app.post("/api/friends/accept", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      await storage.acceptFriendRequest(req.user!.id, req.params.friendId);
+      const { userId } = req.body;
+      
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+
+      await storage.acceptFriendRequest(req.user!.id, userId);
       res.sendStatus(200);
     } catch (error) {
+      console.error('Accept friend request error:', error);
       res.status(400).json({ message: "Failed to accept friend request" });
+    }
+  });
+
+  app.post("/api/friends/reject", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const { userId } = req.body;
+      
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+
+      await storage.rejectFriendRequest(req.user!.id, userId);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Reject friend request error:', error);
+      res.status(400).json({ message: "Failed to reject friend request" });
     }
   });
 

@@ -133,7 +133,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]> {
-    const result = await this.db
+    // Get friends where current user sent the request (userId -> friendId)
+    const sentRequests = await this.db
       .select({
         id: users.id,
         username: users.username,
@@ -157,7 +158,38 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    return result;
+    // Get friends where current user received the request (friendId -> userId)
+    const receivedRequests = await this.db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password: users.password,
+        country: users.country,
+        gender: users.gender,
+        level: users.level,
+        isOnline: users.isOnline,
+        lastSeen: users.lastSeen,
+        status: users.status,
+        createdAt: users.createdAt,
+        friendshipStatus: friendships.status,
+      })
+      .from(friendships)
+      .innerJoin(users, eq(friendships.userId, users.id))
+      .where(
+        and(
+          eq(friendships.friendId, userId),
+          eq(friendships.status, "accepted")
+        )
+      );
+
+    // Combine both results and remove duplicates
+    const allFriends = [...sentRequests, ...receivedRequests];
+    const uniqueFriends = allFriends.filter((friend, index, self) => 
+      index === self.findIndex(f => f.id === friend.id)
+    );
+
+    return uniqueFriends;
   }
 
   async addFriend(userId: string, friendId: string): Promise<Friendship> {
@@ -179,6 +211,41 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return friendship || undefined;
+  }
+
+  async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
+    await this.db
+      .update(friendships)
+      .set({ status: "accepted" })
+      .where(
+        and(
+          eq(friendships.userId, friendId),
+          eq(friendships.friendId, userId),
+          eq(friendships.status, "pending")
+        )
+      );
+  }
+
+  async createFriendRequest(userId: string, friendId: string): Promise<void> {
+    await this.db
+      .insert(friendships)
+      .values({
+        userId,
+        friendId,
+        status: "pending"
+      });
+  }
+
+  async rejectFriendRequest(userId: string, friendId: string): Promise<void> {
+    await this.db
+      .delete(friendships)
+      .where(
+        and(
+          eq(friendships.userId, friendId),
+          eq(friendships.friendId, userId),
+          eq(friendships.status, "pending")
+        )
+      );
   }
 
   async createFriendRequest(userId: string, friendId: string): Promise<Friendship> {
