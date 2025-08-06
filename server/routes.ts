@@ -174,44 +174,26 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Sender not found" });
       }
 
-      // For now, just create a direct message with gift info
-      // In a real app, you'd also handle coin deduction and gift inventory
+      // Create direct message with gift info using storage method
       const giftMessage = `🎁 ${giftName} x${quantity} (${totalCost} coins)`;
 
-      const result = await db
-        .insert(directMessages)
-        .values({
-          content: giftMessage,
-          senderId,
-          recipientId,
-          messageType: 'gift',
-          giftData: JSON.stringify({
-            giftId,
-            name: giftName,
-            price,
-            quantity,
-            totalCost,
-            emoji,
-            category,
-            lottie: null // You can add lottie data here if needed
-          }),
-        })
-        .returning();
+      const directMessage = await storage.createDirectMessage({
+        content: giftMessage,
+        senderId,
+        recipientId,
+        messageType: 'gift'
+      });
 
-      const message = result[0];
-
-      // Get sender info for the message
-      const messageWithSender = await db.query.directMessages.findFirst({
-        where: eq(directMessages.id, message.id),
-        with: {
-          sender: true,
-        },
+      // Send gift notification via WebSocket
+      broadcastToUser(recipientId, {
+        type: 'new_direct_message',
+        message: directMessage,
       });
 
       res.json({
         success: true,
         message: "Gift sent successfully",
-        data: messageWithSender
+        data: directMessage
       });
     } catch (error) {
       console.error("Failed to send gift:", error);

@@ -93,16 +93,26 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
       });
 
       if (response.ok) {
+        const result = await response.json();
         toast({
           title: "Gift sent successfully!",
           description: `You sent ${gift.name} x${quantity} to ${recipient.username} for ${totalCost} coins.`,
         });
         onClose();
       } else {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('Gift send error:', errorText);
+        let errorMessage = "Failed to send gift";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        
         toast({
           title: "Failed to send gift",
-          description: errorData.message || "You don't have enough coins.",
+          description: errorMessage,
           variant: "destructive",
         });
       }
