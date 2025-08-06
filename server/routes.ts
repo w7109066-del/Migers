@@ -294,9 +294,30 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      const members = await storage.getRoomMembers(req.params.roomId);
+      const { roomId } = req.params;
+      
+      // For mock rooms (1-4), return mock member data with current user
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        const currentUser = await storage.getUser(req.user!.id);
+        const mockMembers = [
+          {
+            user: {
+              id: currentUser?.id || req.user!.id,
+              username: currentUser?.username || req.user!.username,
+              level: currentUser?.level || 1,
+              isOnline: currentUser?.isOnline || true,
+            }
+          }
+        ];
+        res.json(mockMembers);
+        return;
+      }
+
+      // For real rooms, get actual members
+      const members = await storage.getRoomMembers(roomId);
       res.json(members);
     } catch (error) {
+      console.error('Get room members error:', error);
       res.status(500).json({ message: "Failed to fetch room members" });
     }
   });
@@ -571,11 +592,15 @@ export function registerRoutes(app: Express): Server {
     path: '/ws' 
   });
 
+  // Track users in mock rooms
+  const mockRoomMembers = new Map<string, Set<string>>();
+
   wss.on('connection', async (ws: WebSocket, req) => {
     console.log('New WebSocket connection');
 
     let userId: string | null = null;
     let userSession: any = null;
+    let currentRoomId: string | null = null;
 
     ws.on('message', async (data) => {
       try {
@@ -609,8 +634,14 @@ export function registerRoutes(app: Express): Server {
                 break;
               }
 
-              // For mock rooms (1-4), skip database operation
-              if (!['1', '2', '3', '4'].includes(message.roomId)) {
+              // For mock rooms (1-4), track in memory
+              if (['1', '2', '3', '4'].includes(message.roomId)) {
+                if (!mockRoomMembers.has(message.roomId)) {
+                  mockRoomMembers.set(message.roomId, new Set());
+                }
+                mockRoomMembers.get(message.roomId)!.add(userId);
+                currentRoomId = message.roomId;
+              } else {
                 await storage.joinRoom(message.roomId, userId);
               }
 
@@ -651,8 +682,13 @@ export function registerRoutes(app: Express): Server {
               // Get user data for system message before leaving
               const user = await storage.getUser(userId);
 
-              // For mock rooms (1-4), skip database operation
-              if (!['1', '2', '3', '4'].includes(message.roomId)) {
+              // For mock rooms (1-4), remove from memory tracking
+              if (['1', '2', '3', '4'].includes(message.roomId)) {
+                if (mockRoomMembers.has(message.roomId)) {
+                  mockRoomMembers.get(message.roomId)!.delete(userId);
+                }
+                currentRoomId = null;
+              } else {
                 await storage.leaveRoom(message.roomId, userId);
               }
 
@@ -786,8 +822,35 @@ export function registerRoutes(app: Express): Server {
           await storage.removeUserSession(userSession.socketId);
         }
         
-        // If user was in a room, send leave message
-        // Note: In a real implementation, you'd track which room the user was in
+        // Clean up mock room membership
+        if (currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
+          if (mockRoomMembers.has(currentRoomId)) {
+            mockRoomMembers.get(currentRoomId)!.delete(userId);
+          }
+          
+          // Get user data for leave message
+          const user = await storage.getUser(userId);
+          
+          // Broadcast system message about user leaving
+          broadcastToRoom(currentRoomId, {
+            type: 'new_message',
+            message: {
+              id: `system-leave-${Date.now()}`,
+              content: `${user?.username || 'User'} has left`,
+              senderId: 'system',
+              roomId: currentRoomId,
+              recipientId: null,
+              messageType: 'system',
+              createdAt: new Date().toISOString(),
+              sender: {
+                id: 'system',
+                username: 'System',
+                level: 0,
+                isOnline: true,
+              }
+            }
+          });
+        }
       }
       console.log('WebSocket connection closed');
     });

@@ -183,7 +183,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           <div>
             <div className="font-semibold text-gray-800">{currentRoom.name}</div>
             <div className="text-xs text-gray-500">
-              {roomMembers?.length || 0} members online
+              Currently in room: {roomMembers?.length || 0} users
             </div>
           </div>
         </div>
@@ -215,7 +215,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
                       <div className="flex items-center space-x-2">
                         <span className="font-medium text-gray-800">{member.user.username}</span>
                         <Badge variant="secondary" className="bg-warning text-white text-xs">
-                          {member.user.level}
+                          Level {member.user.level}
                         </Badge>
                       </div>
                       <div className="text-sm text-gray-500">
@@ -224,6 +224,15 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
                     </div>
                   </div>
                 ))}
+                
+                {/* Show message if no members found */}
+                {(!roomMembers || roomMembers.length === 0) && (
+                  <div className="text-center text-gray-500 py-4">
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No members found</p>
+                    <p className="text-xs">Members will appear here when they join</p>
+                  </div>
+                )}
               </div>
             </SheetContent>
           </Sheet>
