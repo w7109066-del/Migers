@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -73,6 +74,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [roomMemberCounts, setRoomMemberCounts] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Listen for real-time member count updates
   useEffect(() => {
@@ -150,6 +152,9 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   const handleBackToRoomList = () => {
+    // Navigate back to room list
+    navigate('/rooms');
+    
     // Reset selected room immediately
     setSelectedRoom(null);
     
