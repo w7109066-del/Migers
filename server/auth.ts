@@ -81,6 +81,35 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Additional server-side username validation
+      const { username } = req.body;
+      
+      // Validate username format
+      if (!username || typeof username !== 'string') {
+        return res.status(400).json({ message: "Username is required" });
+      }
+
+      // Check length
+      if (username.length < 4 || username.length > 12) {
+        return res.status(400).json({ message: "Username must be 4-12 characters long" });
+      }
+
+      // Check valid characters (lowercase letters, numbers, dots only)
+      if (!/^[a-z0-9.]+$/.test(username)) {
+        return res.status(400).json({ message: "Username can only contain lowercase letters, numbers, and dots" });
+      }
+
+      // Check for invalid dot patterns
+      if (username.startsWith('.') || username.endsWith('.') || username.includes('..')) {
+        return res.status(400).json({ message: "Invalid dot usage in username" });
+      }
+
+      // Check for reserved usernames
+      const reservedUsernames = ['admin', 'root', 'system', 'api', 'www', 'mail', 'ftp', 'test', 'guest', 'user', 'support'];
+      if (reservedUsernames.includes(username.toLowerCase())) {
+        return res.status(400).json({ message: "This username is reserved" });
+      }
+
       const validatedData = insertUserSchema.parse(req.body);
       
       const existingUser = await storage.getUserByUsername(validatedData.username);
@@ -103,6 +132,11 @@ export function setupAuth(app: Express) {
         res.status(201).json(user);
       });
     } catch (error) {
+      console.error('Registration error:', error);
+      if (error instanceof z.ZodError) {
+        const firstError = error.errors[0];
+        return res.status(400).json({ message: firstError.message });
+      }
       res.status(400).json({ message: "Invalid registration data" });
     }
   });

@@ -197,6 +197,17 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   country: true,
   gender: true,
+}).extend({
+  username: z.string()
+    .min(4, "Username must be at least 4 characters")
+    .max(12, "Username must be at most 12 characters")
+    .regex(/^[a-z0-9.]+$/, "Username can only contain lowercase letters, numbers, and dots")
+    .refine((val) => !val.startsWith('.') && !val.endsWith('.'), {
+      message: "Username cannot start or end with a dot"
+    })
+    .refine((val) => !val.includes('..'), {
+      message: "Username cannot contain consecutive dots"
+    })
 });
 
 export const insertFriendshipSchema = createInsertSchema(friendships).pick({

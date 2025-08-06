@@ -167,11 +167,21 @@ export default function AuthPage() {
                       <Input
                         id="register-username"
                         type="text"
-                        placeholder="Choose a username"
+                        placeholder="4-12 characters: lowercase, numbers, dots"
                         className="pl-10"
                         {...registerForm.register("username")}
+                        onChange={(e) => {
+                          // Auto-convert to lowercase and filter invalid characters
+                          const value = e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, '');
+                          e.target.value = value;
+                          registerForm.setValue("username", value);
+                        }}
+                        maxLength={12}
                       />
                       <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      4-12 characters, lowercase letters, numbers, and dots only
                     </div>
                     {registerForm.formState.errors.username && (
                       <p className="text-sm text-red-600">{registerForm.formState.errors.username.message}</p>
