@@ -547,7 +547,7 @@ export default function HomePage() {
       <WebSocketProvider>
         <div className="h-full w-full bg-white flex flex-col">
         {/* Header - Only show on home tab (activeTab === 0), completely hidden on all other tabs */}
-        {activeTab === 0 && (
+        {activeTab === 0 ? (
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
             {/* Left side - User profile */}
             <div className="flex items-center space-x-3">
@@ -623,7 +623,7 @@ export default function HomePage() {
               <NotificationDropdown />
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Swipe Tabs Content */}
         <div className="flex-1">
