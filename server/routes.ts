@@ -337,6 +337,12 @@ export function registerRoutes(app: Express): Server {
 
           case 'join_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
+              // Prevent duplicate joins - check if user is already in the room
+              if (currentRoomId === message.roomId) {
+                console.log(`User ${userId} already in room ${message.roomId}, skipping duplicate join`);
+                break;
+              }
+
               // Check room capacity (25 users max)
               const roomMemberCount = await getRoomMemberCount(message.roomId);
               if (roomMemberCount >= 25) {
@@ -347,98 +353,98 @@ export function registerRoutes(app: Express): Server {
                 break;
               }
 
-              // For mock rooms (1-4), track in memory with user data
-              if (['1', '2', '3', '4'].includes(message.roomId)) {
-                if (!mockRoomMembers.has(message.roomId)) {
-                  mockRoomMembers.set(message.roomId, new Map());
-                }
-                const currentUser = await storage.getUser(userId);
-                mockRoomMembers.get(message.roomId)!.set(userId, {
-                  id: userId,
-                  username: currentUser?.username || 'User',
-                  level: currentUser?.level || 1,
-                  isOnline: true
-                });
-                currentRoomId = message.roomId;
-
-                console.log(`User ${currentUser?.username} joined room ${message.roomId}. Total members:`, mockRoomMembers.get(message.roomId)!.size);
-              } else {
-                await storage.joinRoom(message.roomId, userId);
-              }
-
-              // Get user data to ensure username is available
+              // Get user data first
               const currentUser = await storage.getUser(userId);
               if (!currentUser) {
                 return; // Should not happen if userId is valid
               }
 
-              // Get room name for welcome message
-              const roomNames = {
-                '1': 'MeChat',
-                '2': 'Indonesia', 
-                '3': 'MeChat',
-                '4': 'lowcard'
-              };
-              const roomName = roomNames[message.roomId as keyof typeof roomNames] || 'room';
-
-              // Broadcast welcome message first
-              broadcastToRoom(message.roomId, {
-                type: 'new_message',
-                message: {
-                  id: `system-welcome-${Date.now()}`,
-                  content: `Selamat datang di room ${roomName}`,
-                  senderId: 'system',
-                  roomId: message.roomId,
-                  recipientId: null,
-                  messageType: 'system',
-                  createdAt: new Date().toISOString(),
-                  sender: {
-                    id: 'system',
-                    username: 'System',
-                    level: 0,
-                    isOnline: true,
-                  }
+              // Check if user is already in this specific room to prevent duplicates
+              let userAlreadyInRoom = false;
+              
+              // For mock rooms (1-4), track in memory with user data
+              if (['1', '2', '3', '4'].includes(message.roomId)) {
+                if (!mockRoomMembers.has(message.roomId)) {
+                  mockRoomMembers.set(message.roomId, new Map());
                 }
-              });
+                
+                // Check if user already exists in room
+                userAlreadyInRoom = mockRoomMembers.get(message.roomId)!.has(userId);
+                
+                if (!userAlreadyInRoom) {
+                  mockRoomMembers.get(message.roomId)!.set(userId, {
+                    id: userId,
+                    username: currentUser.username || 'User',
+                    level: currentUser.level || 1,
+                    isOnline: true
+                  });
+                  currentRoomId = message.roomId;
 
-              // Broadcast system message about user joining
-              broadcastToRoom(message.roomId, {
-                type: 'new_message',
-                message: {
-                  id: `system-join-${Date.now()}`,
-                  content: `${currentUser.username} has entered`,
-                  senderId: 'system',
-                  roomId: message.roomId,
-                  recipientId: null,
-                  messageType: 'system',
-                  createdAt: new Date().toISOString(),
-                  sender: {
-                    id: 'system',
-                    username: 'System',
-                    level: 0,
-                    isOnline: true,
-                  }
+                  console.log(`User ${currentUser.username} joined room ${message.roomId}. Total members:`, mockRoomMembers.get(message.roomId)!.size);
                 }
-              });
+              } else {
+                // For real rooms, check membership first
+                const existingMembers = await storage.getRoomMembers(message.roomId);
+                userAlreadyInRoom = existingMembers?.some(member => member.user.id === userId) || false;
+                
+                if (!userAlreadyInRoom) {
+                  await storage.joinRoom(message.roomId, userId);
+                  currentRoomId = message.roomId;
+                }
+              }
 
-              // Broadcast to room members
-              broadcastToRoom(message.roomId, {
-                type: 'user_joined',
-                userId,
-                roomId: message.roomId,
-              }, ws);
+              // Only send messages if user wasn't already in room
+              if (!userAlreadyInRoom) {
+                // Get room name for welcome message
+                const roomNames = {
+                  '1': 'MeChat',
+                  '2': 'Indonesia', 
+                  '3': 'MeChat',
+                  '4': 'lowcard'
+                };
+                const roomName = roomNames[message.roomId as keyof typeof roomNames] || 'room';
 
-              // Broadcast room count update to all clients
-              const currentCount = getRoomMemberCount(message.roomId);
-              wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                  client.send(JSON.stringify({
-                    type: 'room_member_count_updated',
+                // Broadcast system message about user joining (no welcome message to avoid spam)
+                broadcastToRoom(message.roomId, {
+                  type: 'new_message',
+                  message: {
+                    id: `system-join-${userId}-${Date.now()}`,
+                    content: `${currentUser.username} has entered`,
+                    senderId: 'system',
                     roomId: message.roomId,
-                    memberCount: currentCount
-                  }));
-                }
-              });
+                    recipientId: null,
+                    messageType: 'system',
+                    createdAt: new Date().toISOString(),
+                    sender: {
+                      id: 'system',
+                      username: 'System',
+                      level: 0,
+                      isOnline: true,
+                    }
+                  }
+                });
+
+                // Broadcast to room members
+                broadcastToRoom(message.roomId, {
+                  type: 'user_joined',
+                  userId,
+                  roomId: message.roomId,
+                }, ws);
+
+                // Broadcast room count update to all clients
+                const currentCount = await getRoomMemberCount(message.roomId);
+                wss.clients.forEach((client) => {
+                  if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify({
+                      type: 'room_member_count_updated',
+                      roomId: message.roomId,
+                      memberCount: currentCount
+                    }));
+                  }
+                });
+              } else {
+                console.log(`User ${currentUser.username} already in room ${message.roomId}, no duplicate join message sent`);
+              }
             }
             break;
 

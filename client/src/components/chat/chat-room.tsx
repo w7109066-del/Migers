@@ -123,7 +123,12 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   useEffect(() => {
     if (isConnected && roomId) {
       console.log('WebSocket connected, joining room:', roomId);
-      joinRoom(roomId);
+      // Add a small delay to prevent race conditions
+      const timer = setTimeout(() => {
+        joinRoom(roomId);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [isConnected, roomId, joinRoom]);
 

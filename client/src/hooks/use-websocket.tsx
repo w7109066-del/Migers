@@ -195,10 +195,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   };
 
   const joinRoom = (roomId: string) => {
-    sendMessage({
-      type: 'join_room',
-      roomId,
-    });
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      sendMessage({
+        type: 'join_room',
+        roomId,
+      });
+    }
   };
 
   const leaveRoom = (roomId: string) => {
