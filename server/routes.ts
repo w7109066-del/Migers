@@ -390,6 +390,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update user status message
+  app.patch("/api/user/status-message", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const { statusMessage } = req.body;
+      
+      if (!statusMessage || typeof statusMessage !== 'string') {
+        return res.status(400).json({ message: "Status message is required" });
+      }
+
+      if (statusMessage.length > 200) {
+        return res.status(400).json({ message: "Status message is too long (max 200 characters)" });
+      }
+
+      await storage.updateUserStatusMessage(req.user!.id, statusMessage.trim());
+      
+      res.json({ statusMessage: statusMessage.trim() });
+    } catch (error) {
+      console.error('Status message update error:', error);
+      res.status(400).json({ message: "Failed to update status message" });
+    }
+  });
+
   // Feed posts API
   app.get("/api/feed", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

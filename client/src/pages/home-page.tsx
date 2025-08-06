@@ -14,6 +14,7 @@ import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
 import { NotificationDropdown } from "@/components/ui/notification-dropdown";
 import { EditProfileModal } from "@/components/ui/edit-profile-modal";
 import { UserSearchModal } from "@/components/ui/user-search-modal";
+import { StatusUpdateModal } from "@/components/ui/status-update-modal";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,7 @@ export default function HomePage() {
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showUserSearch, setShowUserSearch] = useState(false);
+  const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [userStatus, setUserStatus] = useState(user?.status || "online");
 
   // Update local status when user data changes
@@ -602,7 +604,12 @@ export default function HomePage() {
               >
                 <Search className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 p-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 p-2"
+                onClick={() => setShowStatusUpdate(true)}
+              >
                 <Edit className="w-4 h-4" />
               </Button>
               <NotificationDropdown />
@@ -642,6 +649,12 @@ export default function HomePage() {
             setSelectedDMUser(user);
             setActiveTab(3); // Switch to DM tab
           }}
+        />
+
+        {/* Status Update Modal */}
+        <StatusUpdateModal
+          isOpen={showStatusUpdate}
+          onClose={() => setShowStatusUpdate(false)}
         />
         </div>
         <Toaster />

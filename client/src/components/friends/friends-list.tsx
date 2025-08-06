@@ -141,6 +141,9 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
                 <div>
                   <div className="font-semibold text-gray-800">{friend.username}</div>
                   <div className="text-sm text-gray-500">
+                    {friend.status && friend.status.length > 0 && friend.status !== 'online' && friend.status !== 'offline' && friend.status !== 'away' && friend.status !== 'busy' ? (
+                      <div className="text-xs text-gray-600 mb-1 italic">"{friend.status}"</div>
+                    ) : null}
                     {getLastSeenText(friend.lastSeen ? friend.lastSeen.toString() : null, friend.isOnline || false)}
                   </div>
                 </div>

@@ -138,6 +138,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
+  async updateUserStatusMessage(userId: string, statusMessage: string): Promise<void> {
+    await this.db
+      .update(users)
+      .set({ 
+        status: statusMessage,
+        lastSeen: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
   async searchUsers(query: string, currentUserId: string): Promise<User[]> {
     const searchResults = await this.db
       .select()

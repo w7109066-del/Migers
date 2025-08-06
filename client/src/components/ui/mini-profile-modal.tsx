@@ -119,11 +119,14 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
             </div>
           </div>
 
-          <h3 className="text-xl font-bold text-gray-800 mb-2">{profile.username}</h3>
-
-          {/* Status text */}
-          <div className="text-sm text-gray-600 mb-4">
-            {profile.status || "..."}
+          {/* User Info */}
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-1">{profile.username}</h2>
+            {profile.status && profile.status.length > 0 && profile.status !== 'online' && profile.status !== 'offline' && profile.status !== 'away' && profile.status !== 'busy' ? (
+              <p className="text-gray-600 text-sm italic mb-2">"{profile.status}"</p>
+            ) : (
+              <p className="text-gray-600 text-sm">{profile.isOnline ? 'Online' : 'Offline'}</p>
+            )}
           </div>
 
           {/* Badges row */}
