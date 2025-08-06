@@ -1,6 +1,5 @@
-
-import React, { useState, useRef, useCallback } from 'react';
-import { cn } from '@/lib/utils';
+import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface Tab {
   id: string;
@@ -11,39 +10,86 @@ interface Tab {
 
 interface SwipeTabsProps {
   tabs: Tab[];
-  onTabChange?: (index: number) => void;
   className?: string;
 }
 
-export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
+export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
 
-  const handleTabClick = useCallback((index: number) => {
-    setActiveTab(index);
-    onTabChange?.(index);
-  }, [onTabChange]);
+  const switchTab = (tabIndex: number) => {
+    if (tabIndex < 0 || tabIndex >= tabs.length) return;
+    
+    setActiveTab(tabIndex);
+    
+    if (containerRef.current) {
+      const tabWidth = containerRef.current.clientWidth;
+      containerRef.current.scrollLeft = tabIndex * tabWidth;
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!containerRef.current) return;
+    
+    startXRef.current = e.touches[0].pageX;
+    scrollLeftRef.current = containerRef.current.scrollLeft;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!containerRef.current) return;
+    
+    const endX = e.changedTouches[0].pageX;
+    const diff = startXRef.current - endX;
+    const threshold = 50;
+    
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0 && activeTab < tabs.length - 1) {
+        // Swipe left - next tab
+        switchTab(activeTab + 1);
+      } else if (diff < 0 && activeTab > 0) {
+        // Swipe right - previous tab
+        switchTab(activeTab - 1);
+      }
+    }
+  };
+
+  // Handle wheel scrolling for desktop
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaX > 50 && activeTab < tabs.length - 1) {
+      switchTab(activeTab + 1);
+    } else if (e.deltaX < -50 && activeTab > 0) {
+      switchTab(activeTab - 1);
+    }
+  };
+
+  useEffect(() => {
+    // Auto-scroll to active tab on mount
+    switchTab(0);
+  }, []);
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Tab Content */}
-      <div 
-        ref={containerRef}
-        className="flex-1 overflow-hidden relative"
-      >
-        <div 
-          className="flex h-full"
+      <div className="flex-1 relative overflow-hidden">
+        <div
+          ref={containerRef}
+          className="flex h-full overflow-x-hidden"
           style={{
-            transform: `translateX(-${activeTab * 100}%)`,
-            width: `${tabs.length * 100}%`,
-            transition: 'transform 200ms ease-out'
+            scrollSnapType: "x mandatory",
+            scrollBehavior: "smooth",
           }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
         >
           {tabs.map((tab, index) => (
             <div
               key={tab.id}
               className="w-full h-full flex-shrink-0"
-              style={{ width: `${100 / tabs.length}%` }}
+              style={{ scrollSnapAlign: "start" }}
             >
               {tab.content}
             </div>
@@ -51,23 +97,34 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
         </div>
       </div>
 
-      {/* Tab Navigation - At bottom */}
-      <div className="flex bg-white border-t border-gray-200">
-        {tabs.map((tab, index) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabClick(index)}
-            className={cn(
-              "flex-1 flex flex-col items-center py-3 px-2 text-xs font-medium transition-colors",
-              activeTab === index
-                ? "text-primary border-t-2 border-primary bg-primary/5"
-                : "text-gray-500 hover:text-gray-700"
-            )}
-          >
-            {tab.icon}
-            <span className="mt-1">{tab.label}</span>
-          </button>
-        ))}
+      {/* Bottom Tab Bar */}
+      <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom">
+        <div className="flex items-center justify-around relative">
+          {/* Tab Indicator */}
+          <div
+            className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-transform duration-300"
+            style={{
+              width: `${100 / tabs.length}%`,
+              transform: `translateX(${activeTab * 100}%)`,
+            }}
+          />
+          
+          {tabs.map((tab, index) => (
+            <button
+              key={tab.id}
+              onClick={() => switchTab(index)}
+              className={cn(
+                "flex flex-col items-center py-2 px-3 transition-colors",
+                activeTab === index
+                  ? "text-primary"
+                  : "text-gray-400 hover:text-gray-600"
+              )}
+            >
+              {tab.icon}
+              <span className="text-xs mt-1 font-medium">{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
