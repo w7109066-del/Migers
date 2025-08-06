@@ -41,14 +41,19 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
       isGiftMessage(msg.content) && !hiddenGiftMessages.has(msg.id)
     );
 
+    const timers: NodeJS.Timeout[] = [];
+
     newGiftMessages.forEach(message => {
       const timer = setTimeout(() => {
         setHiddenGiftMessages(prev => new Set([...prev, message.id]));
       }, 3000);
-
-      return () => clearTimeout(timer);
+      timers.push(timer);
     });
-  }, [messages, hiddenGiftMessages]);
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [messages]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
