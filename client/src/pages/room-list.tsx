@@ -155,16 +155,12 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       await joinRoomMutation.mutateAsync(room.id);
       console.log('Successfully joined room:', room.id);
       
-      // Small delay to ensure WebSocket is ready
-      setTimeout(() => {
-        setSelectedRoom(room);
-      }, 100);
+      // Set selected room immediately
+      setSelectedRoom(room);
     } catch (error) {
       console.error('Failed to join room:', error);
       // Still allow entering the room even if join fails
-      setTimeout(() => {
-        setSelectedRoom(room);
-      }, 100);
+      setSelectedRoom(room);
     }
   };
 
@@ -259,8 +255,8 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   // Show chat room if selected
   if (selectedRoom) {
-    console.log('Rendering chat room for:', selectedRoom);
-    console.log('Selected room details:', { 
+    console.log('RoomList: Rendering chat room for:', selectedRoom);
+    console.log('RoomList: Selected room details:', { 
       id: selectedRoom.id, 
       name: selectedRoom.name, 
       hasId: !!selectedRoom.id, 
@@ -269,10 +265,12 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     
     // Validate selected room before rendering
     if (!selectedRoom.id || !selectedRoom.name) {
-      console.error('Invalid selected room:', selectedRoom);
+      console.error('RoomList: Invalid selected room, resetting:', selectedRoom);
       setSelectedRoom(null);
       return null;
     }
+
+    console.log('RoomList: About to render ChatRoom component');
     
     return (
       <div className="h-full w-full bg-white flex flex-col">

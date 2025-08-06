@@ -71,17 +71,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   useEffect(() => {
     console.log('ChatRoom useEffect:', { isConnected, roomId, roomName });
     
-    if (isConnected && roomId && roomName) {
+    if (roomId && roomName) {
       console.log('Initializing chat room:', roomId);
       
       // Clear previous messages first
       setMessages([]);
       
-      // Join room
-      joinRoom(roomId);
-      console.log('Joined room:', roomId);
-      
-      // Set welcome messages
+      // Set welcome messages immediately
       const welcomeMessages = [
         {
           id: `welcome-${roomId}`,
@@ -103,8 +99,14 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       
       setMessages(welcomeMessages);
       console.log('Set welcome messages for room:', roomId);
+      
+      // Join room if connected, or wait for connection
+      if (isConnected) {
+        joinRoom(roomId);
+        console.log('Joined room:', roomId);
+      }
     } else {
-      console.warn('ChatRoom not initialized - missing requirements:', { isConnected, roomId, roomName });
+      console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
     }
     
     // Cleanup when roomId changes
@@ -113,7 +115,15 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       setMessages([]);
       setIsUserListOpen(false);
     };
-  }, [isConnected, roomId, roomName, joinRoom]);
+  }, [roomId, roomName, joinRoom]);
+
+  // Separate effect for joining room when connection is established
+  useEffect(() => {
+    if (isConnected && roomId) {
+      console.log('WebSocket connected, joining room:', roomId);
+      joinRoom(roomId);
+    }
+  }, [isConnected, roomId, joinRoom]);
 
   // Update room members message
   useEffect(() => {
@@ -266,9 +276,9 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   // Check if current user is admin/moderator
   const isAdmin = user?.level >= 5; // Assuming level 5+ are admins
 
-  // Show loading if no room data or not connected
-  if (!roomId || !roomName || !isConnected) {
-    console.log('ChatRoom: Showing loading state:', { roomId, roomName, isConnected });
+  // More lenient loading check - only require roomId and roomName
+  if (!roomId || !roomName) {
+    console.log('ChatRoom: Missing required props:', { roomId, roomName, isConnected });
     return (
       <div className="h-full flex flex-col bg-gray-50">
         {/* Header placeholder */}
@@ -280,9 +290,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p className="text-gray-600">
-              {!isConnected ? 'Connecting...' : 'Loading chat room...'}
-            </p>
+            <p className="text-gray-600">Loading chat room...</p>
             <p className="text-xs text-gray-500 mt-2">Room ID: {roomId || 'Missing'}</p>
             <p className="text-xs text-gray-500">Room Name: {roomName || 'Missing'}</p>
             <p className="text-xs text-gray-500">Connected: {isConnected ? 'Yes' : 'No'}</p>
