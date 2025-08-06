@@ -356,6 +356,37 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
+  async createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }) {
+    const [message] = await this.db
+      .insert(messages)
+      .values({
+        content: data.content,
+        senderId: data.senderId,
+        recipientId: data.recipientId,
+        messageType: data.messageType || 'text',
+        roomId: null
+      })
+      .returning();
+
+    // Get the full message with sender info
+    const fullMessage = await this.db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        senderId: messages.senderId,
+        recipientId: messages.recipientId,
+        messageType: messages.messageType,
+        metadata: messages.metadata,
+        createdAt: messages.createdAt,
+        sender: users,
+      })
+      .from(messages)
+      .innerJoin(users, eq(messages.senderId, users.id))
+      .where(eq(messages.id, message.id));
+
+    return fullMessage[0];
+  }
+
   async createUserSession(userId: string, socketId: string): Promise<UserSession> {
     const [session] = await this.db
       .insert(userSessions)

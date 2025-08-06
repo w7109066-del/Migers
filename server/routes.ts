@@ -307,21 +307,44 @@ export function registerRoutes(app: Express): Server {
     res.json(messages);
   });
 
-  app.post("/api/messages/direct", async (req, res) => {
+  app.post("/api/messages/direct", upload.single('media'), async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const { content, recipientId } = req.body;
-
     try {
+      const { content, recipientId } = req.body;
+      let messageType = 'text';
+      let mediaUrl = null;
+
+      if (req.file) {
+        mediaUrl = `/uploads/${req.file.filename}`;
+        messageType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+      }
+
+      // Validate required fields
+      if (!recipientId) {
+        return res.status(400).json({ message: "Recipient ID is required" });
+      }
+
+      if (!content?.trim() && !req.file) {
+        return res.status(400).json({ message: "Message must have content or media" });
+      }
+
       const message = await storage.createDirectMessage({
-        content,
+        content: content?.trim() || '',
         senderId: req.user!.id,
         recipientId,
-        messageType: "text"
+        messageType
+      });
+
+      // Broadcast to recipient via WebSocket
+      broadcastToUser(recipientId, {
+        type: 'new_direct_message',
+        message: message,
       });
 
       res.status(201).json(message);
     } catch (error) {
+      console.error('Direct message error:', error);
       res.status(400).json({ message: "Failed to send message" });
     }
   });
@@ -505,34 +528,43 @@ export function registerRoutes(app: Express): Server {
 
           case 'send_message':
             if (userId && message.content) {
-              const messageData = insertMessageSchema.parse({
-                content: message.content,
-                senderId: userId,
-                roomId: message.roomId || null,
-                recipientId: message.recipientId || null,
-                messageType: message.messageType || 'text',
-                metadata: message.metadata || null,
-              });
-
-              const newMessage = await storage.createMessage(messageData);
-
               if (message.roomId) {
+                // Room message
+                const messageData = insertMessageSchema.parse({
+                  content: message.content,
+                  senderId: userId,
+                  roomId: message.roomId,
+                  recipientId: null,
+                  messageType: message.messageType || 'text',
+                  metadata: message.metadata || null,
+                });
+
+                const newMessage = await storage.createMessage(messageData);
+
                 // Broadcast to room
                 broadcastToRoom(message.roomId, {
                   type: 'new_message',
                   message: newMessage,
                 });
               } else if (message.recipientId) {
-                // Send direct message
+                // Direct message
+                const directMessage = await storage.createDirectMessage({
+                  content: message.content,
+                  senderId: userId,
+                  recipientId: message.recipientId,
+                  messageType: message.messageType || 'text'
+                });
+
+                // Send to recipient
                 broadcastToUser(message.recipientId, {
                   type: 'new_direct_message',
-                  message: newMessage,
+                  message: directMessage,
                 });
 
                 // Send confirmation to sender
                 ws.send(JSON.stringify({
                   type: 'message_sent',
-                  message: newMessage,
+                  message: directMessage,
                 }));
               }
             }

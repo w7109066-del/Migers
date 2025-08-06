@@ -119,15 +119,35 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         });
 
         if (response.ok) {
+          const sentMessage = await response.json();
+          setMessages(prev => [...prev, sentMessage]);
           setNewMessage('');
           setSelectedMedia(null);
           setMediaPreview(null);
-          await loadDirectMessages();
+        } else {
+          console.error('Failed to send media message');
         }
       } else {
-        // Handle text message
-        sendDirectMessage(newMessage.trim(), recipient.id);
-        setNewMessage('');
+        // Handle text message via API
+        const response = await fetch('/api/messages/direct', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            content: newMessage.trim(),
+            recipientId: recipient.id
+          }),
+        });
+
+        if (response.ok) {
+          const sentMessage = await response.json();
+          setMessages(prev => [...prev, sentMessage]);
+          setNewMessage('');
+        } else {
+          console.error('Failed to send message');
+        }
       }
     } catch (error) {
       console.error('Failed to send message:', error);
