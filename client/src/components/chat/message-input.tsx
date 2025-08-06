@@ -290,7 +290,8 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
                       size="sm"
                       className="p-2 h-auto flex flex-col items-center hover:bg-gray-100 transition-colors"
                       onClick={() => {
-                        setMessage(prev => prev + item.emoji);
+                        // Langsung kirim emoji animasi ke room
+                        onSendMessage(item.emoji);
                         setShowEmojis(false);
                       }}
                     >

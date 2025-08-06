@@ -797,7 +797,8 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                       size="sm"
                       className="p-2 h-auto flex flex-col items-center hover:bg-gray-100 transition-colors"
                       onClick={() => {
-                        setNewMessage(prev => prev + item.emoji);
+                        setNewMessage(item.emoji);
+                        handleSendMessage();
                         setShowEmojis(false);
                       }}
                     >
