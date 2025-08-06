@@ -105,9 +105,6 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
                 <span className="font-semibold text-sm" style={{ color: '#2f7853' }}>
                   {message.sender.username}
                 </span>
-                <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-semibold">
-                  Level {message.sender.level}
-                </Badge>
                 <span className="text-xs text-gray-500">
                   {formatTime(message.createdAt)}
                 </span>

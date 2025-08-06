@@ -293,9 +293,6 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
                         <span className="font-medium text-gray-800">{member.user.username}</span>
-                        <Badge variant="secondary" className="bg-warning text-white text-xs">
-                          Level {member.user.level}
-                        </Badge>
                       </div>
                       <div className="text-sm text-gray-500">
                         {member.user.isOnline ? "Online" : "Offline"}
