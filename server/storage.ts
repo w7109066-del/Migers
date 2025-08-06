@@ -20,7 +20,7 @@ import {
   type UserSession
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, sql, desc, isNotNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -55,7 +55,10 @@ export interface IStorage {
   // Messages
   getRoomMessages(roomId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   getDirectMessages(userId: string, otherUserId: string, limit?: number): Promise<(Message & { sender: User })[]>;
-  createMessage(message: InsertMessage): Promise<Message>;
+  createMessage(message: InsertMessage);
+
+  // Direct message conversations
+  getDirectMessageConversations(userId: string): Promise<any[]>;
 
   // User sessions for WebSocket
   createUserSession(userId: string, socketId: string): Promise<UserSession>;
@@ -78,8 +81,6 @@ export interface IStorage {
       author: Pick<User, "id" | "username" | "level" | "isOnline">;
     })[]
   >;
-
-  sessionStore: session.SessionStore;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -145,63 +146,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]> {
-    // Get friends where current user sent the request (userId -> friendId)
-    const sentRequests = await this.db
+    const friends = await this.db
       .select({
         id: users.id,
         username: users.username,
         email: users.email,
-        password: users.password,
-        country: users.country,
-        gender: users.gender,
         level: users.level,
         isOnline: users.isOnline,
-        lastSeen: users.lastSeen,
+        country: users.country,
         status: users.status,
         createdAt: users.createdAt,
         friendshipStatus: friendships.status,
+        friendshipCreatedAt: friendships.createdAt,
       })
       .from(friendships)
-      .innerJoin(users, eq(friendships.friendId, users.id))
-      .where(
-        and(
-          eq(friendships.userId, userId),
-          eq(friendships.status, "accepted")
+      .innerJoin(users, 
+        or(
+          and(eq(friendships.userId, userId), eq(users.id, friendships.friendId)),
+          and(eq(friendships.friendId, userId), eq(users.id, friendships.userId))
         )
-      );
+      )
+      .where(eq(friendships.status, 'accepted'));
 
-    // Get friends where current user received the request (friendId -> userId)
-    const receivedRequests = await this.db
-      .select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        password: users.password,
-        country: users.country,
-        gender: users.gender,
-        level: users.level,
-        isOnline: users.isOnline,
-        lastSeen: users.lastSeen,
-        status: users.status,
-        createdAt: users.createdAt,
-        friendshipStatus: friendships.status,
-      })
-      .from(friendships)
-      .innerJoin(users, eq(friendships.userId, users.id))
-      .where(
-        and(
-          eq(friendships.friendId, userId),
-          eq(friendships.status, "accepted")
-        )
-      );
-
-    // Combine both results and remove duplicates
-    const allFriends = [...sentRequests, ...receivedRequests];
-    const uniqueFriends = allFriends.filter((friend, index, self) => 
-      index === self.findIndex(f => f.id === friend.id)
-    );
-
-    return uniqueFriends;
+    return friends;
   }
 
   async addFriend(userId: string, friendId: string): Promise<Friendship> {
@@ -538,6 +505,44 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userSessions.socketId, socketId));
 
     return result[0]?.user;
+  }
+
+  async getDirectMessageConversations(userId: string) {
+    try {
+      // Get all users that have had direct message conversations with the current user
+      const conversations = await this.db
+        .selectDistinct({
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+          status: users.status,
+          lastMessageContent: messages.content,
+          lastMessageTime: messages.createdAt,
+        })
+        .from(messages)
+        .innerJoin(users, 
+          or(
+            and(eq(messages.senderId, userId), eq(users.id, messages.recipientId)),
+            and(eq(messages.recipientId, userId), eq(users.id, messages.senderId))
+          )
+        )
+        .where(
+          and(
+            isNotNull(messages.recipientId),
+            or(
+              eq(messages.senderId, userId),
+              eq(messages.recipientId, userId)
+            )
+          )
+        )
+        .orderBy(desc(messages.createdAt));
+
+      return conversations;
+    } catch (error) {
+      console.error('Error fetching DM conversations:', error);
+      return [];
+    }
   }
 }
 
