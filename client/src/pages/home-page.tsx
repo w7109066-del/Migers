@@ -217,15 +217,99 @@ export default function HomePage() {
       content: (
         <div className="h-full overflow-y-auto bg-gray-50">
           <div className="p-4">
-            <div className="flex items-center justify-between mb-6">
+            {/* Header Section */}
+            <div className="mb-6 bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center space-x-4 mb-4">
+                {/* User Avatar and Level */}
+                <div className="relative">
+                  <UserAvatar
+                    username={user.username}
+                    size="lg"
+                    isOnline={user.isOnline || false}
+                    onClick={() => setShowEditProfile(true)}
+                  />
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute -bottom-1 -right-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-2 border-white"
+                  >
+                    {user.level}
+                  </Badge>
+                </div>
+
+                {/* User Info and Status */}
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold text-gray-800">{user.username}</h2>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800 h-auto p-1"
+                        >
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(userStatus)}`} />
+                          <span>{getStatusText(userStatus)}</span>
+                          <ChevronDown className="w-3 h-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => handleStatusChange('online')}>
+                          <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                          Online
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange('away')}>
+                          <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
+                          Away
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange('busy')}>
+                          <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
+                          Busy
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange('offline')}>
+                          <div className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
+                          Offline
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Action Icons */}
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowUserSearch(true)}
+                    className="text-gray-600 p-2"
+                  >
+                    <Search className="w-5 h-5" />
+                  </Button>
+                  <NotificationDropdown />
+                </div>
+              </div>
+
+              {/* Status Message Input */}
+              <div className="mt-3">
+                <Input
+                  placeholder="What's on your mind? Set your status message..."
+                  value={user.status && user.status !== 'online' && user.status !== 'offline' && user.status !== 'away' && user.status !== 'busy' ? user.status : ''}
+                  onChange={(e) => {
+                    const newStatus = e.target.value.trim();
+                    if (newStatus.length === 0) {
+                      handleStatusChange('online');
+                    } else {
+                      handleStatusChange(newStatus);
+                    }
+                  }}
+                  className="bg-gray-50 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary text-sm"
+                  maxLength={100}
+                />
+              </div>
+            </div>
+
+            {/* Friends Section */}
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">Friends</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowUserSearch(true)}
-              >
-                <Search className="w-4 h-4" />
-              </Button>
             </div>
             <FriendsList onUserClick={showMiniProfile} showRefreshButton={true} />
           </div>
