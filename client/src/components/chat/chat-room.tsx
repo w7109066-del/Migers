@@ -266,9 +266,9 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   // Check if current user is admin/moderator
   const isAdmin = user?.level >= 5; // Assuming level 5+ are admins
 
-  // Show loading if no room data
-  if (!roomId || !roomName) {
-    console.error('ChatRoom: Missing required props:', { roomId, roomName });
+  // Show loading if no room data or not connected
+  if (!roomId || !roomName || !isConnected) {
+    console.log('ChatRoom: Showing loading state:', { roomId, roomName, isConnected });
     return (
       <div className="h-full flex flex-col bg-gray-50">
         {/* Header placeholder */}
@@ -280,14 +280,19 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p className="text-gray-600">Loading chat room...</p>
+            <p className="text-gray-600">
+              {!isConnected ? 'Connecting...' : 'Loading chat room...'}
+            </p>
             <p className="text-xs text-gray-500 mt-2">Room ID: {roomId || 'Missing'}</p>
             <p className="text-xs text-gray-500">Room Name: {roomName || 'Missing'}</p>
+            <p className="text-xs text-gray-500">Connected: {isConnected ? 'Yes' : 'No'}</p>
           </div>
         </div>
       </div>
     );
   }
+
+  console.log('ChatRoom: Rendering main component', { roomId, roomName, isConnected, messagesCount: messages.length });
 
   return (
     <div className="h-full flex flex-col bg-gray-50">

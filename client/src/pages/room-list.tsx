@@ -142,15 +142,29 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   );
 
   const handleRoomClick = async (room: Room) => {
+    console.log('Room clicked:', room);
+    
+    // Validate room data before proceeding
+    if (!room || !room.id || !room.name) {
+      console.error('Invalid room data:', room);
+      return;
+    }
+
     try {
       console.log('Attempting to join room:', room.id);
       await joinRoomMutation.mutateAsync(room.id);
       console.log('Successfully joined room:', room.id);
-      setSelectedRoom(room);
+      
+      // Small delay to ensure WebSocket is ready
+      setTimeout(() => {
+        setSelectedRoom(room);
+      }, 100);
     } catch (error) {
       console.error('Failed to join room:', error);
       // Still allow entering the room even if join fails
-      setSelectedRoom(room);
+      setTimeout(() => {
+        setSelectedRoom(room);
+      }, 100);
     }
   };
 
@@ -246,6 +260,19 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   // Show chat room if selected
   if (selectedRoom) {
     console.log('Rendering chat room for:', selectedRoom);
+    console.log('Selected room details:', { 
+      id: selectedRoom.id, 
+      name: selectedRoom.name, 
+      hasId: !!selectedRoom.id, 
+      hasName: !!selectedRoom.name 
+    });
+    
+    // Validate selected room before rendering
+    if (!selectedRoom.id || !selectedRoom.name) {
+      console.error('Invalid selected room:', selectedRoom);
+      setSelectedRoom(null);
+      return null;
+    }
     
     return (
       <div className="h-full w-full bg-white flex flex-col">
@@ -271,22 +298,13 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
         
         {/* Chat room content */}
         <div className="flex-1 overflow-hidden">
-          {selectedRoom.id && selectedRoom.name ? (
-            <ChatRoom 
-              key={`${selectedRoom.id}-${Date.now()}`}
-              roomId={selectedRoom.id}
-              roomName={selectedRoom.name}
-              onUserClick={onUserClick || (() => {})}
-              onLeaveRoom={handleBackToRoomList}
-            />
-          ) : (
-            <div className="h-full flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                <p className="text-gray-600">Loading chat room...</p>
-              </div>
-            </div>
-          )}
+          <ChatRoom 
+            key={selectedRoom.id}
+            roomId={selectedRoom.id}
+            roomName={selectedRoom.name}
+            onUserClick={onUserClick || (() => {})}
+            onLeaveRoom={handleBackToRoomList}
+          />
         </div>
       </div>
     );
