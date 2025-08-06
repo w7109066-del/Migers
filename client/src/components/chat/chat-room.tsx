@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,6 +56,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
   const { user } = useAuth();
 
@@ -209,13 +211,25 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   };
 
   const handleUserClick = (user: any) => {
-    onUserClick({
+    // Handle profile internally to prevent room from closing
+    setSelectedProfile({
       id: user.id,
       username: user.username,
       level: user.level,
       status: "Available for chat",
       isOnline: user.isOnline,
     });
+  };
+
+  const handleProfileModalClose = () => {
+    setSelectedProfile(null);
+  };
+
+  const handleMessageClick = (profile: any) => {
+    // This will open DM chat - we can call the parent's onUserClick if needed
+    if (onUserClick) {
+      onUserClick(profile);
+    }
   };
 
   const handleKickUser = async (userId: string, username: string) => {
@@ -334,7 +348,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                   <div
                     key={member.user.id}
                     className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-                    onClick={() => handleUserClick(member.user)}
+                    onClick={() => {
+                      handleUserClick(member.user);
+                      setIsUserListOpen(false); // Close user list when profile opens
+                    }}
                   >
                     <UserAvatar 
                       username={member.user.username}
@@ -534,6 +551,15 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       <div className="flex-shrink-0">
         <MessageInput onSendMessage={handleSendMessage} />
       </div>
+
+      {/* Mini Profile Modal */}
+      {selectedProfile && (
+        <MiniProfileModal
+          profile={selectedProfile}
+          onClose={handleProfileModalClose}
+          onMessageClick={handleMessageClick}
+        />
+      )}
     </div>
   );
 }
