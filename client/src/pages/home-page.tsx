@@ -2,6 +2,7 @@ import { useState } from "react";
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { WebSocketProvider } from "@/hooks/use-websocket";
+import { NotificationProvider } from "@/hooks/use-notifications";
 import { SwipeTabs } from "@/components/ui/swipe-tabs";
 import { FriendsList } from "@/components/friends/friends-list";
 import { ChatRoom } from "@/components/chat/chat-room";
@@ -9,6 +10,8 @@ import { DirectMessageChat } from "@/components/chat/direct-message-chat";
 import RoomListPage from "@/pages/room-list";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
+import { NotificationDropdown } from "@/components/ui/notification-dropdown";
+import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -534,8 +537,9 @@ export default function HomePage() {
   ];
 
   return (
-    <WebSocketProvider>
-      <div className="h-full w-full bg-white flex flex-col">
+    <NotificationProvider>
+      <WebSocketProvider>
+        <div className="h-full w-full bg-white flex flex-col">
         {/* Header - only show for Home tab */}
         {activeTab === 0 && (
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -563,6 +567,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center space-x-3">
+              <NotificationDropdown />
               <Button variant="ghost" size="sm" className="text-gray-600 p-2">
                 <Edit className="w-4 h-4" />
               </Button>
@@ -589,7 +594,9 @@ export default function HomePage() {
             }}
           />
         )}
-      </div>
-    </WebSocketProvider>
+        </div>
+        <Toaster />
+      </WebSocketProvider>
+    </NotificationProvider>
   );
 }

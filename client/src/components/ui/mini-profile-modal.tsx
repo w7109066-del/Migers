@@ -1,9 +1,11 @@
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { UserStatus } from "@/components/user/user-status";
 import { X, MessageCircle, UserPlus } from "lucide-react";
+import { useNotifications } from "@/hooks/use-notifications";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "@/hooks/use-toast";
 
 interface MiniProfileModalProps {
   profile: {
@@ -19,20 +21,25 @@ interface MiniProfileModalProps {
 }
 
 export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfileModalProps) {
+  const { user } = useAuth();
+  const { addNotification } = useNotifications();
+
   const handleSendMessage = () => {
-    if (onMessageClick) {
-      onMessageClick({
-        id: profile.id,
-        username: profile.username,
-        level: profile.level,
-        status: profile.status,
-        isOnline: profile.isOnline,
-      });
-    }
+    onMessageClick(profile);
     onClose();
   };
 
   const handleAddFriend = async () => {
+    // Check if user is trying to add themselves
+    if (user && user.id === profile.id) {
+      toast({
+        title: "Cannot add yourself",
+        description: "You cannot send a friend request to yourself.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const response = await fetch('/api/friends/request', {
         method: 'POST',
@@ -40,19 +47,45 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ userId: profile.id }),
+        body: JSON.stringify({
+          userId: profile.id,
+        }),
       });
 
       if (response.ok) {
-        console.log("Friend request sent to", profile.username);
-        // You could add a toast notification here
+        // Add notification for successful friend request
+        addNotification({
+          type: 'friend_request',
+          title: 'Friend Request Sent',
+          message: `Friend request sent to ${profile.username}`,
+          fromUser: {
+            id: profile.id,
+            username: profile.username,
+          },
+        });
+
+        toast({
+          title: "Friend request sent!",
+          description: `Your friend request has been sent to ${profile.username}.`,
+        });
+
+        onClose();
       } else {
-        console.error("Failed to send friend request");
+        const errorData = await response.json();
+        toast({
+          title: "Failed to send friend request",
+          description: errorData.message || "Something went wrong.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error("Error sending friend request:", error);
+      console.error('Failed to send friend request:', error);
+      toast({
+        title: "Network error",
+        description: "Failed to send friend request. Please try again.",
+        variant: "destructive",
+      });
     }
-    onClose();
   };
 
   return (
@@ -85,14 +118,14 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
               )}
             </div>
           </div>
-          
+
           <h3 className="text-xl font-bold text-gray-800 mb-2">{profile.username}</h3>
-          
+
           {/* Status text */}
           <div className="text-sm text-gray-600 mb-4">
             {profile.status || "..."}
           </div>
-          
+
           {/* Badges row */}
           <div className="flex items-center justify-center space-x-2 mb-6">
             <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
@@ -105,7 +138,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
             )}
             <UserStatus isOnline={profile.isOnline} />
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex space-x-3">
             <Button 

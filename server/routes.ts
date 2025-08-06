@@ -107,8 +107,24 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Cannot add yourself as friend" });
       }
 
-      // TODO: Implement friend request logic in storage
-      // For now, just return success
+      // Check if friendship already exists
+      const existingFriendship = await storage.getFriendshipStatus(req.user!.id, userId);
+      if (existingFriendship) {
+        return res.status(400).json({ message: "Friend request already exists or you are already friends" });
+      }
+
+      // Create friend request
+      await storage.createFriendRequest(req.user!.id, userId);
+
+      // Broadcast friend request notification to target user
+      broadcastToUser(userId, {
+        type: 'friend_request_received',
+        fromUser: {
+          id: req.user!.id,
+          username: req.user!.username,
+        },
+      });
+
       res.json({ message: "Friend request sent successfully" });
     } catch (error) {
       console.error('Friend request error:', error);

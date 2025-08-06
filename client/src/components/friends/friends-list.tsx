@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useNotifications } from "@/hooks/use-notifications";
 
 interface Friend extends User {
   friendshipStatus: string;
@@ -15,6 +16,7 @@ interface FriendsListProps {
 
 export function FriendsList({ onUserClick }: FriendsListProps) {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   
   const { data: friends, isLoading } = useQuery<Friend[]>({
     queryKey: ["/api/friends"],

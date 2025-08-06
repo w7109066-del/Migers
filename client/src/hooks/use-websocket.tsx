@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useAuth } from "./use-auth";
 import { useToast } from "./use-toast";
+import { useNotifications } from './use-notifications';
 
 type WebSocketContextType = {
   isConnected: boolean;
@@ -20,6 +21,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const ws = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const { addNotification } = useNotifications();
 
   const connect = () => {
     if (!user) return;
@@ -50,36 +52,36 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
           case 'new_message':
             // Handle new room message
-            window.dispatchEvent(new CustomEvent('newMessage', { 
-              detail: message.message 
+            window.dispatchEvent(new CustomEvent('newMessage', {
+              detail: message.message
             }));
             break;
 
           case 'new_direct_message':
             // Handle new direct message
-            window.dispatchEvent(new CustomEvent('newDirectMessage', { 
-              detail: message.message 
+            window.dispatchEvent(new CustomEvent('newDirectMessage', {
+              detail: message.message
             }));
             break;
 
           case 'user_joined':
-            window.dispatchEvent(new CustomEvent('userJoined', { 
+            window.dispatchEvent(new CustomEvent('userJoined', {
               detail: { userId: message.userId, roomId: message.roomId }
             }));
             break;
 
           case 'user_left':
-            window.dispatchEvent(new CustomEvent('userLeft', { 
+            window.dispatchEvent(new CustomEvent('userLeft', {
               detail: { userId: message.userId, roomId: message.roomId }
             }));
             break;
 
           case 'user_typing':
-            window.dispatchEvent(new CustomEvent('userTyping', { 
-              detail: { 
-                userId: message.userId, 
-                roomId: message.roomId, 
-                isTyping: message.isTyping 
+            window.dispatchEvent(new CustomEvent('userTyping', {
+              detail: {
+                userId: message.userId,
+                roomId: message.roomId,
+                isTyping: message.isTyping
               }
             }));
             break;
@@ -89,6 +91,40 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               title: "Connection Error",
               description: message.message,
               variant: "destructive",
+            });
+            break;
+
+          case 'friend_request_received':
+            addNotification({
+              type: 'friend_request',
+              title: 'New Friend Request',
+              message: `${message.fromUser?.username || 'Someone'} sent you a friend request`,
+              fromUser: message.fromUser,
+            });
+            break;
+          case 'friend_request_accepted':
+            addNotification({
+              type: 'friend_accepted',
+              title: 'Friend Request Accepted',
+              message: `${message.fromUser?.username || 'Someone'} accepted your friend request`,
+              fromUser: message.fromUser,
+            });
+            break;
+          case 'gift_received':
+            addNotification({
+              type: 'gift_received',
+              title: 'Gift Received!',
+              message: `You received ${message.gift?.name || 'a gift'} from ${message.fromUser?.username || 'someone'}`,
+              fromUser: message.fromUser,
+              data: message.gift,
+            });
+            break;
+          case 'credit_received':
+            addNotification({
+              type: 'credit_received',
+              title: 'Credits Received!',
+              message: `You received ${message.amount || 0} credits`,
+              data: { amount: message.amount },
             });
             break;
         }
