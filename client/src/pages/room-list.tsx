@@ -91,7 +91,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     };
   }, []);
 
-  const { data: rooms = mockRoomsFallback, isLoading } = useQuery<Room[]>({
+  const { data: rooms = mockRoomsFallback, isLoading, error } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
     queryFn: async () => {
       const response = await fetch('/api/rooms', {
@@ -106,7 +106,9 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     refetchInterval: 3000, // Refetch every 3 seconds for more frequent updates
     staleTime: 0,
     refetchOnWindowFocus: true,
-    refetchOnMount: true
+    refetchOnMount: true,
+    retry: 3,
+    retryDelay: 1000
   });
 
   const joinRoomMutation = useMutation({
@@ -145,17 +147,19 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   const handleBackToRoomList = () => {
+    // Store current room ID before clearing
+    const currentRoomId = selectedRoom?.id;
+    
     // Clear selected room first
     setSelectedRoom(null);
     
-    // Reset any potential error states
-    queryClient.resetQueries({ queryKey: ["/api/rooms"] });
+    // Only clear member data for the specific room we're leaving
+    if (currentRoomId) {
+      queryClient.removeQueries({ queryKey: ["/api/rooms", currentRoomId, "members"] });
+    }
     
-    // Force a fresh fetch of room data
+    // Force refresh room list with fresh data
     queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-    
-    // Clear any cached member data
-    queryClient.removeQueries({ queryKey: ["/api/rooms", selectedRoom?.id, "members"] });
   };
 
   const categorizedRooms = {
@@ -239,12 +243,26 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     );
   };
 
-  if (isLoading) {
+  if (isLoading && !rooms.length) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="h-full flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-gray-600">Loading rooms...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show fallback data if there's an error but we have cached/mock data
+  if (error && !rooms.length) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="text-red-500 mb-2">Failed to load rooms</div>
+          <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/rooms"] })}>
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -285,7 +303,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   }
 
   return (
-    <div className="h-full w-full bg-white flex flex-col">
+    <div className="h-full w-full bg-white flex flex-col min-h-0">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
@@ -309,7 +327,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       </div>
 
       {/* Room Categories */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
+      <div className="flex-1 overflow-y-auto bg-gray-50 min-h-0">
         <div className="p-4 space-y-6">
           <CategorySection
             title="Room Official"

@@ -90,10 +90,17 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   // Cleanup when component unmounts or room changes
   useEffect(() => {
     return () => {
+      // Clear states
       setMessages([]);
       setCurrentRoom(null);
       setIsInitialized(false);
       setIsUserListOpen(false);
+      
+      // Leave room if we were in one
+      if (currentRoom?.id) {
+        // Note: We don't call leaveRoom here as it might cause issues
+        // The backend should handle cleanup when websocket disconnects
+      }
     };
   }, [roomId]);
 
