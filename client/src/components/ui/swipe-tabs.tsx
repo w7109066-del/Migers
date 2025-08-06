@@ -59,11 +59,11 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
 
     const endTime = Date.now();
     const duration = endTime - startTime;
-    const threshold = 50;
+    const threshold = 100; // Increased from 50 to 100
     const velocity = Math.abs(translateX) / duration; // pixels per ms
 
-    // Fast swipe or distance threshold
-    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.3;
+    // Fast swipe or distance threshold - made less sensitive
+    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.5;
 
     if (shouldSwipe) {
       if (translateX > 0 && activeTab < tabs.length - 1) {
@@ -99,25 +99,6 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      {/* Tab Navigation */}
-      <div className="flex bg-white border-b border-gray-200">
-        {tabs.map((tab, index) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabClick(index)}
-            className={cn(
-              "flex-1 flex flex-col items-center py-3 px-2 text-xs font-medium transition-colors",
-              activeTab === index
-                ? "text-primary border-b-2 border-primary bg-primary/5"
-                : "text-gray-500 hover:text-gray-700"
-            )}
-          >
-            {tab.icon}
-            <span className="mt-1">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
       {/* Tab Content */}
       <div 
         ref={containerRef}
@@ -141,6 +122,25 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Tab Navigation - Moved to bottom */}
+      <div className="flex bg-white border-t border-gray-200">
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            onClick={() => handleTabClick(index)}
+            className={cn(
+              "flex-1 flex flex-col items-center py-3 px-2 text-xs font-medium transition-colors",
+              activeTab === index
+                ? "text-primary border-t-2 border-primary bg-primary/5"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            {tab.icon}
+            <span className="mt-1">{tab.label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
