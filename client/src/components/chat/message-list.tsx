@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,6 +25,7 @@ interface MessageListProps {
 export function MessageList({ messages, onUserClick }: MessageListProps) {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [hiddenGiftMessages, setHiddenGiftMessages] = useState<Set<string>>(new Set());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -33,6 +34,21 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-hide gift messages after 3 seconds
+  useEffect(() => {
+    const newGiftMessages = messages.filter(msg => 
+      isGiftMessage(msg.content) && !hiddenGiftMessages.has(msg.id)
+    );
+
+    newGiftMessages.forEach(message => {
+      const timer = setTimeout(() => {
+        setHiddenGiftMessages(prev => new Set([...prev, message.id]));
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    });
+  }, [messages, hiddenGiftMessages]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -67,12 +83,20 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
         const isSystemMessage = message.senderId === 'system';
         const isGift = isGiftMessage(message.content);
 
-        // Gift message rendering
+        // Gift message rendering with auto-hide after 3 seconds
         if (isGift) {
           const giftData = parseGiftMessage(message.content, message.sender.username);
+          const isHidden = hiddenGiftMessages.has(message.id);
 
           return (
-            <div key={message.id} className="flex justify-center mb-4 animate-pulse">
+            <div 
+              key={message.id} 
+              className={cn(
+                "flex justify-center mb-4 transition-all duration-1000",
+                isHidden ? "opacity-0 transform scale-95 pointer-events-none" : "opacity-100 animate-pulse"
+              )}
+              style={{ display: isHidden ? 'none' : 'flex' }}
+            >
               <div className="bg-gradient-to-r from-yellow-100 via-orange-100 to-pink-100 border-2 border-orange-300 rounded-xl p-4 max-w-sm shadow-lg">
                 <div className="flex items-center justify-center space-x-3">
                   <div className="text-3xl animate-bounce">🎁</div>
