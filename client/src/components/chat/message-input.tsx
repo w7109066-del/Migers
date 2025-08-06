@@ -19,6 +19,13 @@ const emojis = [
   { emoji: "🔥", name: "Fire", price: 22 },
 ];
 
+// Dummy data for animated emoticons (replace with actual data)
+const animatedEmoticons = [
+  { emoji: "🌟", name: "Sparkle", price: 30, lottie: gifts[0].lottie }, // Assuming gifts[0].lottie is a valid animation
+  { emoji: "💖", name: "Heartbeat", price: 35, lottie: gifts[1].lottie }, // Assuming gifts[1].lottie is a valid animation
+  { emoji: "🚀", name: "Rocket", price: 40, lottie: gifts[2].lottie }, // Assuming gifts[2].lottie is a valid animation
+];
+
 interface MessageInputProps {
   onSendMessage: (message: string) => void;
 }
@@ -37,16 +44,16 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       // Check if message is a gift command
       const giftCommandRegex = /^\/send\s+(.+?)\s+to\s+(.+)$/i;
       const match = message.match(giftCommandRegex);
-      
+
       if (match) {
         const [, giftName, recipientName] = match;
-        
+
         // Find matching gift from animations
-        const matchedGift = gifts.find(gift => 
+        const matchedGift = gifts.find(gift =>
           gift.name.toLowerCase().includes(giftName.toLowerCase()) ||
           giftName.toLowerCase().includes(gift.name.toLowerCase())
         );
-        
+
         if (matchedGift) {
           // Send formatted gift message with animation data
           const giftMessage = `🎁GIFT:${JSON.stringify({
@@ -66,7 +73,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       } else {
         onSendMessage(message);
       }
-      
+
       setMessage("");
       setShowEmojis(false);
       setShowGifts(false);
@@ -92,26 +99,57 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
     <div className="bg-white border-t border-gray-200">
       {/* Emoji Picker */}
       {showEmojis && (
-        <div className="px-4 pt-2">
+        <div className="px-4 pb-2">
           <Card>
-            <CardContent className="p-3 max-h-64 overflow-y-auto">
-              <div className="mb-2 text-xs text-gray-600 font-semibold">Emoticons</div>
-              <div className="grid grid-cols-8 gap-1">
-                {emojis.map((item, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    size="sm"
-                    className="p-1 h-10 flex items-center justify-center hover:bg-gray-100"
-                    onClick={() => {
-                      setMessage(prev => prev + item.emoji);
-                      setShowEmojis(false);
-                    }}
-                    title={item.name}
-                  >
-                    <span className="text-lg">{item.emoji}</span>
-                  </Button>
-                ))}
+            <CardContent className="p-3 max-h-40 overflow-y-auto">
+              {/* Animated Emoticons Section */}
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-600 mb-2">Animated Emoticons</h4>
+                <div className="grid grid-cols-6 gap-2">
+                  {animatedEmoticons.map((item, index) => (
+                    <Button
+                      key={`animated-${index}`}
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-auto flex flex-col items-center hover:bg-gray-100 transition-colors"
+                      onClick={() => {
+                        setMessage(prev => prev + item.emoji);
+                        setShowEmojis(false);
+                      }}
+                    >
+                      <div className="w-6 h-6 mb-1">
+                        <Lottie
+                          loop
+                          animationData={item.lottie}
+                          play
+                          style={{ width: 24, height: 24 }}
+                        />
+                      </div>
+                      <span className="text-xs text-primary font-bold">{item.price}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Regular Emojis Section */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-600 mb-2">Regular Emojis</h4>
+                <div className="grid grid-cols-8 gap-1">
+                  {emojis.map((item, index) => (
+                    <Button
+                      key={`regular-${index}`}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-8 flex flex-col items-center"
+                      onClick={() => {
+                        setMessage(prev => prev + item.emoji);
+                        setShowEmojis(false);
+                      }}
+                    >
+                      <span className="text-sm">{item.emoji}</span>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>

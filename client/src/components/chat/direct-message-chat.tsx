@@ -248,6 +248,250 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
     });
   };
 
+  // Animated emoticons with Lottie animations
+  const animatedEmoticons = [
+    {
+      emoji: "😍",
+      name: "Heart Eyes",
+      lottie: {
+        "v": "5.7.4",
+        "fr": 30,
+        "ip": 0,
+        "op": 60,
+        "w": 50,
+        "h": 50,
+        "nm": "Heart Eyes",
+        "ddd": 0,
+        "assets": [],
+        "layers": [
+          {
+            "ddd": 0,
+            "ind": 1,
+            "ty": 4,
+            "nm": "face",
+            "sr": 1,
+            "ks": {
+              "o": {"a": 0, "k": 100},
+              "r": {"a": 0, "k": 0},
+              "p": {"a": 0, "k": [25, 25, 0]},
+              "a": {"a": 0, "k": [0, 0, 0]},
+              "s": {"a": 1, "k": [
+                {"t": 0, "s": [100, 100, 100]},
+                {"t": 30, "s": [110, 110, 100]},
+                {"t": 60, "s": [100, 100, 100]}
+              ]}
+            },
+            "ao": 0,
+            "shapes": [
+              {
+                "ty": "gr",
+                "it": [
+                  {
+                    "ty": "el",
+                    "d": 1,
+                    "s": {"a": 0, "k": [40, 40]},
+                    "p": {"a": 0, "k": [0, 0]}
+                  },
+                  {
+                    "ty": "fl",
+                    "c": {"a": 0, "k": [1, 0.8, 0.2, 1]},
+                    "o": {"a": 0, "k": 100}
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      emoji: "🤩",
+      name: "Star Struck",
+      lottie: {
+        "v": "5.7.4",
+        "fr": 30,
+        "ip": 0,
+        "op": 60,
+        "w": 50,
+        "h": 50,
+        "nm": "Star Struck",
+        "ddd": 0,
+        "assets": [],
+        "layers": [
+          {
+            "ddd": 0,
+            "ind": 1,
+            "ty": 4,
+            "nm": "stars",
+            "sr": 1,
+            "ks": {
+              "o": {"a": 1, "k": [
+                {"t": 0, "s": [50]},
+                {"t": 30, "s": [100]},
+                {"t": 60, "s": [50]}
+              ]},
+              "r": {"a": 1, "k": [
+                {"t": 0, "s": [0]},
+                {"t": 60, "s": [360]}
+              ]},
+              "p": {"a": 0, "k": [25, 25, 0]},
+              "a": {"a": 0, "k": [0, 0, 0]},
+              "s": {"a": 0, "k": [100, 100, 100]}
+            },
+            "ao": 0,
+            "shapes": [
+              {
+                "ty": "gr",
+                "it": [
+                  {
+                    "ty": "sr",
+                    "d": 1,
+                    "pt": {"a": 0, "k": 5},
+                    "p": {"a": 0, "k": [0, 0]},
+                    "r": {"a": 0, "k": 0},
+                    "ir": {"a": 0, "k": 8},
+                    "or": {"a": 0, "k": 15}
+                  },
+                  {
+                    "ty": "fl",
+                    "c": {"a": 0, "k": [1, 1, 0, 1]},
+                    "o": {"a": 0, "k": 100}
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      emoji: "🥳",
+      name: "Party Face",
+      lottie: {
+        "v": "5.7.4",
+        "fr": 30,
+        "ip": 0,
+        "op": 90,
+        "w": 50,
+        "h": 50,
+        "nm": "Party Face",
+        "ddd": 0,
+        "assets": [],
+        "layers": [
+          {
+            "ddd": 0,
+            "ind": 1,
+            "ty": 4,
+            "nm": "confetti",
+            "sr": 1,
+            "ks": {
+              "o": {"a": 1, "k": [
+                {"t": 0, "s": [0]},
+                {"t": 20, "s": [100]},
+                {"t": 70, "s": [100]},
+                {"t": 90, "s": [0]}
+              ]},
+              "r": {"a": 1, "k": [
+                {"t": 0, "s": [0]},
+                {"t": 90, "s": [180]}
+              ]},
+              "p": {"a": 1, "k": [
+                {"t": 0, "s": [25, 15, 0]},
+                {"t": 45, "s": [25, 35, 0]},
+                {"t": 90, "s": [25, 15, 0]}
+              ]},
+              "a": {"a": 0, "k": [0, 0, 0]},
+              "s": {"a": 0, "k": [80, 80, 100]}
+            },
+            "ao": 0,
+            "shapes": [
+              {
+                "ty": "gr",
+                "it": [
+                  {
+                    "ty": "rc",
+                    "d": 1,
+                    "s": {"a": 0, "k": [4, 4]},
+                    "p": {"a": 0, "k": [0, 0]},
+                    "r": {"a": 0, "k": 1}
+                  },
+                  {
+                    "ty": "fl",
+                    "c": {"a": 0, "k": [1, 0.3, 0.5, 1]},
+                    "o": {"a": 0, "k": 100}
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      emoji: "😘",
+      name: "Kiss",
+      lottie: {
+        "v": "5.7.4",
+        "fr": 30,
+        "ip": 0,
+        "op": 60,
+        "w": 50,
+        "h": 50,
+        "nm": "Kiss",
+        "ddd": 0,
+        "assets": [],
+        "layers": [
+          {
+            "ddd": 0,
+            "ind": 1,
+            "ty": 4,
+            "nm": "heart",
+            "sr": 1,
+            "ks": {
+              "o": {"a": 1, "k": [
+                {"t": 0, "s": [0]},
+                {"t": 15, "s": [100]},
+                {"t": 45, "s": [100]},
+                {"t": 60, "s": [0]}
+              ]},
+              "r": {"a": 0, "k": 0},
+              "p": {"a": 1, "k": [
+                {"t": 0, "s": [35, 25, 0]},
+                {"t": 30, "s": [45, 15, 0]},
+                {"t": 60, "s": [50, 10, 0]}
+              ]},
+              "a": {"a": 0, "k": [0, 0, 0]},
+              "s": {"a": 1, "k": [
+                {"t": 0, "s": [50, 50, 100]},
+                {"t": 30, "s": [80, 80, 100]},
+                {"t": 60, "s": [30, 30, 100]}
+              ]}
+            },
+            "ao": 0,
+            "shapes": [
+              {
+                "ty": "gr",
+                "it": [
+                  {
+                    "ty": "el",
+                    "d": 1,
+                    "s": {"a": 0, "k": [8, 8]},
+                    "p": {"a": 0, "k": [0, 0]}
+                  },
+                  {
+                    "ty": "fl",
+                    "c": {"a": 0, "k": [1, 0.2, 0.4, 1]},
+                    "o": {"a": 0, "k": 100}
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ];
+
   const emojis = [
     { emoji: '😀', name: 'Grinning Face' },
     { emoji: '😃', name: 'Grinning Face with Big Eyes' },
@@ -541,22 +785,54 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
       {showEmojis && (
         <div className="px-4 pb-2">
           <Card>
-            <CardContent className="p-3 max-h-32 overflow-y-auto">
-              <div className="grid grid-cols-8 gap-1">
-                {emojis.map((item, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    size="sm"
-                    className="p-1 h-8 flex flex-col items-center"
-                    onClick={() => {
-                      setNewMessage(prev => prev + item.emoji);
-                      setShowEmojis(false);
-                    }}
-                  >
-                    <span className="text-sm">{item.emoji}</span>
-                  </Button>
-                ))}
+            <CardContent className="p-3 max-h-40 overflow-y-auto">
+              {/* Animated Emoticons Section */}
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-600 mb-2">Animated Emoticons</h4>
+                <div className="grid grid-cols-6 gap-2">
+                  {animatedEmoticons.map((item, index) => (
+                    <Button
+                      key={`animated-${index}`}
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-auto flex flex-col items-center hover:bg-gray-100 transition-colors"
+                      onClick={() => {
+                        setNewMessage(prev => prev + item.emoji);
+                        setShowEmojis(false);
+                      }}
+                    >
+                      <div className="w-6 h-6 mb-1">
+                        <Lottie
+                          loop
+                          animationData={item.lottie}
+                          play
+                          style={{ width: 24, height: 24 }}
+                        />
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Regular Emojis Section */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-600 mb-2">Regular Emojis</h4>
+                <div className="grid grid-cols-8 gap-1">
+                  {emojis.map((item, index) => (
+                    <Button
+                      key={`regular-${index}`}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-8 flex flex-col items-center"
+                      onClick={() => {
+                        setNewMessage(prev => prev + item.emoji);
+                        setShowEmojis(false);
+                      }}
+                    >
+                      <span className="text-sm">{item.emoji}</span>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
