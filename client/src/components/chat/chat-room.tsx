@@ -70,8 +70,10 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", currentRoom?.id, "members"],
     enabled: Boolean(isConnected && currentRoom?.id),
-    refetchInterval: 5000, // Refetch every 5 seconds to keep members list updated
-    staleTime: 0 // Always consider data stale to ensure fresh updates
+    refetchInterval: 2000, // Refetch every 2 seconds for faster updates
+    staleTime: 0, // Always consider data stale to ensure fresh updates
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   // Set up room from props or use first available room
@@ -183,8 +185,10 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
         };
         setMessages(prev => [...prev, joinMessage]);
         
-        // Refetch room members to update the list
-        refetchMembers();
+        // Force immediate refetch with invalidation
+        setTimeout(() => {
+          refetchMembers();
+        }, 100);
       }
     };
 
@@ -201,8 +205,10 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
         };
         setMessages(prev => [...prev, leaveMessage]);
         
-        // Refetch room members to update the list
-        refetchMembers();
+        // Force immediate refetch with invalidation  
+        setTimeout(() => {
+          refetchMembers();
+        }, 100);
       }
     };
 

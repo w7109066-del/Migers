@@ -607,6 +607,9 @@ export function registerRoutes(app: Express): Server {
 
   // Track users in mock rooms with detailed user info
   const mockRoomMembers = new Map<string, Map<string, any>>();
+  
+  // Track websocket connections by user ID
+  const userConnections = new Map<string, WebSocket>();
 
   wss.on('connection', async (ws: WebSocket, req) => {
     console.log('New WebSocket connection');
@@ -627,6 +630,9 @@ export function registerRoutes(app: Express): Server {
               userId = message.userId;
               userSession = await storage.createUserSession(userId, generateSocketId());
               await storage.updateUserOnlineStatus(userId, true);
+              
+              // Track this user's connection
+              userConnections.set(userId, ws);
 
               ws.send(JSON.stringify({
                 type: 'authenticated',
@@ -660,6 +666,8 @@ export function registerRoutes(app: Express): Server {
                   isOnline: true
                 });
                 currentRoomId = message.roomId;
+                
+                console.log(`User ${currentUser?.username} joined room ${message.roomId}. Total members:`, mockRoomMembers.get(message.roomId)!.size);
               } else {
                 await storage.joinRoom(message.roomId, userId);
               }
@@ -868,6 +876,9 @@ export function registerRoutes(app: Express): Server {
 
     ws.on('close', async () => {
       if (userId) {
+        // Remove from user connections tracking
+        userConnections.delete(userId);
+        
         await storage.updateUserOnlineStatus(userId, false);
         if (userSession) {
           await storage.removeUserSession(userSession.socketId);
@@ -876,31 +887,31 @@ export function registerRoutes(app: Express): Server {
         // Clean up mock room membership
         if (currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
           if (mockRoomMembers.has(currentRoomId)) {
+            const user = await storage.getUser(userId);
             mockRoomMembers.get(currentRoomId)!.delete(userId);
-          }
+            
+            console.log(`User ${user?.username} left room ${currentRoomId}. Remaining members:`, mockRoomMembers.get(currentRoomId)!.size);
 
-          // Get user data for leave message
-          const user = await storage.getUser(userId);
-
-          // Broadcast system message about user leaving
-          broadcastToRoom(currentRoomId, {
-            type: 'new_message',
-            message: {
-              id: `system-leave-${Date.now()}`,
-              content: `${user?.username || 'User'} has left`,
-              senderId: 'system',
-              roomId: currentRoomId,
-              recipientId: null,
-              messageType: 'system',
-              createdAt: new Date().toISOString(),
-              sender: {
-                id: 'system',
-                username: 'System',
-                level: 0,
-                isOnline: true,
+            // Broadcast system message about user leaving
+            broadcastToRoom(currentRoomId, {
+              type: 'new_message',
+              message: {
+                id: `system-leave-${Date.now()}`,
+                content: `${user?.username || 'User'} has left`,
+                senderId: 'system',
+                roomId: currentRoomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
               }
-            }
-          });
+            });
+          }
         }
       }
       console.log('WebSocket connection closed');
@@ -928,13 +939,23 @@ export function registerRoutes(app: Express): Server {
   }
 
   function broadcastToRoom(roomId: string, message: any, excludeWs?: WebSocket) {
-    wss.clients.forEach((client) => {
-      if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
-        // In a real implementation, you'd track which users are in which rooms
-        // For now, broadcasting to all clients and letting the frontend filter
-        client.send(JSON.stringify(message));
-      }
-    });
+    // For mock rooms, get actual members and send only to them
+    if (['1', '2', '3', '4'].includes(roomId) && mockRoomMembers.has(roomId)) {
+      const roomMembers = mockRoomMembers.get(roomId)!;
+      roomMembers.forEach((memberData, memberId) => {
+        const memberWs = userConnections.get(memberId);
+        if (memberWs && memberWs !== excludeWs && memberWs.readyState === WebSocket.OPEN) {
+          memberWs.send(JSON.stringify(message));
+        }
+      });
+    } else {
+      // For other rooms, broadcast to all connected clients
+      wss.clients.forEach((client) => {
+        if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(message));
+        }
+      });
+    }
   }
 
   function broadcastToUser(userId: string, message: any) {
