@@ -61,25 +61,25 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
               <div className="text-sm">
                 {isWelcomeMessage && (
                   <div>
-                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-red-500 font-medium">System: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}
                 {isCurrentlyInRoom && (
                   <div>
-                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-red-500 font-medium">System: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}
                 {isRoomManaged && (
                   <div>
-                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-red-500 font-medium">System: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}
                 {isUserEnterLeave && (
                   <div>
-                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-red-500 font-medium">System: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}
