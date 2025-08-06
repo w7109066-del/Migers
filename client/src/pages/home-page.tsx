@@ -27,13 +27,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  Home, 
-  MessageCircle, 
-  Newspaper, 
-  Mail, 
-  Settings, 
-  Search, 
+import {
+  Home,
+  MessageCircle,
+  Newspaper,
+  Mail,
+  Settings,
+  Search,
   Edit,
   Bell,
   Moon,
@@ -219,8 +219,8 @@ export default function HomePage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-800">Friends</h3>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowUserSearch(true)}
               >
@@ -257,8 +257,8 @@ export default function HomePage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
-                  <UserAvatar 
-                    username={user.username} 
+                  <UserAvatar
+                    username={user.username}
                     size="md"
                     isOnline={user.isOnline || false}
                   />
@@ -290,15 +290,15 @@ export default function HomePage() {
                     {mediaPreview && (
                       <div className="relative">
                         {selectedMedia?.type.startsWith('image/') ? (
-                          <img 
-                            src={mediaPreview} 
-                            alt="Preview" 
+                          <img
+                            src={mediaPreview}
+                            alt="Preview"
                             className="max-h-48 rounded-lg object-cover"
                           />
                         ) : (
-                          <video 
-                            src={mediaPreview} 
-                            controls 
+                          <video
+                            src={mediaPreview}
+                            controls
                             className="max-h-48 rounded-lg"
                           />
                         )}
@@ -362,8 +362,8 @@ export default function HomePage() {
                 <Card key={post.id}>
                   <CardContent className="p-4">
                     <div className="flex items-start space-x-3">
-                      <UserAvatar 
-                        username={post.author?.username || 'Unknown'} 
+                      <UserAvatar
+                        username={post.author?.username || 'Unknown'}
                         size="md"
                         isOnline={post.author?.isOnline || false}
                         onClick={() => showMiniProfile({
@@ -386,34 +386,34 @@ export default function HomePage() {
                             </Badge>
                           )}
                         </div>
-                        
+
                         {post.content && (
                           <div className="text-sm text-gray-600 mb-2">{post.content}</div>
                         )}
-                        
+
                         {/* Media content */}
                         {post.mediaUrl && (
                           <div className="mb-2">
                             {post.mediaType === 'image' ? (
-                              <img 
-                                src={post.mediaUrl} 
-                                alt="Post media" 
+                              <img
+                                src={post.mediaUrl}
+                                alt="Post media"
                                 className="rounded-lg max-h-64 object-cover w-full"
                               />
                             ) : post.mediaType === 'video' ? (
-                              <video 
-                                src={post.mediaUrl} 
-                                controls 
+                              <video
+                                src={post.mediaUrl}
+                                controls
                                 className="rounded-lg max-h-64 w-full"
                               />
                             ) : null}
                           </div>
                         )}
-                        
+
                         <div className="text-xs text-gray-400 mb-2">
                           {new Date(post.createdAt).toLocaleDateString()} at {new Date(post.createdAt).toLocaleTimeString()}
                         </div>
-                        
+
                         <div className="flex items-center space-x-4 mt-2">
                           <div className="flex items-center space-x-1">
                             <Heart className="w-4 h-4 text-gray-500 cursor-pointer" />
@@ -464,8 +464,8 @@ export default function HomePage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-4 mb-4">
-                  <UserAvatar 
-                    username={user.username} 
+                  <UserAvatar
+                    username={user.username}
                     size="lg"
                     isOnline={user.isOnline || false}
                   />
@@ -483,8 +483,8 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => setShowEditProfile(true)}
                 >
@@ -523,7 +523,7 @@ export default function HomePage() {
                     <span className="font-medium text-gray-800">Help & Support</span>
                   </button>
 
-                  <button 
+                  <button
                     className="w-full p-4 text-left flex items-center space-x-3 text-red-600 hover:bg-red-50"
                     onClick={() => logoutMutation.mutate()}
                     disabled={logoutMutation.isPending}
@@ -546,13 +546,13 @@ export default function HomePage() {
     <NotificationProvider>
       <WebSocketProvider>
         <div className="h-full w-full bg-white flex flex-col">
-        {/* Header - Only show on home tab, hide on all other tabs including Chatroom */}
+        {/* Header - Only show on home tab (activeTab === 0), completely hidden on all other tabs */}
         {activeTab === 0 && (
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
             {/* Left side - User profile */}
             <div className="flex items-center space-x-3">
-              <UserAvatar 
-                username={user.username} 
+              <UserAvatar
+                username={user.username}
                 size="md"
                 isOnline={user.isOnline || false}
                 onClick={() => showMiniProfile({
@@ -606,15 +606,15 @@ export default function HomePage() {
 
             {/* Right side - Action buttons */}
             <div className="flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowUserSearch(true)}
               >
                 <Search className="w-4 h-4" />
               </Button>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowEditProfile(true)}
               >
