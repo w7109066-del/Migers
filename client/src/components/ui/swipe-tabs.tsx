@@ -98,7 +98,7 @@ export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
       </div>
 
       {/* Bottom Tab Bar */}
-      <div className="bg-white border-t border-gray-200 px-4 py-2">
+      <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom">
         <div className="flex items-center justify-around relative">
           {/* Tab Indicator */}
           <div

@@ -302,9 +302,9 @@ export default function HomePage() {
 
   return (
     <WebSocketProvider>
-      <div className="h-screen w-full bg-white relative overflow-hidden">
+      <div className="h-full w-full bg-white flex flex-col">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
               <UserAvatar 
@@ -339,7 +339,9 @@ export default function HomePage() {
         </div>
 
         {/* Swipe Tabs Content */}
-        <SwipeTabs tabs={tabs} />
+        <div className="flex-1">
+          <SwipeTabs tabs={tabs} />
+        </div>
 
         {/* Mini Profile Modal */}
         {selectedProfile && (

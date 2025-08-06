@@ -64,10 +64,8 @@
     user-select: none;
     margin: 0;
     padding: 0;
-    overflow: hidden;
     height: 100vh;
     width: 100vw;
-    position: fixed;
   }
   
   html {
@@ -75,13 +73,19 @@
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden;
   }
   
   #root {
     height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height */
     width: 100vw;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Safe area support for mobile devices */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
   }
   
   /* Custom scrollbar styles */
