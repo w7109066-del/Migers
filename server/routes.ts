@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema } from "@shared/schema";
+import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
@@ -141,6 +141,82 @@ export function registerRoutes(app: Express): Server {
       res.sendStatus(200);
     } catch (error) {
       res.status(400).json({ message: "Failed to update status" });
+    }
+  });
+
+  // Feed posts API
+  app.get("/api/feed", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const posts = await storage.getFeedPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch feed posts" });
+    }
+  });
+
+  app.post("/api/feed", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { content } = req.body;
+      const post = await storage.createFeedPost({
+        content,
+        authorId: req.user!.id,
+      });
+      res.status(201).json(post);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create post" });
+    }
+  });
+
+  // Post interactions API
+  app.post("/api/feed/:postId/like", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      await storage.likePost(req.params.postId, req.user!.id);
+      res.sendStatus(200);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to like post" });
+    }
+  });
+
+  app.delete("/api/feed/:postId/like", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      await storage.unlikePost(req.params.postId, req.user!.id);
+      res.sendStatus(200);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to unlike post" });
+    }
+  });
+
+  app.post("/api/feed/:postId/comment", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { content } = req.body;
+      const comment = await storage.addComment(req.params.postId, {
+        content,
+        authorId: req.user!.id,
+      });
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add comment" });
+    }
+  });
+
+  app.get("/api/feed/:postId/comments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const comments = await storage.getComments(req.params.postId);
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
     }
   });
 

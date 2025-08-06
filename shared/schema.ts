@@ -64,6 +64,31 @@ export const userSessions = pgTable("user_sessions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const posts = pgTable("posts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  content: text("content").notNull(),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  likesCount: integer("likes_count").default(0),
+  commentsCount: integer("comments_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const postLikes = pgTable("post_likes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const postComments = pgTable("post_comments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  content: text("content").notNull(),
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   friendships: many(friendships, { relationName: "userFriendships" }),
@@ -132,6 +157,37 @@ export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   }),
 }));
 
+export const postsRelations = relations(posts, ({ one, many }) => ({
+  author: one(users, {
+    fields: [posts.authorId],
+    references: [users.id],
+  }),
+  likes: many(postLikes),
+  comments: many(postComments),
+}));
+
+export const postLikesRelations = relations(postLikes, ({ one }) => ({
+  post: one(posts, {
+    fields: [postLikes.postId],
+    references: [posts.id],
+  }),
+  user: one(users, {
+    fields: [postLikes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const postCommentsRelations = relations(postComments, ({ one }) => ({
+  post: one(posts, {
+    fields: [postComments.postId],
+    references: [posts.id],
+  }),
+  author: one(users, {
+    fields: [postComments.authorId],
+    references: [users.id],
+  }),
+}));
+
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -161,6 +217,17 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   metadata: true,
 });
 
+export const insertPostSchema = createInsertSchema(posts).pick({
+  content: true,
+  authorId: true,
+});
+
+export const insertCommentSchema = createInsertSchema(postComments).pick({
+  content: true,
+  postId: true,
+  authorId: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -172,3 +239,8 @@ export type RoomMember = typeof roomMembers.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type UserSession = typeof userSessions.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = z.infer<typeof insertPostSchema>;
+export type PostLike = typeof postLikes.$inferSelect;
+export type PostComment = typeof postComments.$inferSelect;
+export type InsertComment = z.infer<typeof insertCommentSchema>;

@@ -24,7 +24,9 @@ import {
   Moon,
   Shield,
   HelpCircle,
-  LogOut
+  LogOut,
+  Heart,
+  Share2
 } from "lucide-react";
 
 interface MiniProfileData {
@@ -87,7 +89,7 @@ export default function HomePage() {
         <div className="h-full overflow-y-auto bg-gray-50">
           <div className="p-4 space-y-4">
             <h3 className="text-lg font-semibold text-gray-800">Activity Feed</h3>
-            
+
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
@@ -111,6 +113,16 @@ export default function HomePage() {
                     </div>
                     <div className="text-sm text-gray-600 mb-2">Just joined this awesome music room! 🎵</div>
                     <div className="text-xs text-gray-400">15 minutes ago</div>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <div className="flex items-center space-x-1">
+                        <Heart className="w-4 h-4 text-gray-500 cursor-pointer" />
+                        <span className="text-xs text-gray-500">12</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Share2 className="w-4 h-4 text-gray-500 cursor-pointer" />
+                        <span className="text-xs text-gray-500">Share</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -139,6 +151,16 @@ export default function HomePage() {
                     </div>
                     <div className="text-sm text-gray-600 mb-2">Congratulations on leveling up! 🎉</div>
                     <div className="text-xs text-gray-400">1 hour ago</div>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <div className="flex items-center space-x-1">
+                        <Heart className="w-4 h-4 text-gray-500 cursor-pointer" />
+                        <span className="text-xs text-gray-500">56</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Share2 className="w-4 h-4 text-gray-500 cursor-pointer" />
+                        <span className="text-xs text-gray-500">Share</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -155,7 +177,7 @@ export default function HomePage() {
         <div className="h-full overflow-y-auto bg-gray-50">
           <div className="p-4">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Direct Messages</h3>
-            
+
             <div className="space-y-3">
               <Card className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
@@ -226,7 +248,7 @@ export default function HomePage() {
         <div className="h-full overflow-y-auto bg-gray-50">
           <div className="p-4 space-y-4">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Settings</h3>
-            
+
             {/* Profile Section */}
             <Card>
               <CardContent className="p-4">
@@ -255,7 +277,7 @@ export default function HomePage() {
                 </Button>
               </CardContent>
             </Card>
-            
+
             {/* Settings Options */}
             <Card>
               <CardContent className="p-0">
@@ -267,7 +289,7 @@ export default function HomePage() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  
+
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Moon className="h-5 w-5 text-primary" />
@@ -275,17 +297,17 @@ export default function HomePage() {
                     </div>
                     <Switch />
                   </div>
-                  
+
                   <button className="w-full p-4 text-left flex items-center space-x-3 hover:bg-gray-50">
                     <Shield className="h-5 w-5 text-primary" />
                     <span className="font-medium text-gray-800">Privacy & Security</span>
                   </button>
-                  
+
                   <button className="w-full p-4 text-left flex items-center space-x-3 hover:bg-gray-50">
                     <HelpCircle className="h-5 w-5 text-primary" />
                     <span className="font-medium text-gray-800">Help & Support</span>
                   </button>
-                  
+
                   <button 
                     className="w-full p-4 text-left flex items-center space-x-3 text-red-600 hover:bg-red-50"
                     onClick={() => logoutMutation.mutate()}
@@ -317,7 +339,7 @@ export default function HomePage() {
                 size="md"
                 isOnline={user.isOnline || false}
               />
-              
+
               <div>
                 <div className="flex items-center space-x-1">
                   <span className="font-semibold text-sm text-gray-800">{user.username}</span>
@@ -332,7 +354,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <Button variant="ghost" size="sm" className="text-gray-600 p-2">
               <Edit className="w-4 h-4" />

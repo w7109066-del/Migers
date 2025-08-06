@@ -1,11 +1,14 @@
-import { 
-  users, 
-  friendships, 
-  chatRooms, 
-  roomMembers, 
-  messages, 
+import {
+  users,
+  friendships,
+  chatRooms,
+  roomMembers,
+  messages,
   userSessions,
-  type User, 
+  posts,
+  postLikes,
+  postComments,
+  type User,
   type InsertUser,
   type Friendship,
   type InsertFriendship,
@@ -32,12 +35,12 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserOnlineStatus(userId: string, isOnline: boolean): Promise<void>;
   updateUserStatus(userId: string, status: string): Promise<void>;
-  
+
   // Friends management
   getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]>;
   addFriend(userId: string, friendId: string): Promise<Friendship>;
   acceptFriendRequest(userId: string, friendId: string): Promise<void>;
-  
+
   // Chat rooms
   getChatRooms(): Promise<ChatRoom[]>;
   getChatRoom(roomId: string): Promise<ChatRoom | undefined>;
@@ -45,48 +48,65 @@ export interface IStorage {
   joinRoom(roomId: string, userId: string): Promise<void>;
   leaveRoom(roomId: string, userId: string): Promise<void>;
   getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]>;
-  
+
   // Messages
   getRoomMessages(roomId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   getDirectMessages(userId: string, otherUserId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   createMessage(message: InsertMessage): Promise<Message>;
-  
+
   // User sessions for WebSocket
   createUserSession(userId: string, socketId: string): Promise<UserSession>;
   updateUserSession(sessionId: string, socketId: string): Promise<void>;
   removeUserSession(socketId: string): Promise<void>;
   getUserBySocketId(socketId: string): Promise<User | undefined>;
-  
+
+  // Feed posts methods
+  getFeedPosts(): Promise<
+    (Omit<typeof posts.$inferSelect, "updatedAt"> & {
+      author: Pick<User, "id" | "username" | "level" | "isOnline">;
+    })[]
+  >;
+  createFeedPost(postData: { content: string; authorId: string }): Promise<typeof posts.$inferSelect>;
+  likePost(postId: string, userId: string): Promise<void>;
+  unlikePost(postId: string, userId: string): Promise<void>;
+  addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect>;
+  getComments(postId: string): Promise<
+    (Omit<typeof postComments.$inferSelect, "updatedAt"> & {
+      author: Pick<User, "id" | "username" | "level" | "isOnline">;
+    })[]
+  >;
+
   sessionStore: session.SessionStore;
 }
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
+  private db = db; // Alias db for easier access in methods
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
     });
   }
 
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await this.db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await this.db.select().from(users).where(eq(users.email, email));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
+    const [user] = await this.db
       .insert(users)
       .values(insertUser)
       .returning();
@@ -94,24 +114,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserOnlineStatus(userId: string, isOnline: boolean): Promise<void> {
-    await db
+    await this.db
       .update(users)
-      .set({ 
-        isOnline, 
-        lastSeen: new Date() 
+      .set({
+        isOnline,
+        lastSeen: new Date()
       })
       .where(eq(users.id, userId));
   }
 
   async updateUserStatus(userId: string, status: string): Promise<void> {
-    await db
+    await this.db
       .update(users)
       .set({ status })
       .where(eq(users.id, userId));
   }
 
   async getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]> {
-    const result = await db
+    const result = await this.db
       .select({
         id: users.id,
         username: users.username,
@@ -134,12 +154,12 @@ export class DatabaseStorage implements IStorage {
           eq(friendships.status, "accepted")
         )
       );
-    
+
     return result;
   }
 
   async addFriend(userId: string, friendId: string): Promise<Friendship> {
-    const [friendship] = await db
+    const [friendship] = await this.db
       .insert(friendships)
       .values({ userId, friendId, status: "pending" })
       .returning();
@@ -147,7 +167,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
-    await db
+    await this.db
       .update(friendships)
       .set({ status: "accepted" })
       .where(
@@ -159,16 +179,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatRooms(): Promise<ChatRoom[]> {
-    return await db.select().from(chatRooms).where(eq(chatRooms.isPublic, true));
+    return await this.db.select().from(chatRooms).where(eq(chatRooms.isPublic, true));
   }
 
   async getChatRoom(roomId: string): Promise<ChatRoom | undefined> {
-    const [room] = await db.select().from(chatRooms).where(eq(chatRooms.id, roomId));
+    const [room] = await this.db.select().from(chatRooms).where(eq(chatRooms.id, roomId));
     return room || undefined;
   }
 
   async createChatRoom(room: InsertChatRoom): Promise<ChatRoom> {
-    const [chatRoom] = await db
+    const [chatRoom] = await this.db
       .insert(chatRooms)
       .values(room)
       .returning();
@@ -176,14 +196,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async joinRoom(roomId: string, userId: string): Promise<void> {
-    await db
+    await this.db
       .insert(roomMembers)
       .values({ roomId, userId })
       .onConflictDoNothing();
   }
 
   async leaveRoom(roomId: string, userId: string): Promise<void> {
-    await db
+    await this.db
       .delete(roomMembers)
       .where(
         and(
@@ -194,7 +214,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]> {
-    const result = await db
+    const result = await this.db
       .select({
         id: roomMembers.id,
         roomId: roomMembers.roomId,
@@ -206,12 +226,12 @@ export class DatabaseStorage implements IStorage {
       .from(roomMembers)
       .innerJoin(users, eq(roomMembers.userId, users.id))
       .where(eq(roomMembers.roomId, roomId));
-    
+
     return result;
   }
 
   async getRoomMessages(roomId: string, limit: number = 50): Promise<(Message & { sender: User })[]> {
-    const result = await db
+    const result = await this.db
       .select({
         id: messages.id,
         content: messages.content,
@@ -228,12 +248,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.roomId, roomId))
       .orderBy(desc(messages.createdAt))
       .limit(limit);
-    
+
     return result.reverse();
   }
 
   async getDirectMessages(userId: string, otherUserId: string, limit: number = 50): Promise<(Message & { sender: User })[]> {
-    const result = await db
+    const result = await this.db
       .select({
         id: messages.id,
         content: messages.content,
@@ -258,12 +278,12 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(messages.createdAt))
       .limit(limit);
-    
+
     return result.reverse();
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [newMessage] = await db
+    const [newMessage] = await this.db
       .insert(messages)
       .values(message)
       .returning();
@@ -271,7 +291,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUserSession(userId: string, socketId: string): Promise<UserSession> {
-    const [session] = await db
+    const [session] = await this.db
       .insert(userSessions)
       .values({ userId, socketId })
       .returning();
@@ -279,25 +299,138 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserSession(sessionId: string, socketId: string): Promise<void> {
-    await db
+    await this.db
       .update(userSessions)
       .set({ socketId, updatedAt: new Date() })
       .where(eq(userSessions.id, sessionId));
   }
 
   async removeUserSession(socketId: string): Promise<void> {
-    await db
-      .delete(userSessions)
+    return this.db.delete(userSessions)
       .where(eq(userSessions.socketId, socketId));
   }
 
+  // Feed posts methods
+  async getFeedPosts() {
+    return this.db
+      .select({
+        id: posts.id,
+        content: posts.content,
+        likesCount: posts.likesCount,
+        commentsCount: posts.commentsCount,
+        createdAt: posts.createdAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+        },
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.authorId, users.id))
+      .orderBy(desc(posts.createdAt))
+      .limit(50);
+  }
+
+  async createFeedPost(postData: { content: string; authorId: string }) {
+    const [post] = await this.db
+      .insert(posts)
+      .values(postData)
+      .returning();
+    return post;
+  }
+
+  async likePost(postId: string, userId: string) {
+    // Check if already liked
+    const existingLike = await this.db
+      .select()
+      .from(postLikes)
+      .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
+
+    if (existingLike.length > 0) {
+      return; // Already liked
+    }
+
+    await this.db.transaction(async (tx) => {
+      // Add like
+      await tx.insert(postLikes).values({ postId, userId });
+
+      // Increment likes count
+      await tx
+        .update(posts)
+        .set({
+          likesCount: sql`${posts.likesCount} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(posts.id, postId));
+    });
+  }
+
+  async unlikePost(postId: string, userId: string) {
+    await this.db.transaction(async (tx) => {
+      // Remove like
+      await tx
+        .delete(postLikes)
+        .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
+
+      // Decrement likes count
+      await tx
+        .update(posts)
+        .set({
+          likesCount: sql`GREATEST(${posts.likesCount} - 1, 0)`,
+          updatedAt: new Date()
+        })
+        .where(eq(posts.id, postId));
+    });
+  }
+
+  async addComment(postId: string, commentData: { content: string; authorId: string }) {
+    return this.db.transaction(async (tx) => {
+      // Add comment
+      const [comment] = await tx
+        .insert(postComments)
+        .values({ ...commentData, postId })
+        .returning();
+
+      // Increment comments count
+      await tx
+        .update(posts)
+        .set({
+          commentsCount: sql`${posts.commentsCount} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(posts.id, postId));
+
+      return comment;
+    });
+  }
+
+  async getComments(postId: string) {
+    return this.db
+      .select({
+        id: postComments.id,
+        content: postComments.content,
+        createdAt: postComments.createdAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+        },
+      })
+      .from(postComments)
+      .leftJoin(users, eq(postComments.authorId, users.id))
+      .where(eq(postComments.postId, postId))
+      .orderBy(postComments.createdAt);
+  }
+
   async getUserBySocketId(socketId: string): Promise<User | undefined> {
-    const result = await db
+    const result = await this.db
       .select({ user: users })
       .from(userSessions)
       .innerJoin(users, eq(userSessions.userId, users.id))
       .where(eq(userSessions.socketId, socketId));
-    
+
     return result[0]?.user;
   }
 }
