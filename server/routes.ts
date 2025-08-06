@@ -281,16 +281,7 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      // Validate user ID format
-      const userId = req.user!.id;
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      
-      if (!uuidRegex.test(userId)) {
-        console.error('Invalid user ID format:', userId);
-        return res.status(400).json({ message: "Invalid user ID format" });
-      }
-
-      const conversations = await storage.getDirectMessageConversations(userId);
+      const conversations = await storage.getDirectMessageConversations(req.user!.id);
       res.json(conversations);
     } catch (error) {
       console.error('Get conversations error:', error);
