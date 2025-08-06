@@ -296,20 +296,33 @@ export function registerRoutes(app: Express): Server {
     try {
       const { roomId } = req.params;
 
-      // For mock rooms (1-4), return mock member data with current user
+      // For mock rooms (1-4), return actual users in room
       if (['1', '2', '3', '4'].includes(roomId)) {
-        const currentUser = await storage.getUser(req.user!.id);
-        const mockMembers = [
-          {
-            user: {
-              id: currentUser?.id || req.user!.id,
-              username: currentUser?.username || req.user!.username,
-              level: currentUser?.level || 1,
-              isOnline: currentUser?.isOnline || true,
-            }
-          }
-        ];
-        res.json(mockMembers);
+        const roomMembers = mockRoomMembers.get(roomId) || new Map();
+        const memberIds = Array.from(roomMembers.keys());
+        
+        if (memberIds.length === 0) {
+          res.json([]);
+          return;
+        }
+
+        // Get user details for all members
+        const users = await Promise.all(
+          memberIds.map(async (userId) => {
+            const user = await storage.getUser(userId);
+            return user ? {
+              user: {
+                id: user.id,
+                username: user.username,
+                level: user.level,
+                isOnline: user.isOnline,
+              }
+            } : null;
+          })
+        );
+
+        // Filter out null users and return
+        res.json(users.filter(Boolean));
         return;
       }
 
@@ -592,8 +605,8 @@ export function registerRoutes(app: Express): Server {
     path: '/ws' 
   });
 
-  // Track users in mock rooms
-  const mockRoomMembers = new Map<string, Set<string>>();
+  // Track users in mock rooms with detailed user info
+  const mockRoomMembers = new Map<string, Map<string, any>>();
 
   wss.on('connection', async (ws: WebSocket, req) => {
     console.log('New WebSocket connection');
@@ -634,12 +647,18 @@ export function registerRoutes(app: Express): Server {
                 break;
               }
 
-              // For mock rooms (1-4), track in memory
+              // For mock rooms (1-4), track in memory with user data
               if (['1', '2', '3', '4'].includes(message.roomId)) {
                 if (!mockRoomMembers.has(message.roomId)) {
-                  mockRoomMembers.set(message.roomId, new Set());
+                  mockRoomMembers.set(message.roomId, new Map());
                 }
-                mockRoomMembers.get(message.roomId)!.add(userId);
+                const currentUser = await storage.getUser(userId);
+                mockRoomMembers.get(message.roomId)!.set(userId, {
+                  id: userId,
+                  username: currentUser?.username || 'User',
+                  level: currentUser?.level || 1,
+                  isOnline: true
+                });
                 currentRoomId = message.roomId;
               } else {
                 await storage.joinRoom(message.roomId, userId);
@@ -894,9 +913,10 @@ export function registerRoutes(app: Express): Server {
   }
 
   async function getRoomMemberCount(roomId: string): Promise<number> {
-    // For mock rooms, return a mock count
+    // For mock rooms, return actual member count
     if (['1', '2', '3', '4'].includes(roomId)) {
-      return Math.floor(Math.random() * 15) + 5; // Mock count between 5-19
+      const roomMembers = mockRoomMembers.get(roomId);
+      return roomMembers ? roomMembers.size : 0;
     }
 
     try {

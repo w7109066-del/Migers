@@ -66,31 +66,12 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     }
   });
 
-  // Mock room members for now
-  const { data: roomMembers } = useQuery<RoomMember[]>({
+  // Room members data
+  const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", currentRoom?.id, "members"],
     enabled: Boolean(isConnected && currentRoom?.id),
-    queryFn: () => {
-      // Return mock members for demonstration
-      return Promise.resolve([
-        {
-          user: {
-            id: "1",
-            username: "You",
-            level: 5,
-            isOnline: true
-          }
-        },
-        {
-          user: {
-            id: "2", 
-            username: "User123",
-            level: 3,
-            isOnline: true
-          }
-        }
-      ]);
-    }
+    refetchInterval: 5000, // Refetch every 5 seconds to keep members list updated
+    staleTime: 0 // Always consider data stale to ensure fresh updates
   });
 
   // Set up room from props or use first available room
@@ -143,13 +124,18 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
         // Check if room info message already exists
         const hasRoomInfo = prev.some(msg => msg.id === `room-info-${currentRoom.id}`);
         
+        const memberNames = roomMembers
+          .map(m => m.user.username)
+          .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
+          .join(', ');
+        
         if (hasRoomInfo) {
           // Update existing room info message
           return prev.map(msg => 
             msg.id === `room-info-${currentRoom.id}` 
               ? {
                   ...msg,
-                  content: `Currently in the room: ${roomMembers.map(m => m.user.username).join(', ')}`
+                  content: `Currently in the room: ${memberNames} (${roomMembers.length} users)`
                 }
               : msg
           );
@@ -159,7 +145,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
             ...prev,
             {
               id: `room-info-${currentRoom.id}`,
-              content: `Currently in the room: ${roomMembers.map(m => m.user.username).join(', ')}`,
+              content: `Currently in the room: ${memberNames} (${roomMembers.length} users)`,
               senderId: 'system',
               createdAt: new Date().toISOString(),
               sender: { id: 'system', username: 'System', level: 0, isOnline: true },
@@ -168,6 +154,9 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           ];
         }
       });
+    } else if (currentRoom?.id) {
+      // If no members, remove room info message
+      setMessages(prev => prev.filter(msg => msg.id !== `room-info-${currentRoom.id}`));
     }
   }, [roomMembers, currentRoom?.id]);
 
@@ -193,6 +182,9 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           messageType: 'system'
         };
         setMessages(prev => [...prev, joinMessage]);
+        
+        // Refetch room members to update the list
+        refetchMembers();
       }
     };
 
@@ -208,6 +200,9 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           messageType: 'system'
         };
         setMessages(prev => [...prev, leaveMessage]);
+        
+        // Refetch room members to update the list
+        refetchMembers();
       }
     };
 
@@ -262,7 +257,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           <div>
             <div className="font-semibold text-gray-800">{currentRoom.name}</div>
             <div className="text-xs text-gray-500">
-              Currently in room: {roomMembers?.length || 0} users
+              {roomMembers?.length || 0} users online
             </div>
           </div>
         </div>
