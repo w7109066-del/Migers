@@ -276,6 +276,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get all DM conversations for current user
+  app.get("/api/messages/conversations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const conversations = await storage.getDirectMessageConversations(req.user!.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error('Get conversations error:', error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
   // Direct message routes
   app.get("/api/messages/direct/:recipientId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

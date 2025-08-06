@@ -139,7 +139,7 @@ export class DatabaseStorage implements IStorage {
   async refreshFriendsList(userId: string): Promise<(User & { friendshipStatus: string })[]> {
     // Update current user's last activity
     await this.updateUserOnlineStatus(userId, true);
-    
+
     // Get fresh friends data with updated online status
     return this.getFriends(userId);
   }

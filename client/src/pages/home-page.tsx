@@ -7,6 +7,7 @@ import { SwipeTabs } from "@/components/ui/swipe-tabs";
 import { FriendsList } from "@/components/friends/friends-list";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { DirectMessageChat } from "@/components/chat/direct-message-chat";
+import { DMConversationsList } from "@/components/chat/dm-conversations-list";
 import RoomListPage from "@/pages/room-list";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
@@ -439,74 +440,7 @@ export default function HomePage() {
           onBack={() => setSelectedDMUser(null)}
         />
       ) : (
-        <div className="h-full overflow-y-auto bg-gray-50">
-          <div className="p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Direct Messages</h3>
-
-            <div className="space-y-3">
-              <Card 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedDMUser({
-                  id: "3f7dd900-6b16-4990-b3a5-bef014bd6743",
-                  username: "alice_spark",
-                  level: 15,
-                  status: "Music is my passion 🎵",
-                  isOnline: true,
-                })}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <UserAvatar 
-                          username="alice_spark" 
-                          size="md"
-                          isOnline={true}
-                        />
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                          2
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800">alice_spark</div>
-                        <div className="text-sm text-gray-600 truncate">Hey! Want to join our gaming session?</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-400">5m</div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedDMUser({
-                  id: "4f8ee901-7c27-5a01-c4b6-cff125ce7844",
-                  username: "mike_rocket",
-                  level: 23,
-                  status: "Gaming enthusiast",
-                  isOnline: false,
-                })}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <UserAvatar 
-                        username="mike_rocket" 
-                        size="md"
-                        isOnline={false}
-                      />
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800">mike_rocket</div>
-                        <div className="text-sm text-gray-600 truncate">Thanks for the help earlier!</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-400">2h</div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
+        <DMConversationsList onSelectUser={setSelectedDMUser} />
       ),
     },
     {
