@@ -11,6 +11,14 @@ import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { directMessages, users } from "@shared/schema";
 
+// Authentication middleware
+function requireAuth(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+}
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
   setupAuth(app);
