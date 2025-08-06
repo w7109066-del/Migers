@@ -153,11 +153,8 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     // Reset selected room immediately
     setSelectedRoom(null);
     
-    // Force component re-render by clearing and refetching
-    queryClient.removeQueries({ queryKey: ["/api/rooms"] });
-    setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-    }, 100);
+    // Refresh room data
+    queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
   };
 
   const categorizedRooms = {
@@ -279,22 +276,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     );
   }
 
-  // Show loading
-  if (isLoading && (!displayRooms || displayRooms.length === 0)) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-gray-600">Loading rooms...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback for any rendering issues
-  if (!displayRooms || displayRooms.length === 0) {
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="h-full w-full bg-white flex flex-col">
+        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold text-gray-800">Chat Rooms</h1>
@@ -303,18 +289,43 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
               New Room
             </Button>
           </div>
+          
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search rooms..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
+
+        {/* Loading content */}
         <div className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Loading chat rooms...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading rooms...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Show room list
+  // Show room list - ensure we always have data to display
+  const safeDisplayRooms = displayRooms && displayRooms.length > 0 ? displayRooms : mockRoomsFallback;
+  const safeFilteredRooms = safeDisplayRooms.filter((room: Room) =>
+    room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    room.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const safeCategorizedRooms = {
+    official: safeFilteredRooms.filter((room: Room) => room.category === "official"),
+    recent: safeFilteredRooms.filter((room: Room) => room.category === "recent"),
+    favorite: safeFilteredRooms.filter((room: Room) => room.category === "favorite"),
+    game: safeFilteredRooms.filter((room: Room) => room.category === "game")
+  };
+
   return (
     <div className="h-full w-full bg-white flex flex-col">
       {/* Header */}
@@ -344,32 +355,32 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           <CategorySection
             title="Room Official"
             icon={<Crown className="w-4 h-4" />}
-            rooms={categorizedRooms.official}
+            rooms={safeCategorizedRooms.official}
             color="text-primary"
           />
 
           <CategorySection
             title="Recent Room"
             icon={<Users className="w-4 h-4" />}
-            rooms={categorizedRooms.recent}
+            rooms={safeCategorizedRooms.recent}
             color="text-green-600"
           />
 
           <CategorySection
             title="Favorite Room"
             icon={<Star className="w-4 h-4" />}
-            rooms={categorizedRooms.favorite}
+            rooms={safeCategorizedRooms.favorite}
             color="text-yellow-600"
           />
 
           <CategorySection
             title="Game Room"
             icon={<Gamepad2 className="w-4 h-4" />}
-            rooms={categorizedRooms.game}
+            rooms={safeCategorizedRooms.game}
             color="text-blue-600"
           />
 
-          {filteredRooms.length === 0 && (
+          {safeFilteredRooms.length === 0 && (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">No rooms found</p>

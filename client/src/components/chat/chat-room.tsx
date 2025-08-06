@@ -260,10 +260,18 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   // Show loading if no room data
   if (!roomId || !roomName) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-gray-600">Loading chat room...</p>
+      <div className="h-full flex flex-col bg-gray-50">
+        {/* Header placeholder */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center flex-shrink-0">
+          <div className="w-32 h-4 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        
+        {/* Loading content */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading chat room...</p>
+          </div>
         </div>
       </div>
     );
