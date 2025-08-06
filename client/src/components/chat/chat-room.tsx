@@ -1,9 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -11,7 +11,6 @@ import { useQuery } from "@tanstack/react-query";
 import { 
   Users, 
   Settings, 
-  X, 
   Hash 
 } from "lucide-react";
 
@@ -32,6 +31,7 @@ interface Message {
     level: number;
     isOnline: boolean;
   };
+  messageType?: string;
 }
 
 interface RoomMember {
@@ -46,87 +46,36 @@ interface RoomMember {
 export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
-  const [currentRoom, setCurrentRoom] = useState<any>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   const { sendChatMessage, joinRoom, isConnected } = useWebSocket();
-
-  // Fetch available rooms first
-  const { data: availableRooms } = useQuery<any[]>({
-    queryKey: ["/api/rooms"],
-    enabled: Boolean(isConnected),
-  });
-
-  // Mock room messages for now
-  const { data: roomMessages } = useQuery<Message[]>({
-    queryKey: ["/api/rooms", currentRoom?.id, "messages"],
-    enabled: Boolean(isConnected && currentRoom?.id),
-    queryFn: () => {
-      // Return empty messages initially - server will send welcome message
-      return Promise.resolve([]);
-    }
-  });
 
   // Room members data
   const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
-    queryKey: ["/api/rooms", currentRoom?.id, "members"],
-    enabled: Boolean(isConnected && currentRoom?.id),
-    refetchInterval: 2000, // Refetch every 2 seconds for faster updates
-    staleTime: 0, // Always consider data stale to ensure fresh updates
-    refetchOnWindowFocus: true,
-    refetchOnMount: true
+    queryKey: ["/api/rooms", roomId, "members"],
+    enabled: Boolean(isConnected && roomId),
+    refetchInterval: 3000,
+    staleTime: 1000,
+    retry: 1
   });
 
-  // Set up room from props or use first available room
+  // Initialize room and messages
   useEffect(() => {
-    if (roomId && roomName) {
-      setCurrentRoom({ id: roomId, name: roomName });
-      setIsInitialized(true);
-    } else if (availableRooms && availableRooms.length > 0) {
-      setCurrentRoom(availableRooms[0]);
-      setIsInitialized(true);
-    }
-  }, [roomId, roomName, availableRooms]);
-
-  // Cleanup when component unmounts or room changes
-  useEffect(() => {
-    return () => {
-      // Clear states
-      setMessages([]);
-      setCurrentRoom(null);
-      setIsInitialized(false);
-      setIsUserListOpen(false);
+    if (isConnected && roomId && roomName) {
+      // Join room
+      joinRoom(roomId);
       
-      // Leave room if we were in one
-      if (currentRoom?.id) {
-        // Note: We don't call leaveRoom here as it might cause issues
-        // The backend should handle cleanup when websocket disconnects
-      }
-    };
-  }, [roomId]);
-
-  useEffect(() => {
-    if (roomMessages) {
-      setMessages(roomMessages);
-    }
-  }, [roomMessages]);
-
-  useEffect(() => {
-    if (isConnected && currentRoom?.id && isInitialized) {
-      joinRoom(currentRoom.id);
-      
-      // Clear previous messages and add welcome messages only once
+      // Set welcome messages
       const welcomeMessages = [
         {
-          id: `welcome-${currentRoom.id}`,
-          content: `Welcome to ${currentRoom.name} official chat room.`,
+          id: `welcome-${roomId}`,
+          content: `Welcome to ${roomName} official chat room.`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
           messageType: 'system'
         },
         {
-          id: `room-managed-${currentRoom.id}`,
-          content: `This room is managed by ${currentRoom.name.toLowerCase()}`,
+          id: `room-managed-${roomId}`,
+          content: `This room is managed by ${roomName.toLowerCase()}`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
@@ -136,64 +85,45 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
       
       setMessages(welcomeMessages);
     }
-  }, [isConnected, joinRoom, currentRoom?.id, isInitialized]);
+  }, [isConnected, roomId, roomName, joinRoom]);
 
-  // Update the "Currently in the room" message when members change
+  // Update room members message
   useEffect(() => {
-    if (roomMembers && roomMembers.length > 0 && currentRoom?.id) {
+    if (roomMembers && roomMembers.length > 0 && roomId) {
+      const memberNames = roomMembers
+        .map(m => m.user.username)
+        .sort((a, b) => a.localeCompare(b))
+        .join(', ');
+      
       setMessages(prev => {
-        // Check if room info message already exists
-        const hasRoomInfo = prev.some(msg => msg.id === `room-info-${currentRoom.id}`);
-        
-        const memberNames = roomMembers
-          .map(m => m.user.username)
-          .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
-          .join(', ');
-        
-        if (hasRoomInfo) {
-          // Update existing room info message
-          return prev.map(msg => 
-            msg.id === `room-info-${currentRoom.id}` 
-              ? {
-                  ...msg,
-                  content: `Currently in the room: ${memberNames} (${roomMembers.length} users)`
-                }
-              : msg
-          );
-        } else {
-          // Add new room info message
-          return [
-            ...prev,
-            {
-              id: `room-info-${currentRoom.id}`,
-              content: `Currently in the room: ${memberNames} (${roomMembers.length} users)`,
-              senderId: 'system',
-              createdAt: new Date().toISOString(),
-              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-              messageType: 'system'
-            }
-          ];
-        }
+        const filtered = prev.filter(msg => msg.id !== `room-info-${roomId}`);
+        return [
+          ...filtered,
+          {
+            id: `room-info-${roomId}`,
+            content: `Currently in the room: ${memberNames} (${roomMembers.length} users)`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          }
+        ];
       });
-    } else if (currentRoom?.id) {
-      // If no members, remove room info message
-      setMessages(prev => prev.filter(msg => msg.id !== `room-info-${currentRoom.id}`));
     }
-  }, [roomMembers, currentRoom?.id]);
+  }, [roomMembers, roomId]);
 
+  // WebSocket event listeners
   useEffect(() => {
-    // Listen for new messages
     const handleNewMessage = (event: CustomEvent) => {
       const newMessage = event.detail;
-      if (newMessage.roomId === currentRoom?.id) {
+      if (newMessage.roomId === roomId) {
         setMessages(prev => [...prev, newMessage]);
       }
     };
 
-    // Listen for user join/leave events
     const handleUserJoin = (event: CustomEvent) => {
-      const { username, roomId } = event.detail;
-      if (roomId === currentRoom?.id && username && username !== 'undefined') {
+      const { username, roomId: eventRoomId } = event.detail;
+      if (eventRoomId === roomId && username && username !== 'undefined') {
         const joinMessage = {
           id: `join-${Date.now()}-${username}`,
           content: `${username} has entered`,
@@ -203,17 +133,13 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           messageType: 'system'
         };
         setMessages(prev => [...prev, joinMessage]);
-        
-        // Force immediate refetch with invalidation
-        setTimeout(() => {
-          refetchMembers();
-        }, 100);
+        setTimeout(() => refetchMembers(), 100);
       }
     };
 
     const handleUserLeave = (event: CustomEvent) => {
-      const { username, roomId } = event.detail;
-      if (roomId === currentRoom?.id && username && username !== 'undefined') {
+      const { username, roomId: eventRoomId } = event.detail;
+      if (eventRoomId === roomId && username && username !== 'undefined') {
         const leaveMessage = {
           id: `leave-${Date.now()}-${username}`,
           content: `${username} has left`,
@@ -223,11 +149,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           messageType: 'system'
         };
         setMessages(prev => [...prev, leaveMessage]);
-        
-        // Force immediate refetch with invalidation  
-        setTimeout(() => {
-          refetchMembers();
-        }, 100);
+        setTimeout(() => refetchMembers(), 100);
       }
     };
 
@@ -240,11 +162,11 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
       window.removeEventListener('userJoined', handleUserJoin as EventListener);
       window.removeEventListener('userLeft', handleUserLeave as EventListener);
     };
-  }, [currentRoom?.id]);
+  }, [roomId, refetchMembers]);
 
   const handleSendMessage = (content: string) => {
-    if (currentRoom?.id) {
-      sendChatMessage(content, currentRoom.id);
+    if (roomId) {
+      sendChatMessage(content, roomId);
     }
   };
 
@@ -258,14 +180,13 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     });
   };
 
-  // If no rooms available, show message
-  if (!currentRoom) {
+  // Show loading if no room data
+  if (!roomId || !roomName) {
     return (
-      <div className="h-full flex flex-col bg-gray-50 items-center justify-center">
-        <div className="text-center p-8">
-          <Hash className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">No Chat Rooms Available</h3>
-          <p className="text-gray-500">Chat rooms will appear here when available.</p>
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-gray-600">Loading chat room...</p>
         </div>
       </div>
     );
@@ -274,13 +195,13 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Chat Room Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Hash className="text-white text-sm" />
           </div>
           <div>
-            <div className="font-semibold text-gray-800">{currentRoom.name}</div>
+            <div className="font-semibold text-gray-800">{roomName}</div>
             <div className="text-xs text-gray-500">
               {roomMembers?.length || 0}/25 users online
             </div>
@@ -321,12 +242,10 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
                   </div>
                 ))}
 
-                {/* Show message if no members found */}
                 {(!roomMembers || roomMembers.length === 0) && (
                   <div className="text-center text-gray-500 py-4">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No members found</p>
-                    <p className="text-xs">Members will appear here when they join</p>
                   </div>
                 )}
               </div>
@@ -339,15 +258,15 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
         </div>
       </div>
 
-      
-
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
         <MessageList messages={messages} onUserClick={handleUserClick} />
       </div>
 
       {/* Message Input */}
-      <MessageInput onSendMessage={handleSendMessage} />
+      <div className="flex-shrink-0">
+        <MessageInput onSendMessage={handleSendMessage} />
+      </div>
     </div>
   );
 }

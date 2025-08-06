@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Plus, Users, Crown, Star, Gamepad2 } from "lucide-react";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { ChatRoom } from "@/components/chat/chat-room";
@@ -24,7 +24,7 @@ interface RoomListPageProps {
   onUserClick?: (profile: any) => void;
 }
 
-// Mock data untuk fallback jika API gagal
+// Mock data untuk fallback
 const mockRoomsFallback: Room[] = [
   {
     id: "1",
@@ -91,24 +91,26 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     };
   }, []);
 
-  const { data: rooms = mockRoomsFallback, isLoading, error } = useQuery<Room[]>({
+  const { data: rooms = mockRoomsFallback, isLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
     queryFn: async () => {
-      const response = await fetch('/api/rooms', {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch rooms');
+      try {
+        const response = await fetch('/api/rooms', {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch rooms');
+        }
+        return response.json();
+      } catch (error) {
+        console.warn('Failed to fetch rooms, using fallback:', error);
+        return mockRoomsFallback;
       }
-      return response.json();
     },
     enabled: true,
-    refetchInterval: 3000, // Refetch every 3 seconds for more frequent updates
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    retry: 3,
-    retryDelay: 1000
+    refetchInterval: 5000,
+    staleTime: 1000,
+    retry: 1
   });
 
   const joinRoomMutation = useMutation({
@@ -129,41 +131,27 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     },
   });
 
-  const filteredRooms = (displayRooms as Room[]).filter((room: Room) =>
+  // Always use rooms data or fallback
+  const displayRooms = rooms && rooms.length > 0 ? rooms : mockRoomsFallback;
+
+  const filteredRooms = displayRooms.filter((room: Room) =>
     room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     room.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleRoomClick = async (room: Room) => {
     try {
-      const result = await joinRoomMutation.mutateAsync(room.id);
-      console.log('Successfully joined room:', result);
-      setSelectedRoom(room);
+      await joinRoomMutation.mutateAsync(room.id);
+      console.log('Successfully joined room');
     } catch (error) {
       console.error('Failed to join room:', error);
-      // Still allow entering the room even if join fails
-      setSelectedRoom(room);
     }
+    setSelectedRoom(room);
   };
 
   const handleBackToRoomList = () => {
-    // Store current room ID before clearing
-    const currentRoomId = selectedRoom?.id;
-    
-    // Clear selected room first
     setSelectedRoom(null);
-    
-    // Only clear member data for the specific room we're leaving
-    if (currentRoomId) {
-      queryClient.removeQueries({ queryKey: ["/api/rooms", currentRoomId, "members"] });
-    }
-    
-    // Ensure room list data is available immediately
-    queryClient.setQueryData(["/api/rooms"], (oldData: Room[] | undefined) => {
-      return oldData || mockRoomsFallback;
-    });
-    
-    // Then refresh with fresh data
+    // Simple refresh without complex cache operations
     queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
   };
 
@@ -248,45 +236,17 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     );
   };
 
-  // Always ensure we have data to show - prioritize showing something over blank screen
-  const displayRooms = rooms && rooms.length > 0 ? rooms : mockRoomsFallback;
-
-  if (isLoading && !displayRooms.length) {
+  // Show chat room if selected
+  if (selectedRoom) {
     return (
-      <div className="h-full flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-gray-600">Loading rooms...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show fallback data if there's an error but we have cached/mock data
-  if (error && !displayRooms.length) {
-    return (
-      <div className="h-full flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="text-red-500 mb-2">Failed to load rooms</div>
-          <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/rooms"] })}>
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Header component that always shows
-  const HeaderComponent = () => (
-    <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
-      {selectedRoom ? (
-        // Chat room header
-        <div className="flex items-center justify-center relative">
+      <div className="h-full w-full bg-white flex flex-col">
+        {/* Chat room header */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center relative flex-shrink-0">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleBackToRoomList}
-            className="text-gray-600 absolute left-0 hover:bg-gray-100"
+            className="text-gray-600 absolute left-4 hover:bg-gray-100"
           >
             ← Back
           </Button>
@@ -299,37 +259,8 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
             <span className="font-semibold text-gray-800">{selectedRoom.name}</span>
           </div>
         </div>
-      ) : (
-        // Room list header
-        <>
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-xl font-bold text-gray-800">Chat Rooms</h1>
-            <Button size="sm" className="bg-primary hover:bg-primary/90">
-              <Plus className="w-4 h-4 mr-1" />
-              New Room
-            </Button>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search rooms..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
-
-  // Show chat room if a room is selected
-  if (selectedRoom) {
-    return (
-      <div className="h-full flex flex-col bg-white">
-        <HeaderComponent />
+        
+        {/* Chat room content */}
         <div className="flex-1 overflow-hidden">
           <ChatRoom 
             key={selectedRoom.id} 
@@ -342,12 +273,44 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     );
   }
 
+  // Show loading
+  if (isLoading && !displayRooms.length) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-gray-600">Loading rooms...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show room list
   return (
-    <div className="h-full w-full bg-white flex flex-col min-h-0">
-      <HeaderComponent />
+    <div className="h-full w-full bg-white flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold text-gray-800">Chat Rooms</h1>
+          <Button size="sm" className="bg-primary hover:bg-primary/90">
+            <Plus className="w-4 h-4 mr-1" />
+            New Room
+          </Button>
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search rooms..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
       
       {/* Room Categories */}
-      <div className="flex-1 overflow-y-auto bg-gray-50 min-h-0">
+      <div className="flex-1 overflow-y-auto bg-gray-50">
         <div className="p-4 space-y-6">
           <CategorySection
             title="Room Official"
