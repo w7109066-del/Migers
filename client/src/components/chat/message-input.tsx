@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Plus, Smile, Gift } from "lucide-react";
+import { Send, Plus, Smile } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Lottie from "react-lottie-player";
 
@@ -90,59 +90,11 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
         </div>
       )}
 
-      {/* Gift Picker */}
-      {showGifts && (
-        <div className="px-4 pt-2">
-          <Card>
-            <CardContent className="p-3">
-              <div className="mb-2 text-xs text-gray-600 font-semibold">Gifts (Coin Cost)</div>
-              <div className="grid grid-cols-4 gap-2">
-                {gifts.map((gift, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    size="sm"
-                    className="flex flex-col items-center p-2 h-auto hover:bg-gray-100 transition-colors border border-gray-200 rounded-lg"
-                    onClick={() => handleSendGift(gift)}
-                  >
-                    <div className="w-10 h-10 mb-1">
-                      {/* Placeholder for Lottie animation - ensure correct path and animation data */}
-                      {gift.lottie && (
-                        <Lottie
-                          loop
-                          animationData={gift.lottie}
-                          play
-                          style={{ width: 40, height: 40 }}
-                        />
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-gray-700 truncate max-w-full">{gift.name}</div>
-                      <div className="text-xs text-primary font-bold">{gift.value} coins</div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      
 
       {/* Input Form */}
       <div className="p-4 bg-white sticky bottom-0">
         <div className="flex items-center space-x-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-orange-600 p-2 flex-shrink-0"
-            onClick={() => {
-              setShowGifts(!showGifts);
-              setShowEmojis(false);
-            }}
-          >
-            <Gift className="w-5 h-5" />
-          </Button>
           <Button
             type="button"
             variant="ghost"
