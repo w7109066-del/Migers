@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { WebSocketProvider } from "@/hooks/use-websocket";
 import { SwipeTabs } from "@/components/ui/swipe-tabs";
@@ -48,6 +49,15 @@ export default function HomePage() {
   const [postContent, setPostContent] = useState("");
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
+
+  // Load feed posts when component mounts or when switching to feed tab
+  React.useEffect(() => {
+    if (user && activeTab === 2) {
+      loadFeedPosts();
+    }
+  }, [user, activeTab]);
 
   if (!user) return null;
 
@@ -73,6 +83,27 @@ export default function HomePage() {
     setMediaPreview(null);
   };
 
+  const loadFeedPosts = async () => {
+    try {
+      setIsLoadingFeed(true);
+      const response = await fetch('/api/feed', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const posts = await response.json();
+        setFeedPosts(posts);
+      } else {
+        console.error('Failed to load feed posts');
+      }
+    } catch (error) {
+      console.error('Failed to load feed posts:', error);
+    } finally {
+      setIsLoadingFeed(false);
+    }
+  };
+
   const handleCreatePost = async () => {
     if (!postContent.trim() && !selectedMedia) return;
 
@@ -95,7 +126,8 @@ export default function HomePage() {
         setPostContent('');
         setSelectedMedia(null);
         setMediaPreview(null);
-        // Optionally refresh the feed here
+        // Refresh the feed to show the new post
+        await loadFeedPosts();
         console.log('Post created successfully');
       } else {
         const errorData = await response.json();
@@ -245,86 +277,87 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3">
-                  <UserAvatar 
-                    username="alice_spark" 
-                    size="md"
-                    isOnline={true}
-                    onClick={() => showMiniProfile({
-                      id: "alice",
-                      username: "alice_spark",
-                      level: 15,
-                      status: "Music is my passion 🎵",
-                      isOnline: true,
-                    })}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-semibold text-gray-800">alice_spark</span>
-                      <span className="text-sm text-gray-500">joined</span>
-                      <span className="font-semibold text-primary">Music Lovers</span>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">Just joined this awesome music room! 🎵</div>
-                    
-                    {/* Example media content - replace with actual media from posts */}
-                    {/* <div className="mb-2">
-                      <img src="/path/to/image" alt="Post media" className="rounded-lg max-h-64 object-cover" />
-                    </div> */}
-                    <div className="text-xs text-gray-400">15 minutes ago</div>
-                    <div className="flex items-center space-x-4 mt-2">
-                      <div className="flex items-center space-x-1">
-                        <Heart className="w-4 h-4 text-gray-500 cursor-pointer" />
-                        <span className="text-xs text-gray-500">12</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Share2 className="w-4 h-4 text-gray-500 cursor-pointer" />
-                        <span className="text-xs text-gray-500">Share</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3">
-                  <UserAvatar 
-                    username="mike_rocket" 
-                    size="md"
-                    isOnline={false}
-                    onClick={() => showMiniProfile({
-                      id: "mike",
-                      username: "mike_rocket",
-                      level: 23,
-                      status: "Gaming enthusiast",
-                      isOnline: false,
-                    })}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-semibold text-gray-800">mike_rocket</span>
-                      <span className="text-sm text-gray-500">reached level</span>
-                      <Badge variant="secondary" className="bg-warning text-white">23</Badge>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">Congratulations on leveling up! 🎉</div>
-                    <div className="text-xs text-gray-400">1 hour ago</div>
-                    <div className="flex items-center space-x-4 mt-2">
-                      <div className="flex items-center space-x-1">
-                        <Heart className="w-4 h-4 text-gray-500 cursor-pointer" />
-                        <span className="text-xs text-gray-500">56</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Share2 className="w-4 h-4 text-gray-500 cursor-pointer" />
-                        <span className="text-xs text-gray-500">Share</span>
+            {/* Dynamic Feed Posts */}
+            {isLoadingFeed ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-500">Loading feed...</div>
+              </div>
+            ) : feedPosts.length > 0 ? (
+              feedPosts.map((post) => (
+                <Card key={post.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <UserAvatar 
+                        username={post.author?.username || 'Unknown'} 
+                        size="md"
+                        isOnline={post.author?.isOnline || false}
+                        onClick={() => showMiniProfile({
+                          id: post.author?.id || 'unknown',
+                          username: post.author?.username || 'Unknown',
+                          level: post.author?.level || 1,
+                          status: "",
+                          isOnline: post.author?.isOnline || false,
+                        })}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="font-semibold text-gray-800">
+                            {post.author?.username || 'Unknown'}
+                          </span>
+                          {post.author?.level && (
+                            <Badge variant="secondary" className="bg-warning text-white text-xs">
+                              {post.author.level}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {post.content && (
+                          <div className="text-sm text-gray-600 mb-2">{post.content}</div>
+                        )}
+                        
+                        {/* Media content */}
+                        {post.mediaUrl && (
+                          <div className="mb-2">
+                            {post.mediaType === 'image' ? (
+                              <img 
+                                src={post.mediaUrl} 
+                                alt="Post media" 
+                                className="rounded-lg max-h-64 object-cover w-full"
+                              />
+                            ) : post.mediaType === 'video' ? (
+                              <video 
+                                src={post.mediaUrl} 
+                                controls 
+                                className="rounded-lg max-h-64 w-full"
+                              />
+                            ) : null}
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-400 mb-2">
+                          {new Date(post.createdAt).toLocaleDateString()} at {new Date(post.createdAt).toLocaleTimeString()}
+                        </div>
+                        
+                        <div className="flex items-center space-x-4 mt-2">
+                          <div className="flex items-center space-x-1">
+                            <Heart className="w-4 h-4 text-gray-500 cursor-pointer" />
+                            <span className="text-xs text-gray-500">{post.likesCount || 0}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Share2 className="w-4 h-4 text-gray-500 cursor-pointer" />
+                            <span className="text-xs text-gray-500">Share</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-500">No posts yet. Be the first to post!</div>
+              </div>
+            )}
           </div>
         </div>
       ),
