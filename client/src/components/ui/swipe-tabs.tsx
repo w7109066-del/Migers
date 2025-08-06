@@ -16,12 +16,21 @@ interface SwipeTabsProps {
 
 export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTabClick = useCallback((index: number) => {
+    if (isTransitioning || index === activeTab) return;
+    
+    setIsTransitioning(true);
     setActiveTab(index);
     onTabChange?.(index);
-  }, [onTabChange]);
+    
+    // Reset transition state after animation completes
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 500);
+  }, [onTabChange, activeTab, isTransitioning]);
 
   
 
@@ -39,7 +48,7 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
           style={{
             transform: `translateX(-${activeTab * 100}%)`,
             width: `${tabs.length * 100}%`,
-            transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+            transition: 'transform 500ms ease-in-out'
           }}
         >
           {tabs.map((tab, index) => (
@@ -60,11 +69,13 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
           <button
             key={tab.id}
             onClick={() => handleTabClick(index)}
+            disabled={isTransitioning}
             className={cn(
               "flex-1 flex flex-col items-center py-3 px-2 text-xs font-medium transition-colors",
               activeTab === index
                 ? "text-primary border-t-2 border-primary bg-primary/5"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-gray-500 hover:text-gray-700",
+              isTransitioning && "opacity-50 cursor-not-allowed"
             )}
           >
             {tab.icon}
