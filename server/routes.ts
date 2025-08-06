@@ -360,6 +360,105 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post("/api/rooms/:roomId/kick", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const { roomId } = req.params;
+      const { userId } = req.body;
+      const currentUser = req.user!;
+
+      // Check if current user has admin privileges (level 5+)
+      if (currentUser.level < 5) {
+        return res.status(403).json({ message: "Insufficient privileges to kick users" });
+      }
+
+      // For mock rooms (1-4), remove user from memory tracking
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        if (mockRoomMembers.has(roomId)) {
+          mockRoomMembers.get(roomId)!.delete(userId);
+        }
+
+        // Get user info for system message
+        const kickedUser = await storage.getUser(userId);
+
+        // Broadcast kick message to room
+        broadcastToRoom(roomId, {
+          type: 'new_message',
+          message: {
+            id: `system-kick-${Date.now()}`,
+            content: `${kickedUser?.username || 'User'} has been kicked from the room`,
+            senderId: 'system',
+            roomId: roomId,
+            recipientId: null,
+            messageType: 'system',
+            createdAt: new Date().toISOString(),
+            sender: {
+              id: 'system',
+              username: 'System',
+              level: 0,
+              isOnline: true,
+            }
+          }
+        });
+
+        // Force disconnect the kicked user
+        const kickedUserConnection = userConnections.get(userId);
+        if (kickedUserConnection) {
+          kickedUserConnection.send(JSON.stringify({
+            type: 'kicked_from_room',
+            roomId: roomId,
+            message: `You have been kicked from ${roomId} by an administrator`
+          }));
+        }
+
+        res.json({ success: true, message: "User kicked successfully" });
+        return;
+      }
+
+      // For real rooms, remove from database
+      await storage.leaveRoom(roomId, userId);
+      res.json({ success: true, message: "User kicked successfully" });
+    } catch (error) {
+      console.error('Kick user error:', error);
+      res.status(500).json({ message: "Failed to kick user" });
+    }
+  });
+
+  app.post("/api/rooms/:roomId/close", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const { roomId } = req.params;
+      const currentUser = req.user!;
+
+      // Check if current user has admin privileges (level 5+)
+      if (currentUser.level < 5) {
+        return res.status(403).json({ message: "Insufficient privileges to close room" });
+      }
+
+      // Cannot close official rooms (1-4)
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        return res.status(403).json({ message: "Cannot close official rooms" });
+      }
+
+      // For custom rooms, close the room
+      await storage.closeRoom(roomId);
+
+      // Broadcast room closure to all members
+      broadcastToRoom(roomId, {
+        type: 'room_closed',
+        roomId: roomId,
+        message: 'This room has been closed by an administrator'
+      });
+
+      res.json({ success: true, message: "Room closed successfully" });
+    } catch (error) {
+      console.error('Close room error:', error);
+      res.status(500).json({ message: "Failed to close room" });
+    }
+  });
+
   // Direct messages API
   app.get("/api/messages/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

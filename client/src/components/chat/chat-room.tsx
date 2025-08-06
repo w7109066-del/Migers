@@ -6,12 +6,19 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   Users, 
   Settings, 
-  Hash 
+  Hash,
+  Info,
+  UserMinus,
+  X,
+  Shield
 } from "lucide-react";
 
 interface ChatRoomProps {
@@ -46,7 +53,9 @@ interface RoomMember {
 export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
-  const { sendChatMessage, joinRoom, isConnected } = useWebSocket();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
+  const { user } = useAuth();
 
   // Room members data
   const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
@@ -189,6 +198,55 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     });
   };
 
+  const handleKickUser = async (userId: string, username: string) => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/kick`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        // Show success message
+        const kickMessage = {
+          id: `kick-${Date.now()}`,
+          content: `${username} has been kicked from the room`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, kickMessage]);
+      }
+    } catch (error) {
+      console.error('Failed to kick user:', error);
+    }
+  };
+
+  const handleCloseRoom = async () => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/close`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        leaveRoom(roomId);
+        // Navigate back or show success message
+        window.history.back();
+      }
+    } catch (error) {
+      console.error('Failed to close room:', error);
+    }
+  };
+
+  // Check if current user is admin/moderator
+  const isAdmin = user?.level >= 5; // Assuming level 5+ are admins
+
   // Show loading if no room data
   if (!roomId || !roomName) {
     return (
@@ -261,9 +319,166 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
             </SheetContent>
           </Sheet>
 
-          <Button variant="ghost" size="sm" className="p-2 text-gray-600">
-            <Settings className="w-4 h-4" />
-          </Button>
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-2 text-gray-600">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <Hash className="w-5 h-5" />
+                  <span>{roomName} Settings</span>
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {/* Room Info */}
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Info className="w-4 h-4 text-blue-500" />
+                    <span className="font-medium">Room Information</span>
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p><strong>Room ID:</strong> {roomId}</p>
+                    <p><strong>Members:</strong> {roomMembers?.length || 0}/25</p>
+                    <p><strong>Status:</strong> Active</p>
+                    <p><strong>Type:</strong> {roomId && ['1', '3'].includes(roomId) ? 'Official' : 'Community'}</p>
+                  </div>
+                </div>
+
+                {/* Admin Actions */}
+                {isAdmin && (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Shield className="w-4 h-4 text-orange-500" />
+                      <span className="font-medium">Admin Actions</span>
+                    </div>
+                    
+                    {/* Kick Users */}
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-sm">Manage Users</span>
+                          <p className="text-xs text-gray-500">Kick users from room</p>
+                        </div>
+                        <Sheet>
+                          <SheetTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <UserMinus className="w-4 h-4 mr-1" />
+                              Kick
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent side="right" className="w-80">
+                            <SheetHeader>
+                              <SheetTitle>Kick User</SheetTitle>
+                            </SheetHeader>
+                            <div className="mt-4 space-y-3">
+                              {roomMembers?.filter(member => member.user.id !== user?.id).map((member) => (
+                                <div
+                                  key={member.user.id}
+                                  className="flex items-center justify-between p-2 rounded-lg border"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <UserAvatar 
+                                      username={member.user.username}
+                                      size="sm"
+                                      isOnline={member.user.isOnline}
+                                    />
+                                    <div>
+                                      <span className="font-medium text-sm">{member.user.username}</span>
+                                      <p className="text-xs text-gray-500">Level {member.user.level}</p>
+                                    </div>
+                                  </div>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="destructive" size="sm">
+                                        <UserMinus className="w-3 h-3" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Kick User</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to kick {member.user.username} from this room?
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleKickUser(member.user.id, member.user.username)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Kick User
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              ))}
+                              
+                              {(!roomMembers || roomMembers.filter(m => m.user.id !== user?.id).length === 0) && (
+                                <div className="text-center text-gray-500 py-4">
+                                  <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                  <p className="text-sm">No other users to kick</p>
+                                </div>
+                              )}
+                            </div>
+                          </SheetContent>
+                        </Sheet>
+                      </div>
+                    </div>
+
+                    {/* Close Room */}
+                    {roomId && !['1', '2', '3', '4'].includes(roomId) && (
+                      <div className="p-3 border border-red-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-sm text-red-700">Close Room</span>
+                            <p className="text-xs text-red-500">Permanently close this room</p>
+                          </div>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <X className="w-4 h-4 mr-1" />
+                                Close
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Close Room</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to permanently close "{roomName}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleCloseRoom}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Close Room
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {!isAdmin && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-700">
+                      You need admin privileges to access room management features.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

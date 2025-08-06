@@ -52,6 +52,8 @@ export interface IStorage {
   joinRoom(roomId: string, userId: string): Promise<void>;
   leaveRoom(roomId: string, userId: string): Promise<void>;
   getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]>;
+  kickMember(roomId: string, userId: string): Promise<void>; // Added kickMember
+  closeRoom(roomId: string): Promise<void>; // Added closeRoom
 
   // Messages
   getRoomMessages(roomId: string, limit?: number): Promise<(Message & { sender: User })[]>;
@@ -231,14 +233,16 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async createFriendRequest(userId: string, friendId: string): Promise<void> {
-    await this.db
+  async createFriendRequest(userId: string, friendId: string): Promise<Friendship> {
+    const [friendship] = await this.db
       .insert(friendships)
       .values({
         userId,
         friendId,
         status: "pending"
-      });
+      })
+      .returning();
+    return friendship;
   }
 
   async rejectFriendRequest(userId: string, friendId: string): Promise<void> {
@@ -251,14 +255,6 @@ export class DatabaseStorage implements IStorage {
           eq(friendships.status, "pending")
         )
       );
-  }
-
-  async createFriendRequest(userId: string, friendId: string): Promise<Friendship> {
-    const [friendship] = await this.db
-      .insert(friendships)
-      .values({ userId, friendId, status: "pending" })
-      .returning();
-    return friendship;
   }
 
   async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
@@ -323,6 +319,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(roomMembers.roomId, roomId));
 
     return result;
+  }
+
+  async kickMember(roomId: string, userId: string): Promise<void> {
+    await this.db.delete(roomMembers).where(
+      and(
+        eq(roomMembers.roomId, roomId),
+        eq(roomMembers.userId, userId)
+      )
+    );
+  }
+
+  async closeRoom(roomId: string): Promise<void> {
+    await db.delete(roomMembers).where(eq(roomMembers.roomId, roomId));
+    await db.delete(messages).where(eq(messages.roomId, roomId));
+    await db.delete(chatRooms).where(eq(chatRooms.id, roomId));
   }
 
   async getRoomMessages(roomId: string, limit: number = 50): Promise<(Message & { sender: User })[]> {
@@ -410,7 +421,7 @@ export class DatabaseStorage implements IStorage {
 
       for (const msg of allMessages) {
         const otherUserId = msg.senderId === userId ? msg.recipientId : msg.senderId;
-        
+
         if (!conversationMap.has(otherUserId)) {
           conversationMap.set(otherUserId, {
             otherUserId,

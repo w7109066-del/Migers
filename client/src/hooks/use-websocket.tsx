@@ -72,8 +72,21 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
           case 'user_left':
             window.dispatchEvent(new CustomEvent('userLeft', {
-              detail: { userId: message.userId, username: message.username, roomId: message.roomId }
+              detail: {
+                username: message.username || 'User',
+                roomId: message.roomId
+              }
             }));
+            break;
+
+          case 'kicked_from_room':
+            alert(`You have been kicked from the room: ${message.message}`);
+            window.location.href = '/';
+            break;
+
+          case 'room_closed':
+            alert(`Room has been closed: ${message.message}`);
+            window.location.href = '/';
             break;
 
           case 'user_typing':
