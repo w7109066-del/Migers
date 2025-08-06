@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
 interface Tab {
   id: string;
@@ -10,123 +10,135 @@ interface Tab {
 
 interface SwipeTabsProps {
   tabs: Tab[];
+  onTabChange?: (index: number) => void;
   className?: string;
-  onTabChange?: (tabIndex: number) => void;
 }
 
-export function SwipeTabs({ tabs, className, onTabChange }: SwipeTabsProps) {
+export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [translateX, setTranslateX] = useState(0);
+  const [startTime, setStartTime] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const startXRef = useRef(0);
-  const scrollLeftRef = useRef(0);
+  const animationFrameRef = useRef<number>();
 
-  const switchTab = (tabIndex: number) => {
-    if (tabIndex < 0 || tabIndex >= tabs.length) return;
+  const handleTabClick = useCallback((index: number) => {
+    setActiveTab(index);
+    onTabChange?.(index);
+  }, [onTabChange]);
 
-    setActiveTab(tabIndex);
-    onTabChange?.(tabIndex);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].clientX);
+    setStartTime(Date.now());
+    setTranslateX(0);
+  }, []);
 
-    if (containerRef.current) {
-      const tabWidth = containerRef.current.clientWidth;
-      containerRef.current.scrollLeft = tabIndex * tabWidth;
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging) return;
+
+    e.preventDefault(); // Prevent scrolling
+
+    const currentX = e.touches[0].clientX;
+    const diff = startX - currentX;
+
+    // Cancel any pending animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
-  };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!containerRef.current) return;
+    // Use requestAnimationFrame for smoother updates
+    animationFrameRef.current = requestAnimationFrame(() => {
+      setTranslateX(-diff);
+    });
+  }, [isDragging, startX]);
 
-    startXRef.current = e.touches[0].pageX;
-    scrollLeftRef.current = containerRef.current.scrollLeft;
-  };
+  const handleTouchEnd = useCallback(() => {
+    if (!isDragging) return;
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!containerRef.current) return;
-
-    const endX = e.changedTouches[0].pageX;
-    const diff = startXRef.current - endX;
+    const endTime = Date.now();
+    const duration = endTime - startTime;
     const threshold = 50;
+    const velocity = Math.abs(translateX) / duration; // pixels per ms
 
-    // Check if the touch event is primarily for horizontal swipe
-    // and not for vertical scrolling of the content within the tab
-    if (Math.abs(diff) > Math.abs(e.changedTouches[0].pageY - e.touches[0].pageY)) {
-      if (diff > 0 && activeTab < tabs.length - 1) {
-        // Swipe left - next tab
-        switchTab(activeTab + 1);
-      } else if (diff < 0 && activeTab > 0) {
-        // Swipe right - previous tab
-        switchTab(activeTab - 1);
+    // Fast swipe or distance threshold
+    const shouldSwipe = Math.abs(translateX) > threshold || velocity > 0.3;
+
+    if (shouldSwipe) {
+      if (translateX > 0 && activeTab < tabs.length - 1) {
+        const newTab = activeTab + 1;
+        setActiveTab(newTab);
+        onTabChange?.(newTab);
+      } else if (translateX < 0 && activeTab > 0) {
+        const newTab = activeTab - 1;
+        setActiveTab(newTab);
+        onTabChange?.(newTab);
       }
     }
-  };
 
-  // Handle wheel scrolling for desktop
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.deltaX > 50 && activeTab < tabs.length - 1) {
-      switchTab(activeTab + 1);
-    } else if (e.deltaX < -50 && activeTab > 0) {
-      switchTab(activeTab - 1);
-    }
-  };
+    setIsDragging(false);
+    setTranslateX(0);
+  }, [isDragging, translateX, activeTab, tabs.length, onTabChange, startTime]);
 
+  // Cleanup animation frame on unmount
   useEffect(() => {
-    // Auto-scroll to active tab on mount
-    switchTab(0);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, []);
+
+  // Memoize transform style to prevent unnecessary recalculations
+  const transformStyle = useMemo(() => ({
+    transform: `translateX(${isDragging ? translateX : -activeTab * 100}%)`,
+    width: `${tabs.length * 100}%`,
+    transition: isDragging ? 'none' : 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+  }), [isDragging, translateX, activeTab, tabs.length]);
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
+      {/* Tab Navigation */}
+      <div className="flex bg-white border-b border-gray-200">
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            onClick={() => handleTabClick(index)}
+            className={cn(
+              "flex-1 flex flex-col items-center py-3 px-2 text-xs font-medium transition-colors",
+              activeTab === index
+                ? "text-primary border-b-2 border-primary bg-primary/5"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            {tab.icon}
+            <span className="mt-1">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
       {/* Tab Content */}
-      <div className="flex-1 relative overflow-hidden">
-        <div
-          ref={containerRef}
-          className="flex h-full overflow-x-hidden"
-          style={{
-            scrollSnapType: "x mandatory",
-            scrollBehavior: "smooth",
-          }}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onWheel={handleWheel}
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-hidden relative touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: 'pan-y' }}
+      >
+        <div 
+          className="flex h-full will-change-transform"
+          style={transformStyle}
         >
           {tabs.map((tab, index) => (
             <div
               key={tab.id}
-              className="w-full h-full flex-shrink-0 relative" // Added relative positioning
-              style={{ scrollSnapAlign: "start" }}
+              className="w-full h-full flex-shrink-0"
+              style={{ width: `${100 / tabs.length}%` }}
             >
-              {tab.content}
+              {Math.abs(index - activeTab) <= 1 ? tab.content : null}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bottom Tab Bar */}
-      <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-50">
-        <div className="flex items-center justify-around relative">
-          {/* Tab Indicator */}
-          <div
-            className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-transform duration-500 ease-out"
-            style={{
-              width: `${100 / tabs.length}%`,
-              transform: `translateX(${activeTab * 100}%)`,
-            }}
-          />
-
-          {tabs.map((tab, index) => (
-            <button
-              key={tab.id}
-              onClick={() => switchTab(index)}
-              className={cn(
-                "flex flex-col items-center py-2 px-3 transition-colors",
-                activeTab === index
-                  ? "text-primary"
-                  : "text-gray-400 hover:text-gray-600"
-              )}
-            >
-              {tab.icon}
-              <span className="text-xs mt-1 font-medium">{tab.label}</span>
-            </button>
           ))}
         </div>
       </div>
