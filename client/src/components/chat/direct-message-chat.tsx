@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,7 +93,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
     };
 
     window.addEventListener('newDirectMessage', handleNewDirectMessage as EventListener);
-    
+
     return () => {
       window.removeEventListener('newDirectMessage', handleNewDirectMessage as EventListener);
     };
@@ -187,7 +186,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   const handleSendGift = async (gift: any) => {
     try {
       const giftMessage = `🎁 ${gift.name} (${gift.value} coins)`;
-      
+
       const response = await fetch('/api/messages/direct', {
         method: 'POST',
         headers: {
@@ -249,7 +248,70 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
     });
   };
 
-  const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
+  const emojis = [
+    { emoji: '😀', name: 'Grinning Face', price: 1 },
+    { emoji: '😃', name: 'Grinning Face with Big Eyes', price: 1 },
+    { emoji: '😄', name: 'Grinning Face with Smiling Eyes', price: 1 },
+    { emoji: '😁', name: 'Beaming Face with Smiling Eyes', price: 1 },
+    { emoji: '😆', name: 'Grinning Squinting Face', price: 2 },
+    { emoji: '😅', name: 'Grinning Face with Sweat', price: 2 },
+    { emoji: '🤣', name: 'Rolling on the Floor Laughing', price: 3 },
+    { emoji: '😂', name: 'Face with Tears of Joy', price: 3 },
+    { emoji: '🙂', name: 'Slightly Smiling Face', price: 1 },
+    { emoji: '🙃', name: 'Upside-Down Face', price: 2 },
+    { emoji: '😉', name: 'Winking Face', price: 2 },
+    { emoji: '😊', name: 'Smiling Face with Smiling Eyes', price: 1 },
+    { emoji: '😇', name: 'Smiling Face with Halo', price: 3 },
+    { emoji: '🥰', name: 'Smiling Face with Hearts', price: 4 },
+    { emoji: '😍', name: 'Smiling Face with Heart-Eyes', price: 4 },
+    { emoji: '🤩', name: 'Star-Struck', price: 4 },
+    { emoji: '😘', name: 'Face Blowing a Kiss', price: 3 },
+    { emoji: '😗', name: 'Kissing Face', price: 3 },
+    { emoji: '☺️', name: 'Smiling Face', price: 1 },
+    { emoji: '😚', name: 'Kissing Face with Closed Eyes', price: 3 },
+    { emoji: '😙', name: 'Kissing Face with Smiling Eyes', price: 3 },
+    { emoji: '🥲', name: 'Smiling Face with Tear', price: 2 },
+    { emoji: '😋', name: 'Face Savoring Food', price: 2 },
+    { emoji: '😛', name: 'Face with Tongue', price: 2 },
+    { emoji: '😜', name: 'Winking Face with Tongue', price: 2 },
+    { emoji: '🤪', name: 'Zany Face', price: 3 },
+    { emoji: '😝', name: 'Squinting Face with Tongue', price: 2 },
+    { emoji: '🤑', name: 'Money-Mouth Face', price: 5 },
+    { emoji: '🤗', name: 'Hugging Face', price: 3 },
+    { emoji: '🤭', name: 'Face with Hand Over Mouth', price: 2 },
+    { emoji: '🤫', name: 'Shushing Face', price: 2 },
+    { emoji: '🤔', name: 'Thinking Face', price: 2 },
+    { emoji: '🤐', name: 'Zipper-Mouth Face', price: 2 },
+    { emoji: '🤨', name: 'Face with Raised Eyebrow', price: 2 },
+    { emoji: '😐', name: 'Neutral Face', price: 1 },
+    { emoji: '😑', name: 'Expressionless Face', price: 1 },
+    { emoji: '😶', name: 'Face Without Mouth', price: 1 },
+    { emoji: '😏', name: 'Smirking Face', price: 2 },
+    { emoji: '😒', name: 'Unamused Face', price: 1 },
+    { emoji: '🙄', name: 'Face with Rolling Eyes', price: 2 },
+    { emoji: '😬', name: 'Grimacing Face', price: 2 },
+    { emoji: '🤥', name: 'Lying Face', price: 3 },
+    { emoji: '😔', name: 'Pensive Face', price: 2 },
+    { emoji: '😪', name: 'Sleepy Face', price: 1 },
+    { emoji: '🤤', name: 'Drooling Face', price: 2 },
+    { emoji: '😴', name: 'Sleeping Face', price: 1 },
+    { emoji: '😷', name: 'Face with Medical Mask', price: 2 },
+    { emoji: '🤒', name: 'Face with Thermometer', price: 2 },
+    { emoji: '🤕', name: 'Face with Head-Bandage', price: 2 },
+    { emoji: '🤢', name: 'Nauseated Face', price: 2 },
+    { emoji: '🤮', name: 'Face Vomiting', price: 3 },
+    { emoji: '🤧', name: 'Sneezing Face', price: 2 },
+    { emoji: '🥵', name: 'Hot Face', price: 3 },
+    { emoji: '🥶', name: 'Cold Face', price: 3 },
+    { emoji: '🥴', name: 'Woozy Face', price: 3 },
+    { emoji: '😵', name: 'Dizzy Face', price: 2 },
+    { emoji: '🤯', name: 'Exploding Head', price: 4 },
+    { emoji: '🤠', name: 'Cowboy Hat Face', price: 4 },
+    { emoji: '🥳', name: 'Partying Face', price: 4 },
+    { emoji: '😎', name: 'Smiling Face with Sunglasses', price: 3 },
+    { emoji: '🤓', name: 'Nerd Face', price: 3 },
+    { emoji: '🧐', name: 'Face with Monocle', price: 4 },
+  ];
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -263,13 +325,13 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        
+
         <UserAvatar
           username={recipient.username}
           size="md"
           isOnline={recipient.isOnline}
         />
-        
+
         <div className="flex-1">
           <div className="flex items-center space-x-2">
             <span className="font-semibold text-gray-800">{recipient.username}</span>
@@ -287,7 +349,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => {
           const isOwnMessage = message.senderId === user?.id;
-          
+
           return (
             <div
               key={message.id}
@@ -401,18 +463,19 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
           <Card>
             <CardContent className="p-3 max-h-32 overflow-y-auto">
               <div className="grid grid-cols-8 gap-1">
-                {emojis.map((emoji, index) => (
+                {emojis.map((item, index) => (
                   <Button
                     key={index}
                     variant="ghost"
                     size="sm"
-                    className="p-1 h-8"
+                    className="p-1 h-8 flex flex-col items-center"
                     onClick={() => {
-                      setNewMessage(prev => prev + emoji);
+                      setNewMessage(prev => prev + item.emoji);
                       setShowEmojis(false);
                     }}
                   >
-                    <span className="text-sm">{emoji}</span>
+                    <span className="text-sm">{item.emoji}</span>
+                    <span className="text-xs text-gray-500">{item.price}</span>
                   </Button>
                 ))}
               </div>
