@@ -34,7 +34,19 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       e.preventDefault();
     }
     if (message.trim()) {
-      onSendMessage(message);
+      // Check if message is a gift command
+      const giftCommandRegex = /^\/send\s+(.+?)\s+to\s+(.+)$/i;
+      const match = message.match(giftCommandRegex);
+      
+      if (match) {
+        const [, giftName, recipientName] = match;
+        // Send formatted gift message
+        const giftMessage = `🎁 sent ${giftName.trim()} gift to ${recipientName.trim()} ✨`;
+        onSendMessage(giftMessage);
+      } else {
+        onSendMessage(message);
+      }
+      
       setMessage("");
       setShowEmojis(false);
       setShowGifts(false);
@@ -151,7 +163,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Type a message..."
+            placeholder="Type a message or /send {gift} to {user}..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
