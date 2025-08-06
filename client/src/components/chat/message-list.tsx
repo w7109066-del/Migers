@@ -102,7 +102,12 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
             />
             <div className="flex-1">
               <div className="text-sm text-gray-800 break-words">
-                <span className="font-semibold" style={{ color: '#2f7853' }}>
+                <span 
+                  className="font-semibold" 
+                  style={{ 
+                    color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
+                  }}
+                >
                   {message.sender.username}
                 </span>
                 <span className="text-gray-500 ml-1">
