@@ -9,6 +9,7 @@ type WebSocketContextType = {
   leaveRoom: (roomId: string) => void;
   sendChatMessage: (content: string, roomId?: string, recipientId?: string) => void;
   setTyping: (roomId: string, isTyping: boolean) => void;
+  sendDirectMessage: (content: string, recipientId: string) => void;
 };
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -25,12 +26,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
+
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
       setIsConnected(true);
-      
+
       // Authenticate with the server
       ws.current?.send(JSON.stringify({
         type: 'authenticate',
@@ -41,38 +42,38 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     ws.current.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        
+
         switch (message.type) {
           case 'authenticated':
             console.log('WebSocket authenticated successfully');
             break;
-            
+
           case 'new_message':
             // Handle new room message
             window.dispatchEvent(new CustomEvent('newMessage', { 
               detail: message.message 
             }));
             break;
-            
+
           case 'new_direct_message':
             // Handle new direct message
             window.dispatchEvent(new CustomEvent('newDirectMessage', { 
               detail: message.message 
             }));
             break;
-            
+
           case 'user_joined':
             window.dispatchEvent(new CustomEvent('userJoined', { 
               detail: { userId: message.userId, roomId: message.roomId }
             }));
             break;
-            
+
           case 'user_left':
             window.dispatchEvent(new CustomEvent('userLeft', { 
               detail: { userId: message.userId, roomId: message.roomId }
             }));
             break;
-            
+
           case 'user_typing':
             window.dispatchEvent(new CustomEvent('userTyping', { 
               detail: { 
@@ -82,7 +83,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               }
             }));
             break;
-            
+
           case 'error':
             toast({
               title: "Connection Error",
@@ -98,7 +99,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     ws.current.onclose = () => {
       setIsConnected(false);
-      
+
       // Attempt to reconnect after 3 seconds
       if (user) {
         reconnectTimeoutRef.current = setTimeout(connect, 3000);
@@ -163,6 +164,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const sendDirectMessage = (content: string, recipientId: string) => {
+    sendMessage({
+      type: 'direct_message',
+      content,
+      recipientId,
+    });
+  };
+
   const setTyping = (roomId: string, isTyping: boolean) => {
     sendMessage({
       type: 'typing',
@@ -180,6 +189,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         leaveRoom,
         sendChatMessage,
         setTyping,
+        sendDirectMessage,
       }}
     >
       {children}

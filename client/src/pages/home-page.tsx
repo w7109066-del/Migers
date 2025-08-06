@@ -5,6 +5,7 @@ import { WebSocketProvider } from "@/hooks/use-websocket";
 import { SwipeTabs } from "@/components/ui/swipe-tabs";
 import { FriendsList } from "@/components/friends/friends-list";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { DirectMessageChat } from "@/components/chat/direct-message-chat";
 import RoomListPage from "@/pages/room-list";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
@@ -44,6 +45,7 @@ interface MiniProfileData {
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
+  const [selectedDMUser, setSelectedDMUser] = useState<MiniProfileData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState(0);
   const [postContent, setPostContent] = useState("");
@@ -366,13 +368,27 @@ export default function HomePage() {
       id: "dm",
       label: "DM",
       icon: <Mail className="w-5 h-5" />,
-      content: (
+      content: selectedDMUser ? (
+        <DirectMessageChat
+          recipient={selectedDMUser}
+          onBack={() => setSelectedDMUser(null)}
+        />
+      ) : (
         <div className="h-full overflow-y-auto bg-gray-50">
           <div className="p-4">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Direct Messages</h3>
 
             <div className="space-y-3">
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setSelectedDMUser({
+                  id: "alice",
+                  username: "alice_spark",
+                  level: 15,
+                  status: "Music is my passion 🎵",
+                  isOnline: true,
+                })}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -381,13 +397,6 @@ export default function HomePage() {
                           username="alice_spark" 
                           size="md"
                           isOnline={true}
-                          onClick={() => showMiniProfile({
-                            id: "alice",
-                            username: "alice_spark",
-                            level: 15,
-                            status: "Music is my passion 🎵",
-                            isOnline: true,
-                          })}
                         />
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                           2
@@ -403,7 +412,16 @@ export default function HomePage() {
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setSelectedDMUser({
+                  id: "mike",
+                  username: "mike_rocket",
+                  level: 23,
+                  status: "Gaming enthusiast",
+                  isOnline: false,
+                })}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -411,13 +429,6 @@ export default function HomePage() {
                         username="mike_rocket" 
                         size="md"
                         isOnline={false}
-                        onClick={() => showMiniProfile({
-                          id: "mike",
-                          username: "mike_rocket",
-                          level: 23,
-                          status: "Gaming enthusiast",
-                          isOnline: false,
-                        })}
                       />
                       <div className="flex-1">
                         <div className="font-semibold text-gray-800">mike_rocket</div>

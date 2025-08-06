@@ -282,13 +282,68 @@ export class DatabaseStorage implements IStorage {
     return result.reverse();
   }
 
-  async createMessage(message: InsertMessage): Promise<Message> {
-    const [newMessage] = await this.db
-      .insert(messages)
-      .values(message)
-      .returning();
-    return newMessage;
+  async createMessage(data: InsertMessage) {
+    const [message] = await db.insert(messages).values(data).returning();
+    return message;
   }
+
+  async createDirectMessage(data: InsertMessage) {
+    const [message] = await db.insert(messages).values(data).returning();
+
+    // Get message with sender info
+    const messageWithSender = await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        senderId: messages.senderId,
+        recipientId: messages.recipientId,
+        createdAt: messages.createdAt,
+        sender: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline
+        }
+      })
+      .from(messages)
+      .innerJoin(users, eq(messages.senderId, users.id))
+      .where(eq(messages.id, message.id));
+
+    return messageWithSender[0];
+  },
+
+  async getDirectMessages(userId: string, recipientId: string) {
+    return await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        senderId: messages.senderId,
+        recipientId: messages.recipientId,
+        createdAt: messages.createdAt,
+        sender: {
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline
+        }
+      })
+      .from(messages)
+      .innerJoin(users, eq(messages.senderId, users.id))
+      .where(
+        and(
+          eq(messages.roomId, sql`NULL`),
+          or(
+            and(eq(messages.senderId, userId), eq(messages.recipientId, recipientId)),
+            and(eq(messages.senderId, recipientId), eq(messages.recipientId, userId))
+          )
+        )
+      )
+      .orderBy(messages.createdAt);
+  },
+
+  async getMessages() {
+    return await db.select().from(messages);
+  },
 
   async createUserSession(userId: string, socketId: string): Promise<UserSession> {
     const [session] = await this.db

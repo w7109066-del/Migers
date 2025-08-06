@@ -30,7 +30,7 @@ export function registerRoutes(app: Express): Server {
       const allowedTypes = /jpeg|jpg|png|gif|mp4|avi|mov|wmv/;
       const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
       const mimetype = allowedTypes.test(file.mimetype);
-      
+
       if (mimetype && extname) {
         return cb(null, true);
       } else {
@@ -45,7 +45,7 @@ export function registerRoutes(app: Express): Server {
   // Friends API
   app.get("/api/friends", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const friends = await storage.getFriends(req.user!.id);
       res.json(friends);
@@ -56,7 +56,7 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/friends", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const { friendId } = insertFriendshipSchema.parse(req.body);
       const friendship = await storage.addFriend(req.user!.id, friendId);
@@ -68,7 +68,7 @@ export function registerRoutes(app: Express): Server {
 
   app.patch("/api/friends/:friendId/accept", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       await storage.acceptFriendRequest(req.user!.id, req.params.friendId);
       res.sendStatus(200);
@@ -80,7 +80,7 @@ export function registerRoutes(app: Express): Server {
   // Chat rooms API
   app.get("/api/rooms", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const rooms = await storage.getChatRooms();
       res.json(rooms);
@@ -91,17 +91,17 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/rooms", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const roomData = insertChatRoomSchema.parse({
         ...req.body,
         createdBy: req.user!.id,
       });
       const room = await storage.createChatRoom(roomData);
-      
+
       // Auto-join the creator to the room
       await storage.joinRoom(room.id, req.user!.id);
-      
+
       res.status(201).json(room);
     } catch (error) {
       res.status(400).json({ message: "Failed to create chat room" });
@@ -110,7 +110,7 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/rooms/:roomId/join", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       await storage.joinRoom(req.params.roomId, req.user!.id);
       res.sendStatus(200);
@@ -121,7 +121,7 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/rooms/:roomId/leave", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       await storage.leaveRoom(req.params.roomId, req.user!.id);
       res.sendStatus(200);
@@ -132,7 +132,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/rooms/:roomId/members", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const members = await storage.getRoomMembers(req.params.roomId);
       res.json(members);
@@ -143,7 +143,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/rooms/:roomId/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const messages = await storage.getRoomMessages(req.params.roomId);
       res.json(messages);
@@ -155,7 +155,7 @@ export function registerRoutes(app: Express): Server {
   // Direct messages API
   app.get("/api/messages/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const messages = await storage.getDirectMessages(req.user!.id, req.params.userId);
       res.json(messages);
@@ -164,10 +164,38 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Direct message routes
+  app.get("/api/messages/direct/:recipientId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const { recipientId } = req.params;
+    const messages = await storage.getDirectMessages(req.user!.id, recipientId);
+    res.json(messages);
+  });
+
+  app.post("/api/messages/direct", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const { content, recipientId } = req.body;
+
+    try {
+      const message = await storage.createDirectMessage({
+        content,
+        senderId: req.user!.id,
+        recipientId,
+        messageType: "text"
+      });
+
+      res.status(201).json(message);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to send message" });
+    }
+  });
+
   // User status API
   app.patch("/api/user/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const { status } = req.body;
       await storage.updateUserStatus(req.user!.id, status);
@@ -180,7 +208,7 @@ export function registerRoutes(app: Express): Server {
   // Feed posts API
   app.get("/api/feed", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const posts = await storage.getFeedPosts();
       res.json(posts);
@@ -191,7 +219,7 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/feed", upload.single('media'), async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const { content } = req.body;
       let mediaType = 'text';
@@ -223,7 +251,7 @@ export function registerRoutes(app: Express): Server {
   // Post interactions API
   app.post("/api/feed/:postId/like", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       await storage.likePost(req.params.postId, req.user!.id);
       res.sendStatus(200);
@@ -234,7 +262,7 @@ export function registerRoutes(app: Express): Server {
 
   app.delete("/api/feed/:postId/like", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       await storage.unlikePost(req.params.postId, req.user!.id);
       res.sendStatus(200);
@@ -245,7 +273,7 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/feed/:postId/comment", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const { content } = req.body;
       const comment = await storage.addComment(req.params.postId, {
@@ -260,7 +288,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/feed/:postId/comments", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const comments = await storage.getComments(req.params.postId);
       res.json(comments);
@@ -279,14 +307,14 @@ export function registerRoutes(app: Express): Server {
 
   wss.on('connection', async (ws: WebSocket, req) => {
     console.log('New WebSocket connection');
-    
+
     let userId: string | null = null;
     let userSession: any = null;
 
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString());
-        
+
         switch (message.type) {
           case 'authenticate':
             // Simple authentication using session
@@ -295,7 +323,7 @@ export function registerRoutes(app: Express): Server {
               userId = message.userId;
               userSession = await storage.createUserSession(userId, generateSocketId());
               await storage.updateUserOnlineStatus(userId, true);
-              
+
               ws.send(JSON.stringify({
                 type: 'authenticated',
                 success: true,
@@ -306,7 +334,7 @@ export function registerRoutes(app: Express): Server {
           case 'join_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
               await storage.joinRoom(message.roomId, userId);
-              
+
               // Broadcast to room members
               broadcastToRoom(message.roomId, {
                 type: 'user_joined',
@@ -319,7 +347,7 @@ export function registerRoutes(app: Express): Server {
           case 'leave_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
               await storage.leaveRoom(message.roomId, userId);
-              
+
               // Broadcast to room members
               broadcastToRoom(message.roomId, {
                 type: 'user_left',
@@ -341,7 +369,7 @@ export function registerRoutes(app: Express): Server {
               });
 
               const newMessage = await storage.createMessage(messageData);
-              
+
               if (message.roomId) {
                 // Broadcast to room
                 broadcastToRoom(message.roomId, {
@@ -354,7 +382,7 @@ export function registerRoutes(app: Express): Server {
                   type: 'new_direct_message',
                   message: newMessage,
                 });
-                
+
                 // Send confirmation to sender
                 ws.send(JSON.stringify({
                   type: 'message_sent',
