@@ -541,23 +541,16 @@ export class DatabaseStorage implements IStorage {
   async getDirectMessageConversations(userId: string) {
     try {
       // Get all users that have had direct message conversations with the current user
-      const conversations = await this.db
-        .selectDistinct({
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
-          status: users.status,
-          lastMessageContent: messages.content,
-          lastMessageTime: messages.createdAt,
+      // with their latest message
+      const subquery = this.db
+        .select({
+          otherUserId: sql`CASE 
+            WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId}
+            ELSE ${messages.senderId}
+          END`.as('otherUserId'),
+          lastMessageId: sql`MAX(${messages.id})`.as('lastMessageId')
         })
         .from(messages)
-        .innerJoin(users, 
-          or(
-            and(eq(messages.senderId, userId), eq(users.id, messages.recipientId)),
-            and(eq(messages.recipientId, userId), eq(users.id, messages.senderId))
-          )
-        )
         .where(
           and(
             isNotNull(messages.recipientId),
@@ -567,6 +560,26 @@ export class DatabaseStorage implements IStorage {
             )
           )
         )
+        .groupBy(sql`CASE 
+          WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId}
+          ELSE ${messages.senderId}
+        END`)
+        .as('latest_messages');
+
+      const conversations = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+          status: users.status,
+          lastMessage: messages.content,
+          lastMessageTime: messages.createdAt,
+          unreadCount: sql`0`.as('unreadCount') // Placeholder for unread count
+        })
+        .from(subquery)
+        .innerJoin(users, eq(users.id, subquery.otherUserId))
+        .leftJoin(messages, eq(messages.id, subquery.lastMessageId))
         .orderBy(desc(messages.createdAt));
 
       return conversations;
