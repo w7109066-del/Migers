@@ -145,9 +145,17 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   const handleBackToRoomList = () => {
+    // Clear selected room first
     setSelectedRoom(null);
-    // Force refresh room list data
+    
+    // Reset any potential error states
+    queryClient.resetQueries({ queryKey: ["/api/rooms"] });
+    
+    // Force a fresh fetch of room data
     queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    
+    // Clear any cached member data
+    queryClient.removeQueries({ queryKey: ["/api/rooms", selectedRoom?.id, "members"] });
   };
 
   const categorizedRooms = {
@@ -245,15 +253,15 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   // Show chat room if a room is selected
   if (selectedRoom) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center relative">
+      <div className="h-full flex flex-col bg-white">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center relative flex-shrink-0">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleBackToRoomList}
-            className="text-gray-600 absolute left-4"
+            className="text-gray-600 absolute left-4 hover:bg-gray-100"
           >
-            ←
+            ← Back
           </Button>
           <div className="flex items-center space-x-2">
             <UserAvatar 
@@ -264,11 +272,12 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
             <span className="font-semibold text-gray-800">{selectedRoom.name}</span>
           </div>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           <ChatRoom 
+            key={selectedRoom.id} 
             roomId={selectedRoom.id}
             roomName={selectedRoom.name}
-            onUserClick={onUserClick}
+            onUserClick={onUserClick || (() => {})}
           />
         </div>
       </div>

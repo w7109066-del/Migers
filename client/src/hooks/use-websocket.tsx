@@ -66,13 +66,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
           case 'user_joined':
             window.dispatchEvent(new CustomEvent('userJoined', {
-              detail: { userId: message.userId, roomId: message.roomId }
+              detail: { userId: message.userId, username: message.username, roomId: message.roomId }
             }));
             break;
 
           case 'user_left':
             window.dispatchEvent(new CustomEvent('userLeft', {
-              detail: { userId: message.userId, roomId: message.roomId }
+              detail: { userId: message.userId, username: message.username, roomId: message.roomId }
             }));
             break;
 

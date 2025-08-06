@@ -87,14 +87,15 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     }
   }, [roomId, roomName, availableRooms]);
 
-  // Cleanup when component unmounts
+  // Cleanup when component unmounts or room changes
   useEffect(() => {
     return () => {
       setMessages([]);
       setCurrentRoom(null);
       setIsInitialized(false);
+      setIsUserListOpen(false);
     };
-  }, []);
+  }, [roomId]);
 
   useEffect(() => {
     if (roomMessages) {
