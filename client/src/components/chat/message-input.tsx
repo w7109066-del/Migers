@@ -19,11 +19,188 @@ const emojis = [
   { emoji: "🔥", name: "Fire", price: 22 },
 ];
 
-// Dummy data for animated emoticons (replace with actual data)
+// Animated emoticons with proper Lottie animations
 const animatedEmoticons = [
-  { emoji: "🌟", name: "Sparkle", price: 30, lottie: gifts[0].lottie }, // Assuming gifts[0].lottie is a valid animation
-  { emoji: "💖", name: "Heartbeat", price: 35, lottie: gifts[1].lottie }, // Assuming gifts[1].lottie is a valid animation
-  { emoji: "🚀", name: "Rocket", price: 40, lottie: gifts[2].lottie }, // Assuming gifts[2].lottie is a valid animation
+  {
+    emoji: "😍",
+    name: "Heart Eyes",
+    price: 30,
+    lottie: {
+      "v": "5.7.4",
+      "fr": 30,
+      "ip": 0,
+      "op": 60,
+      "w": 50,
+      "h": 50,
+      "nm": "Heart Eyes",
+      "ddd": 0,
+      "assets": [],
+      "layers": [
+        {
+          "ddd": 0,
+          "ind": 1,
+          "ty": 4,
+          "nm": "face",
+          "sr": 1,
+          "ks": {
+            "o": {"a": 0, "k": 100},
+            "r": {"a": 0, "k": 0},
+            "p": {"a": 0, "k": [25, 25, 0]},
+            "a": {"a": 0, "k": [0, 0, 0]},
+            "s": {"a": 1, "k": [
+              {"t": 0, "s": [100, 100, 100]},
+              {"t": 30, "s": [110, 110, 100]},
+              {"t": 60, "s": [100, 100, 100]}
+            ]}
+          },
+          "ao": 0,
+          "shapes": [
+            {
+              "ty": "gr",
+              "it": [
+                {
+                  "ty": "el",
+                  "d": 1,
+                  "s": {"a": 0, "k": [40, 40]},
+                  "p": {"a": 0, "k": [0, 0]}
+                },
+                {
+                  "ty": "fl",
+                  "c": {"a": 0, "k": [1, 0.8, 0.2, 1]},
+                  "o": {"a": 0, "k": 100}
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    emoji: "🤩",
+    name: "Star Struck",
+    price: 35,
+    lottie: {
+      "v": "5.7.4",
+      "fr": 30,
+      "ip": 0,
+      "op": 60,
+      "w": 50,
+      "h": 50,
+      "nm": "Star Struck",
+      "ddd": 0,
+      "assets": [],
+      "layers": [
+        {
+          "ddd": 0,
+          "ind": 1,
+          "ty": 4,
+          "nm": "stars",
+          "sr": 1,
+          "ks": {
+            "o": {"a": 1, "k": [
+              {"t": 0, "s": [50]},
+              {"t": 30, "s": [100]},
+              {"t": 60, "s": [50]}
+            ]},
+            "r": {"a": 1, "k": [
+              {"t": 0, "s": [0]},
+              {"t": 60, "s": [360]}
+            ]},
+            "p": {"a": 0, "k": [25, 25, 0]},
+            "a": {"a": 0, "k": [0, 0, 0]},
+            "s": {"a": 0, "k": [100, 100, 100]}
+          },
+          "ao": 0,
+          "shapes": [
+            {
+              "ty": "gr",
+              "it": [
+                {
+                  "ty": "sr",
+                  "d": 1,
+                  "pt": {"a": 0, "k": 5},
+                  "p": {"a": 0, "k": [0, 0]},
+                  "r": {"a": 0, "k": 0},
+                  "ir": {"a": 0, "k": 8},
+                  "or": {"a": 0, "k": 15}
+                },
+                {
+                  "ty": "fl",
+                  "c": {"a": 0, "k": [1, 1, 0, 1]},
+                  "o": {"a": 0, "k": 100}
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    emoji: "🥳",
+    name: "Party Face",
+    price: 40,
+    lottie: {
+      "v": "5.7.4",
+      "fr": 30,
+      "ip": 0,
+      "op": 90,
+      "w": 50,
+      "h": 50,
+      "nm": "Party Face",
+      "ddd": 0,
+      "assets": [],
+      "layers": [
+        {
+          "ddd": 0,
+          "ind": 1,
+          "ty": 4,
+          "nm": "confetti",
+          "sr": 1,
+          "ks": {
+            "o": {"a": 1, "k": [
+              {"t": 0, "s": [0]},
+              {"t": 20, "s": [100]},
+              {"t": 70, "s": [100]},
+              {"t": 90, "s": [0]}
+            ]},
+            "r": {"a": 1, "k": [
+              {"t": 0, "s": [0]},
+              {"t": 90, "s": [180]}
+            ]},
+            "p": {"a": 1, "k": [
+              {"t": 0, "s": [25, 15, 0]},
+              {"t": 45, "s": [25, 35, 0]},
+              {"t": 90, "s": [25, 15, 0]}
+            ]},
+            "a": {"a": 0, "k": [0, 0, 0]},
+            "s": {"a": 0, "k": [80, 80, 100]}
+          },
+          "ao": 0,
+          "shapes": [
+            {
+              "ty": "gr",
+              "it": [
+                {
+                  "ty": "rc",
+                  "d": 1,
+                  "s": {"a": 0, "k": [4, 4]},
+                  "p": {"a": 0, "k": [0, 0]},
+                  "r": {"a": 0, "k": 1}
+                },
+                {
+                  "ty": "fl",
+                  "c": {"a": 0, "k": [1, 0.3, 0.5, 1]},
+                  "o": {"a": 0, "k": 100}
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
 ];
 
 interface MessageInputProps {
@@ -119,10 +296,13 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
                     >
                       <div className="w-6 h-6 mb-1">
                         <Lottie
-                          loop
+                          loop={true}
                           animationData={item.lottie}
-                          play
+                          play={true}
                           style={{ width: 24, height: 24 }}
+                          rendererSettings={{
+                            preserveAspectRatio: 'xMidYMid slice'
+                          }}
                         />
                       </div>
                       <span className="text-xs text-primary font-bold">{item.price}</span>

@@ -803,10 +803,13 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                     >
                       <div className="w-6 h-6 mb-1">
                         <Lottie
-                          loop
+                          loop={true}
                           animationData={item.lottie}
-                          play
+                          play={true}
                           style={{ width: 24, height: 24 }}
+                          rendererSettings={{
+                            preserveAspectRatio: 'xMidYMid slice'
+                          }}
                         />
                       </div>
                     </Button>
