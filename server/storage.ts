@@ -35,6 +35,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserOnlineStatus(userId: string, isOnline: boolean): Promise<void>;
   updateUserStatus(userId: string, status: string): Promise<void>;
+  searchUsers(query: string, currentUserId: string): Promise<User[]>;
 
   // Friends management
   getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]>;
@@ -135,6 +136,21 @@ export class DatabaseStorage implements IStorage {
         lastSeen: new Date()
       })
       .where(eq(users.id, userId));
+  }
+
+  async searchUsers(query: string, currentUserId: string): Promise<User[]> {
+    const searchResults = await this.db
+      .select()
+      .from(users)
+      .where(
+        and(
+          sql`LOWER(${users.username}) LIKE LOWER(${`%${query}%`})`,
+          sql`${users.id} != ${currentUserId}` // Exclude current user from search
+        )
+      )
+      .limit(10);
+
+    return searchResults;
   }
 
   async refreshFriendsList(userId: string): Promise<(User & { friendshipStatus: string })[]> {

@@ -348,6 +348,25 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // User search API
+  app.get("/api/users/search", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim().length < 2) {
+        return res.status(400).json({ message: "Search query must be at least 2 characters" });
+      }
+
+      const users = await storage.searchUsers(q.trim(), req.user!.id);
+      res.json(users);
+    } catch (error) {
+      console.error('User search error:', error);
+      res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
   // User status API
   app.patch("/api/user/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

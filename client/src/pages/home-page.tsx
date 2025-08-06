@@ -13,6 +13,7 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
 import { NotificationDropdown } from "@/components/ui/notification-dropdown";
 import { EditProfileModal } from "@/components/ui/edit-profile-modal";
+import { UserSearchModal } from "@/components/ui/user-search-modal";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ export default function HomePage() {
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showUserSearch, setShowUserSearch] = useState(false);
   const [userStatus, setUserStatus] = useState(user?.status || "online");
 
   // Update local status when user data changes
@@ -215,7 +217,11 @@ export default function HomePage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-800">Friends</h3>
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowUserSearch(true)}
+              >
                 <Search className="w-4 h-4" />
               </Button>
             </div>
@@ -588,7 +594,12 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" size="sm" className="text-gray-600 p-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 p-2"
+                onClick={() => setShowUserSearch(true)}
+              >
                 <Search className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="sm" className="text-gray-600 p-2">
@@ -620,6 +631,17 @@ export default function HomePage() {
         <EditProfileModal
           isOpen={showEditProfile}
           onClose={() => setShowEditProfile(false)}
+        />
+
+        {/* User Search Modal */}
+        <UserSearchModal
+          isOpen={showUserSearch}
+          onClose={() => setShowUserSearch(false)}
+          onUserSelect={showMiniProfile}
+          onMessageClick={(user) => {
+            setSelectedDMUser(user);
+            setActiveTab(3); // Switch to DM tab
+          }}
         />
         </div>
         <Toaster />
