@@ -1,6 +1,36 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
+
+const PostgresSessionStore = connectPg(session);
+
+// Helper function to parse session from cookie
+async function getSessionFromCookie(cookieString: string) {
+  return new Promise((resolve, reject) => {
+    const store = new PostgresSessionStore({ pool, createTableIfMissing: true });
+
+    // Extract session ID from cookie
+    const sessionIdMatch = cookieString.match(/connect\.sid=s%3A([^;]+)/);
+    if (!sessionIdMatch) {
+      resolve(null);
+      return;
+    }
+
+    const sessionId = sessionIdMatch[1].split('.')[0];
+
+    store.get(sessionId, (err, sessionData) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(sessionData);
+      }
+    });
+  });
+}
+
 
 const app = express();
 app.use(express.json());

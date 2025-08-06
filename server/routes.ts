@@ -60,7 +60,7 @@ export function registerRoutes(app: Express): Server {
     try {
       // Refresh friends list with updated status
       const friends = await storage.refreshFriendsList(req.user!.id);
-      
+
       res.json({
         message: "Friends list refreshed successfully",
         friends: friends,
@@ -89,7 +89,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { userId } = req.body;
-      
+
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(userId)) {
@@ -109,7 +109,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { userId } = req.body;
-      
+
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(userId)) {
@@ -224,7 +224,7 @@ export function registerRoutes(app: Express): Server {
           isPrivate: false
         }
       ];
-      
+
       res.json(mockRooms);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch chat rooms" });
@@ -255,7 +255,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { roomId } = req.params;
-      
+
       // For mock rooms (1-4), just return success without database operation
       if (['1', '2', '3', '4'].includes(roomId)) {
         res.json({ 
@@ -295,7 +295,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { roomId } = req.params;
-      
+
       // For mock rooms (1-4), return mock member data with current user
       if (['1', '2', '3', '4'].includes(roomId)) {
         const currentUser = await storage.getUser(req.user!.id);
@@ -430,7 +430,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { q } = req.query;
-      
+
       if (!q || typeof q !== 'string' || q.trim().length < 2) {
         return res.status(400).json({ message: "Search query must be at least 2 characters" });
       }
@@ -449,7 +449,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { status } = req.body;
-      
+
       // Validate status values
       const validStatuses = ['online', 'offline', 'away', 'busy'];
       if (!validStatuses.includes(status)) {
@@ -460,7 +460,7 @@ export function registerRoutes(app: Express): Server {
       const isOnline = status !== 'offline';
       await storage.updateUserStatus(req.user!.id, status);
       await storage.updateUserOnlineStatus(req.user!.id, isOnline);
-      
+
       res.json({ status, isOnline });
     } catch (error) {
       console.error('Status update error:', error);
@@ -474,7 +474,7 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { statusMessage } = req.body;
-      
+
       if (!statusMessage || typeof statusMessage !== 'string') {
         return res.status(400).json({ message: "Status message is required" });
       }
@@ -484,7 +484,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       await storage.updateUserStatusMessage(req.user!.id, statusMessage.trim());
-      
+
       res.json({ statusMessage: statusMessage.trim() });
     } catch (error) {
       console.error('Status message update error:', error);
@@ -645,9 +645,12 @@ export function registerRoutes(app: Express): Server {
                 await storage.joinRoom(message.roomId, userId);
               }
 
-              // Get user data for system message
-              const user = await storage.getUser(userId);
-              
+              // Get user data to ensure username is available
+              const currentUser = await storage.getUser(userId);
+              if (!currentUser) {
+                return; // Should not happen if userId is valid
+              }
+
               // Get room name for welcome message
               const roomNames = {
                 '1': 'MeChat',
@@ -656,7 +659,7 @@ export function registerRoutes(app: Express): Server {
                 '4': 'lowcard'
               };
               const roomName = roomNames[message.roomId as keyof typeof roomNames] || 'room';
-              
+
               // Broadcast welcome message first
               broadcastToRoom(message.roomId, {
                 type: 'new_message',
@@ -682,7 +685,7 @@ export function registerRoutes(app: Express): Server {
                 type: 'new_message',
                 message: {
                   id: `system-join-${Date.now()}`,
-                  content: `${user?.username || 'User'} has entered`,
+                  content: `${currentUser.username} has entered`,
                   senderId: 'system',
                   roomId: message.roomId,
                   recipientId: null,
@@ -757,7 +760,7 @@ export function registerRoutes(app: Express): Server {
                 if (['1', '2', '3', '4'].includes(message.roomId)) {
                   // Get user data for the mock message
                   const user = await storage.getUser(userId);
-                  
+
                   const mockMessage = {
                     id: `mock-${Date.now()}`,
                     content: message.content,
@@ -850,16 +853,16 @@ export function registerRoutes(app: Express): Server {
         if (userSession) {
           await storage.removeUserSession(userSession.socketId);
         }
-        
+
         // Clean up mock room membership
         if (currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
           if (mockRoomMembers.has(currentRoomId)) {
             mockRoomMembers.get(currentRoomId)!.delete(userId);
           }
-          
+
           // Get user data for leave message
           const user = await storage.getUser(userId);
-          
+
           // Broadcast system message about user leaving
           broadcastToRoom(currentRoomId, {
             type: 'new_message',
@@ -895,7 +898,7 @@ export function registerRoutes(app: Express): Server {
     if (['1', '2', '3', '4'].includes(roomId)) {
       return Math.floor(Math.random() * 15) + 5; // Mock count between 5-19
     }
-    
+
     try {
       const members = await storage.getRoomMembers(roomId);
       return members?.length || 0;
@@ -908,6 +911,7 @@ export function registerRoutes(app: Express): Server {
     wss.clients.forEach((client) => {
       if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
         // In a real implementation, you'd track which users are in which rooms
+        // For now, broadcasting to all clients and letting the frontend filter
         client.send(JSON.stringify(message));
       }
     });
@@ -917,6 +921,7 @@ export function registerRoutes(app: Express): Server {
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         // In a real implementation, you'd track userId to WebSocket mapping
+        // For now, broadcasting to all clients and letting the frontend filter
         client.send(JSON.stringify(message));
       }
     });
