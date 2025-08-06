@@ -65,24 +65,21 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
         <div className="px-4 pt-2">
           <Card>
             <CardContent className="p-3 max-h-64 overflow-y-auto">
-              <div className="mb-2 text-xs text-gray-600 font-semibold">Emoticons (Coin Cost)</div>
-              <div className="grid grid-cols-4 gap-2">
-                {emojis.map((emojiItem, index) => (
+              <div className="mb-2 text-xs text-gray-600 font-semibold">Emoticons</div>
+              <div className="grid grid-cols-8 gap-1">
+                {emojis.map((item, index) => (
                   <Button
                     key={index}
                     variant="ghost"
                     size="sm"
-                    className="flex flex-col items-center p-2 h-auto hover:bg-gray-100 transition-colors"
+                    className="p-1 h-10 flex items-center justify-center hover:bg-gray-100"
                     onClick={() => {
-                      setMessage(prev => prev + emojiItem.emoji);
+                      setMessage(prev => prev + item.emoji);
                       setShowEmojis(false);
                     }}
+                    title={item.name}
                   >
-                    <span className="text-lg mb-1">{emojiItem.emoji}</span>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-gray-700 truncate max-w-full">{emojiItem.name}</div>
-                      <div className="text-xs text-yellow-600 font-bold">{emojiItem.price} coins</div>
-                    </div>
+                    <span className="text-lg">{item.emoji}</span>
                   </Button>
                 ))}
               </div>
