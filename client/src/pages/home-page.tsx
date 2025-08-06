@@ -96,6 +96,10 @@ export default function HomePage() {
         setSelectedMedia(null);
         setMediaPreview(null);
         // Optionally refresh the feed here
+        console.log('Post created successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to create post:', errorData);
       }
     } catch (error) {
       console.error('Failed to create post:', error);
@@ -157,7 +161,7 @@ export default function HomePage() {
                         placeholder="What's on your mind?"
                         value={postContent}
                         onChange={(e) => setPostContent(e.target.value)}
-                        className="pr-12 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+                        className="pr-20 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter' && (postContent.trim() || selectedMedia)) {
                             handleCreatePost();
@@ -166,13 +170,12 @@ export default function HomePage() {
                       />
                       <Button
                         type="button"
-                        variant="ghost"
                         size="sm"
-                        className="absolute right-1 top-1 text-primary p-2 hover:bg-primary/10"
+                        className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
                         onClick={handleCreatePost}
                         disabled={!postContent.trim() && !selectedMedia}
                       >
-                        <Share2 className="w-4 h-4" />
+                        Send
                       </Button>
                     </div>
 

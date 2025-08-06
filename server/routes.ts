@@ -202,14 +202,20 @@ export function registerRoutes(app: Express): Server {
         mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
       }
 
+      // Ensure at least content or media is provided
+      if (!content?.trim() && !req.file) {
+        return res.status(400).json({ message: "Post must have content or media" });
+      }
+
       const post = await storage.createFeedPost({
-        content: content || null,
+        content: content?.trim() || null,
         authorId: req.user!.id,
         mediaType,
         mediaUrl,
       });
       res.status(201).json(post);
     } catch (error) {
+      console.error('Post creation error:', error);
       res.status(400).json({ message: "Failed to create post" });
     }
   });
