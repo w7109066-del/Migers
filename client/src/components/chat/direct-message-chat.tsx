@@ -73,7 +73,14 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         (newMessage.senderId === recipient.id && newMessage.recipientId === user?.id) ||
         (newMessage.senderId === user?.id && newMessage.recipientId === recipient.id)
       ) {
-        setMessages(prev => [...prev, newMessage]);
+        setMessages(prev => {
+          // Check if message already exists to prevent duplicates
+          const messageExists = prev.some(msg => msg.id === newMessage.id);
+          if (messageExists) {
+            return prev;
+          }
+          return [...prev, newMessage];
+        });
       }
     };
 
@@ -119,7 +126,15 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         });
 
         if (response.ok) {
-          // Don't add to messages here - let WebSocket handler do it
+          const sentMessage = await response.json();
+          // Add message for sender immediately
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === sentMessage.id);
+            if (messageExists) {
+              return prev;
+            }
+            return [...prev, sentMessage];
+          });
           setNewMessage('');
           setSelectedMedia(null);
           setMediaPreview(null);
@@ -141,7 +156,15 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         });
 
         if (response.ok) {
-          // Don't add to messages here - let WebSocket handler do it
+          const sentMessage = await response.json();
+          // Add message for sender immediately
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === sentMessage.id);
+            if (messageExists) {
+              return prev;
+            }
+            return [...prev, sentMessage];
+          });
           setNewMessage('');
         } else {
           console.error('Failed to send message');
