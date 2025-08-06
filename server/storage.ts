@@ -66,7 +66,7 @@ export interface IStorage {
       author: Pick<User, "id" | "username" | "level" | "isOnline">;
     })[]
   >;
-  createFeedPost(postData: { content: string; authorId: string }): Promise<typeof posts.$inferSelect>;
+  createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }): Promise<typeof posts.$inferSelect>;
   likePost(postId: string, userId: string): Promise<void>;
   unlikePost(postId: string, userId: string): Promise<void>;
   addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect>;
@@ -316,6 +316,8 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: posts.id,
         content: posts.content,
+        mediaType: posts.mediaType,
+        mediaUrl: posts.mediaUrl,
         likesCount: posts.likesCount,
         commentsCount: posts.commentsCount,
         createdAt: posts.createdAt,
@@ -332,7 +334,7 @@ export class DatabaseStorage implements IStorage {
       .limit(50);
   }
 
-  async createFeedPost(postData: { content: string; authorId: string }) {
+  async createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }) {
     const [post] = await this.db
       .insert(posts)
       .values(postData)

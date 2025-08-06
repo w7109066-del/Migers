@@ -1,6 +1,9 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import multer from "multer";
+import path from "path";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
@@ -8,6 +11,36 @@ import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, inse
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
   setupAuth(app);
+
+  // Configure multer for file uploads
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+      }
+    }),
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /jpeg|jpg|png|gif|mp4|avi|mov|wmv/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+      
+      if (mimetype && extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only images and videos are allowed'));
+      }
+    }
+  });
+
+  // Serve uploaded files
+  app.use('/uploads', express.static('uploads'));
 
   // Friends API
   app.get("/api/friends", async (req, res) => {
@@ -156,14 +189,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/feed", async (req, res) => {
+  app.post("/api/feed", upload.single('media'), async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
       const { content } = req.body;
+      let mediaType = 'text';
+      let mediaUrl = null;
+
+      if (req.file) {
+        mediaUrl = `/uploads/${req.file.filename}`;
+        mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+      }
+
       const post = await storage.createFeedPost({
-        content,
+        content: content || null,
         authorId: req.user!.id,
+        mediaType,
+        mediaUrl,
       });
       res.status(201).json(post);
     } catch (error) {

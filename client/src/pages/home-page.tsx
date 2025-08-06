@@ -26,7 +26,10 @@ import {
   HelpCircle,
   LogOut,
   Heart,
-  Share2
+  Share2,
+  Image,
+  Video,
+  X
 } from "lucide-react";
 
 interface MiniProfileData {
@@ -43,6 +46,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState(0);
   const [postContent, setPostContent] = useState("");
+  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -52,6 +57,49 @@ export default function HomePage() {
 
   const closeMiniProfile = () => {
     setSelectedProfile(null);
+  };
+
+  const handleMediaSelect = (file: File) => {
+    setSelectedMedia(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setMediaPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeMedia = () => {
+    setSelectedMedia(null);
+    setMediaPreview(null);
+  };
+
+  const handleCreatePost = async () => {
+    if (!postContent.trim() && !selectedMedia) return;
+
+    try {
+      const formData = new FormData();
+      if (postContent.trim()) {
+        formData.append('content', postContent);
+      }
+      if (selectedMedia) {
+        formData.append('media', selectedMedia);
+      }
+
+      const response = await fetch('/api/feed', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (response.ok) {
+        setPostContent('');
+        setSelectedMedia(null);
+        setMediaPreview(null);
+        // Optionally refresh the feed here
+      }
+    } catch (error) {
+      console.error('Failed to create post:', error);
+    }
   };
 
   const tabs = [
@@ -103,7 +151,7 @@ export default function HomePage() {
                     size="md"
                     isOnline={user.isOnline || false}
                   />
-                  <div className="flex-1">
+                  <div className="flex-1 space-y-3">
                     <div className="relative">
                       <Input
                         placeholder="What's on your mind?"
@@ -111,10 +159,8 @@ export default function HomePage() {
                         onChange={(e) => setPostContent(e.target.value)}
                         className="pr-12 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
                         onKeyPress={(e) => {
-                          if (e.key === 'Enter' && postContent.trim()) {
-                            // Handle post creation here
-                            console.log('Creating post:', postContent);
-                            setPostContent('');
+                          if (e.key === 'Enter' && (postContent.trim() || selectedMedia)) {
+                            handleCreatePost();
                           }
                         }}
                       />
@@ -123,17 +169,73 @@ export default function HomePage() {
                         variant="ghost"
                         size="sm"
                         className="absolute right-1 top-1 text-primary p-2 hover:bg-primary/10"
-                        onClick={() => {
-                          if (postContent.trim()) {
-                            // Handle post creation here
-                            console.log('Creating post:', postContent);
-                            setPostContent('');
-                          }
-                        }}
-                        disabled={!postContent.trim()}
+                        onClick={handleCreatePost}
+                        disabled={!postContent.trim() && !selectedMedia}
                       >
                         <Share2 className="w-4 h-4" />
                       </Button>
+                    </div>
+
+                    {/* Media Preview */}
+                    {mediaPreview && (
+                      <div className="relative">
+                        {selectedMedia?.type.startsWith('image/') ? (
+                          <img 
+                            src={mediaPreview} 
+                            alt="Preview" 
+                            className="max-h-48 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <video 
+                            src={mediaPreview} 
+                            controls 
+                            className="max-h-48 rounded-lg"
+                          />
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 bg-black/50 text-white hover:bg-black/70"
+                          onClick={removeMedia}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Media Upload Buttons */}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => e.target.files?.[0] && handleMediaSelect(e.target.files[0])}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label htmlFor="image-upload">
+                        <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50" asChild>
+                          <span className="cursor-pointer flex items-center space-x-1">
+                            <Image className="w-4 h-4" />
+                            <span className="text-xs">Photo</span>
+                          </span>
+                        </Button>
+                      </label>
+
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => e.target.files?.[0] && handleMediaSelect(e.target.files[0])}
+                        className="hidden"
+                        id="video-upload"
+                      />
+                      <label htmlFor="video-upload">
+                        <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50" asChild>
+                          <span className="cursor-pointer flex items-center space-x-1">
+                            <Video className="w-4 h-4" />
+                            <span className="text-xs">Video</span>
+                          </span>
+                        </Button>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -162,6 +264,11 @@ export default function HomePage() {
                       <span className="font-semibold text-primary">Music Lovers</span>
                     </div>
                     <div className="text-sm text-gray-600 mb-2">Just joined this awesome music room! 🎵</div>
+                    
+                    {/* Example media content - replace with actual media from posts */}
+                    {/* <div className="mb-2">
+                      <img src="/path/to/image" alt="Post media" className="rounded-lg max-h-64 object-cover" />
+                    </div> */}
                     <div className="text-xs text-gray-400">15 minutes ago</div>
                     <div className="flex items-center space-x-4 mt-2">
                       <div className="flex items-center space-x-1">

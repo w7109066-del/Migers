@@ -66,8 +66,10 @@ export const userSessions = pgTable("user_sessions", {
 
 export const posts = pgTable("posts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  content: text("content").notNull(),
+  content: text("content"),
   authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mediaType: varchar("media_type", { length: 20 }).default("text"), // text, image, video
+  mediaUrl: text("media_url"),
   likesCount: integer("likes_count").default(0),
   commentsCount: integer("comments_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -220,6 +222,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 export const insertPostSchema = createInsertSchema(posts).pick({
   content: true,
   authorId: true,
+  mediaType: true,
+  mediaUrl: true,
 });
 
 export const insertCommentSchema = createInsertSchema(postComments).pick({
