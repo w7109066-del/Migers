@@ -112,10 +112,10 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     if (isConnected && currentRoom?.id) {
       joinRoom(currentRoom.id);
       
-      // Add welcome message and system messages when joining room
+      // Clear previous messages and add welcome messages only once
       const welcomeMessages = [
         {
-          id: `welcome-${Date.now()}`,
+          id: `welcome-${currentRoom.id}`,
           content: `Welcome to ${currentRoom.name} official chat room.`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
@@ -123,15 +123,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           messageType: 'system'
         },
         {
-          id: `room-info-${Date.now()}`,
-          content: `Currently in the room: ${roomMembers?.map(m => m.user.username).join(', ') || 'loading...'}`,
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        },
-        {
-          id: `room-managed-${Date.now()}`,
+          id: `room-managed-${currentRoom.id}`,
           content: `This room is managed by ${currentRoom.name.toLowerCase()}`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
@@ -140,26 +132,41 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
         }
       ];
       
-      setMessages(prev => [...prev, ...welcomeMessages]);
+      setMessages(welcomeMessages);
     }
-  }, [isConnected, joinRoom, currentRoom?.id, roomMembers]);
+  }, [isConnected, joinRoom, currentRoom?.id]);
 
   // Update the "Currently in the room" message when members change
   useEffect(() => {
-    if (roomMembers && roomMembers.length > 0) {
+    if (roomMembers && roomMembers.length > 0 && currentRoom?.id) {
       setMessages(prev => {
-        const filteredMessages = prev.filter(msg => msg.id !== `room-info-${currentRoom?.id}`);
-        return [
-          ...filteredMessages,
-          {
-            id: `room-info-${currentRoom?.id}`,
-            content: `Currently in the room: ${roomMembers.map(m => m.user.username).join(', ')}`,
-            senderId: 'system',
-            createdAt: new Date().toISOString(),
-            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-            messageType: 'system'
-          }
-        ];
+        // Check if room info message already exists
+        const hasRoomInfo = prev.some(msg => msg.id === `room-info-${currentRoom.id}`);
+        
+        if (hasRoomInfo) {
+          // Update existing room info message
+          return prev.map(msg => 
+            msg.id === `room-info-${currentRoom.id}` 
+              ? {
+                  ...msg,
+                  content: `Currently in the room: ${roomMembers.map(m => m.user.username).join(', ')}`
+                }
+              : msg
+          );
+        } else {
+          // Add new room info message
+          return [
+            ...prev,
+            {
+              id: `room-info-${currentRoom.id}`,
+              content: `Currently in the room: ${roomMembers.map(m => m.user.username).join(', ')}`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            }
+          ];
+        }
       });
     }
   }, [roomMembers, currentRoom?.id]);
