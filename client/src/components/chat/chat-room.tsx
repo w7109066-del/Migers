@@ -18,13 +18,15 @@ import {
   Info,
   UserMinus,
   X,
-  Shield
+  Shield,
+  ArrowLeft
 } from "lucide-react";
 
 interface ChatRoomProps {
   roomId?: string;
   roomName?: string;
   onUserClick: (profile: any) => void;
+  onLeaveRoom?: () => void;
 }
 
 interface Message {
@@ -50,7 +52,7 @@ interface RoomMember {
   };
 }
 
-export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
+export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -225,6 +227,15 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     }
   };
 
+  const handleLeaveRoom = () => {
+    if (roomId) {
+      leaveRoom(roomId);
+    }
+    if (onLeaveRoom) {
+      onLeaveRoom();
+    }
+  };
+
   const handleCloseRoom = async () => {
     try {
       const response = await fetch(`/api/rooms/${roomId}/close`, {
@@ -264,6 +275,14 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
       {/* Chat Room Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-3">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLeaveRoom}
+            className="p-2 text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Hash className="text-white text-sm" />
           </div>

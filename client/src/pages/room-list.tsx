@@ -272,6 +272,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
             roomId={selectedRoom.id}
             roomName={selectedRoom.name}
             onUserClick={onUserClick || (() => {})}
+            onLeaveRoom={handleBackToRoomList}
           />
         </div>
       </div>
