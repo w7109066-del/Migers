@@ -48,6 +48,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface MiniProfileData {
   id: string;
@@ -286,7 +287,7 @@ export default function HomePage() {
                 >
                   <Search className="w-5 h-5" />
                 </Button>
-                
+
                 {/* Notification Dropdown */}
                 <NotificationDropdown />
 
@@ -302,7 +303,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           {/* Friends List Content */}
           <div className="flex-1 overflow-hidden">
             <FriendsList onUserClick={handleUserClick} />
@@ -624,9 +625,39 @@ export default function HomePage() {
     <NotificationProvider>
       <WebSocketProvider>
         <div className="h-full w-full bg-white flex flex-col">
-          {/* Swipe Tabs Content */}
-          <div className="flex-1">
-            <SwipeTabs tabs={tabs} onTabChange={setActiveTab} />
+          {/* Main Content Area */}
+          <div className="flex-1 overflow-hidden">
+            {tabs[activeTab]?.content}
+          </div>
+
+          {/* Fixed Tab Bar */}
+          <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom">
+            <div className="flex items-center justify-around relative">
+              {/* Tab Indicator */}
+              <div
+                className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-transform duration-300"
+                style={{
+                  width: `${100 / tabs.length}%`,
+                  transform: `translateX(${activeTab * 100}%)`,
+                }}
+              />
+
+              {tabs.map((tab, index) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(index)}
+                  className={cn(
+                    "flex flex-col items-center py-2 px-3 transition-colors",
+                    activeTab === index
+                      ? "text-primary"
+                      : "text-gray-400 hover:text-gray-600"
+                  )}
+                >
+                  {tab.icon}
+                  <span className="text-xs mt-1 font-medium">{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Mini Profile Modal */}
@@ -664,7 +695,6 @@ export default function HomePage() {
             onClose={() => setShowStatusUpdate(false)}
           />
         </div>
-        <Toaster />
       </WebSocketProvider>
     </NotificationProvider>
   );
