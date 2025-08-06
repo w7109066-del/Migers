@@ -44,12 +44,12 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
   };
 
   const isGiftMessage = (content: string) => {
-    return content.includes('sent a') && content.includes('gift to');
+    return content.includes('🎁 sent a') && content.includes('gift to');
   };
 
   const parseGiftMessage = (content: string, senderUsername: string) => {
-    // Parse messages like "chatme sent a Golden Crown gift to tester"
-    const giftRegex = /sent a (.+) gift to (.+)/;
+    // Parse messages like "🎁 sent a Rose gift to everyone in the room ✨"
+    const giftRegex = /🎁 sent a (.+) gift to (.+) ✨/;
     const match = content.match(giftRegex);
 
     if (match) {
@@ -72,20 +72,26 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
           const giftData = parseGiftMessage(message.content, message.sender.username);
 
           return (
-            <div key={message.id} className="flex justify-center mb-4">
-              <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-300 rounded-lg p-3 max-w-md">
-                <div className="flex items-center justify-center space-x-2">
-                  <span className="text-2xl">🎁</span>
+            <div key={message.id} className="flex justify-center mb-4 animate-pulse">
+              <div className="bg-gradient-to-r from-yellow-100 via-orange-100 to-pink-100 border-2 border-orange-300 rounded-xl p-4 max-w-sm shadow-lg">
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="text-3xl animate-bounce">🎁</div>
                   <div className="text-center">
-                    <span className="text-blue-600 font-semibold">{message.sender.username}</span>
-                    <span className="text-gray-700"> sent a </span>
-                    <span className="text-orange-600 font-bold">
-                      {giftData?.giftName || 'Gift'}
-                    </span>
-                    <span className="text-gray-700"> gift to </span>
-                    <span className="text-blue-600 font-semibold">{giftData?.recipient}</span>
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-purple-600 font-bold text-sm">{message.sender.username}</span>
+                      <span className="text-gray-700 text-sm">sent</span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-1 mt-1">
+                      <span className="text-orange-600 font-bold text-lg">
+                        {giftData?.giftName || 'Gift'}
+                      </span>
+                      <span className="text-gray-700 text-sm">to</span>
+                    </div>
+                    <div className="text-blue-600 font-semibold text-sm mt-1">
+                      {giftData?.recipient}
+                    </div>
                   </div>
-                  <span className="text-2xl">✨</span>
+                  <div className="text-3xl animate-spin" style={{animationDuration: '2s'}}>✨</div>
                 </div>
               </div>
             </div>

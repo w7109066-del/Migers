@@ -44,9 +44,8 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
   const handleSendGift = async (gift: any) => {
     try {
       // For room messages, we'll send gift through the regular message system
-      // Format: "user sent a GiftName gift to target_user"
-      // Since this is a room, we'll use a generic format
-      onSendMessage(`sent a ${gift.name} gift to everyone`);
+      // Format that will be recognized by message-list as gift message
+      onSendMessage(`🎁 sent a ${gift.name} gift to everyone in the room ✨`);
       setShowGifts(false);
     } catch (error) {
       console.error('Failed to send gift:', error);
