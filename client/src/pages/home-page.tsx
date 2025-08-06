@@ -220,8 +220,93 @@ export default function HomePage() {
       label: "Home",
       icon: <Home className="w-5 h-5" />,
       content: (
-        <div className="h-full">
-          <FriendsList onUserClick={handleUserClick} />
+        <div className="h-full flex flex-col bg-gray-50">
+          {/* Header with user info, notifications, and search */}
+          <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                {/* User Avatar and Info */}
+                <div className="flex items-center space-x-3">
+                  <UserAvatar
+                    username={user.username}
+                    size="md"
+                    isOnline={user.isOnline || false}
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-800">{user.username}</div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs">
+                        Level {user.level || 1}
+                      </Badge>
+                      {/* Status Dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                            <div className={`w-2 h-2 rounded-full mr-1 ${getStatusColor(userStatus)}`} />
+                            {getStatusText(userStatus)}
+                            <ChevronDown className="w-3 h-3 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-40">
+                          <DropdownMenuItem onClick={() => handleStatusChange('online')}>
+                            <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                            Online
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange('away')}>
+                            <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
+                            Away
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange('busy')}>
+                            <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
+                            Busy
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange('offline')}>
+                            <div className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
+                            Offline
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setShowStatusUpdate(true)}>
+                            <Edit className="w-3 h-3 mr-2" />
+                            Custom Status
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side - Notifications and Search */}
+              <div className="flex items-center space-x-2">
+                {/* Search Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowUserSearch(true)}
+                  className="text-gray-600 p-2"
+                >
+                  <Search className="w-5 h-5" />
+                </Button>
+                
+                {/* Notification Dropdown */}
+                <NotificationDropdown />
+
+                {/* Edit Profile Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowEditProfile(true)}
+                  className="text-gray-600 p-2"
+                >
+                  <Edit className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Friends List Content */}
+          <div className="flex-1 overflow-hidden">
+            <FriendsList onUserClick={handleUserClick} />
+          </div>
         </div>
       ),
     },
