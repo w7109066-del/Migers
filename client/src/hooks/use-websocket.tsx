@@ -127,6 +127,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               data: { amount: message.amount },
             });
             break;
+          case 'room_member_count_updated':
+            window.dispatchEvent(new CustomEvent('room_member_count_updated', {
+              detail: { roomId: message.roomId, memberCount: message.memberCount }
+            }));
+            break;
         }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error);

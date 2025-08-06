@@ -24,8 +24,8 @@ interface RoomListPageProps {
   onUserClick?: (profile: any) => void;
 }
 
-// Mock data untuk menampilkan struktur kategori
-const mockRooms: Room[] = [
+// Mock data untuk fallback jika API gagal
+const mockRoomsFallback: Room[] = [
   {
     id: "1",
     name: "MeChat",
@@ -71,13 +71,42 @@ const mockRooms: Room[] = [
 export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [roomMemberCounts, setRoomMemberCounts] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
 
-  const { data: rooms = mockRooms, isLoading } = useQuery<Room[]>({
+  // Listen for real-time member count updates
+  useEffect(() => {
+    const handleRoomMemberCountUpdate = (event: CustomEvent) => {
+      const { roomId, memberCount } = event.detail;
+      setRoomMemberCounts(prev => ({
+        ...prev,
+        [roomId]: memberCount
+      }));
+    };
+
+    window.addEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
+    };
+  }, []);
+
+  const { data: rooms = mockRoomsFallback, isLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
-    enabled: true, // Enable API query
-    refetchInterval: 5000, // Refetch every 5 seconds to update member counts
-    staleTime: 0 // Always consider data stale for fresh updates
+    queryFn: async () => {
+      const response = await fetch('/api/rooms', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch rooms');
+      }
+      return response.json();
+    },
+    enabled: true,
+    refetchInterval: 3000, // Refetch every 3 seconds for more frequent updates
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   const joinRoomMutation = useMutation({
@@ -179,7 +208,9 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-1 text-gray-500">
                       <Users className="w-4 h-4" />
-                      <span className="text-sm">{room.memberCount}/{room.capacity}</span>
+                      <span className="text-sm">
+                        {roomMemberCounts[room.id] !== undefined ? roomMemberCounts[room.id] : room.memberCount}/{room.capacity}
+                      </span>
                     </div>
                     {room.isPrivate && (
                       <Badge variant="secondary" className="text-xs">Private</Badge>

@@ -194,7 +194,7 @@ export function registerRoutes(app: Express): Server {
         return 0;
       };
 
-      const mockRooms = [
+      const rooms = [
         {
           id: "1",
           name: "MeChat",
@@ -237,8 +237,10 @@ export function registerRoutes(app: Express): Server {
         }
       ];
 
-      res.json(mockRooms);
+      console.log('Returning rooms with member counts:', rooms.map(r => ({ id: r.id, name: r.name, memberCount: r.memberCount })));
+      res.json(rooms);
     } catch (error) {
+      console.error('Error fetching rooms:', error);
       res.status(500).json({ message: "Failed to fetch chat rooms" });
     }
   });
@@ -745,6 +747,18 @@ export function registerRoutes(app: Express): Server {
                 userId,
                 roomId: message.roomId,
               }, ws);
+
+              // Broadcast room count update to all clients
+              const currentCount = getRoomMemberCount(message.roomId);
+              wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(JSON.stringify({
+                    type: 'room_member_count_updated',
+                    roomId: message.roomId,
+                    memberCount: currentCount
+                  }));
+                }
+              });
             }
             break;
 
@@ -789,6 +803,18 @@ export function registerRoutes(app: Express): Server {
                 userId,
                 roomId: message.roomId,
               }, ws);
+
+              // Broadcast room count update to all clients
+              const currentCount = await getRoomMemberCount(message.roomId);
+              wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(JSON.stringify({
+                    type: 'room_member_count_updated',
+                    roomId: message.roomId,
+                    memberCount: currentCount
+                  }));
+                }
+              });
             }
             break;
 
@@ -921,6 +947,18 @@ export function registerRoutes(app: Express): Server {
                   level: 0,
                   isOnline: true,
                 }
+              }
+            });
+
+            // Broadcast room count update to all clients
+            const currentCount = getRoomMemberCount(currentRoomId);
+            wss.clients.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'room_member_count_updated',
+                  roomId: currentRoomId,
+                  memberCount: currentCount
+                }));
               }
             });
           }
