@@ -60,6 +60,9 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   // Initialize room and messages
   useEffect(() => {
     if (isConnected && roomId && roomName) {
+      // Clear previous messages first
+      setMessages([]);
+      
       // Join room
       joinRoom(roomId);
       
@@ -85,6 +88,12 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
       
       setMessages(welcomeMessages);
     }
+    
+    // Cleanup when roomId changes
+    return () => {
+      setMessages([]);
+      setIsUserListOpen(false);
+    };
   }, [isConnected, roomId, roomName, joinRoom]);
 
   // Update room members message

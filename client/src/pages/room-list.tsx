@@ -150,9 +150,14 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   const handleBackToRoomList = () => {
+    // Reset selected room immediately
     setSelectedRoom(null);
-    // Simple refresh without complex cache operations
-    queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    
+    // Force component re-render by clearing and refetching
+    queryClient.removeQueries({ queryKey: ["/api/rooms"] });
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    }, 100);
   };
 
   const categorizedRooms = {
@@ -274,12 +279,35 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   }
 
   // Show loading
-  if (isLoading && !displayRooms.length) {
+  if (isLoading && (!displayRooms || displayRooms.length === 0)) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-gray-600">Loading rooms...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback for any rendering issues
+  if (!displayRooms || displayRooms.length === 0) {
+    return (
+      <div className="h-full w-full bg-white flex flex-col">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-bold text-gray-800">Chat Rooms</h1>
+            <Button size="sm" className="bg-primary hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-1" />
+              New Room
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">Loading chat rooms...</p>
+          </div>
         </div>
       </div>
     );
