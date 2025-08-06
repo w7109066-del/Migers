@@ -5,7 +5,6 @@ import { SwipeTabs } from "@/components/ui/swipe-tabs";
 import { FriendsList } from "@/components/friends/friends-list";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { UserAvatar } from "@/components/user/user-avatar";
-import { UserStatus } from "@/components/user/user-status";
 import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -230,7 +229,7 @@ export default function HomePage() {
                   <UserAvatar 
                     username={user.username} 
                     size="lg"
-                    isOnline={user.isOnline}
+                    isOnline={user.isOnline || false}
                   />
                   <div>
                     <div className="font-semibold text-gray-800">{user.username}</div>
@@ -239,7 +238,10 @@ export default function HomePage() {
                       <Badge variant="secondary" className="bg-warning text-white">
                         Level {user.level}
                       </Badge>
-                      <UserStatus isOnline={user.isOnline} />
+                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        <div className={`w-2 h-2 rounded-full mr-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                        {user.isOnline ? 'Online' : 'Offline'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -300,19 +302,15 @@ export default function HomePage() {
 
   return (
     <WebSocketProvider>
-      <div className="h-screen max-w-sm mx-auto bg-white relative overflow-hidden">
+      <div className="h-screen w-full bg-white relative overflow-hidden">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" className="text-primary p-2">
-              <Home className="w-5 h-5" />
-            </Button>
-            
             <div className="flex items-center space-x-2">
               <UserAvatar 
                 username={user.username} 
                 size="md"
-                isOnline={user.isOnline}
+                isOnline={user.isOnline || false}
               />
               
               <div>
@@ -322,7 +320,10 @@ export default function HomePage() {
                     {user.level}
                   </Badge>
                 </div>
-                <UserStatus isOnline={user.isOnline} />
+                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                  <div className={`w-2 h-2 rounded-full mr-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  {user.isOnline ? 'Online' : 'Offline'}
+                </div>
               </div>
             </div>
           </div>

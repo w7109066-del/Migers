@@ -62,16 +62,24 @@ export default function AuthPage() {
     loginMutation.mutate({
       username: data.username,
       password: data.password,
+    }, {
+      onSuccess: () => {
+        // User will be redirected automatically via the redirect check above
+      }
     });
   };
 
   const onRegister = (data: RegisterFormData) => {
     const { confirmPassword, ...registerData } = data;
-    registerMutation.mutate(registerData);
+    registerMutation.mutate(registerData, {
+      onSuccess: () => {
+        // User will be redirected automatically via the redirect check above
+      }
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center p-4">
+    <div className="h-screen w-full bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
