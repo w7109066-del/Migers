@@ -33,6 +33,7 @@ function App() {
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/app/*" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/rooms" element={<Navigate to="/app" replace />} />
             <Route path="/" element={<Navigate to="/app" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

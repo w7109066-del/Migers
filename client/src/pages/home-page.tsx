@@ -221,10 +221,7 @@ export default function HomePage() {
       icon: <Home className="w-5 h-5" />,
       content: (
         <div className="h-full">
-          <Routes>
-            <Route path="/" element={<RoomListPage onUserClick={handleUserClick} />} />
-            <Route path="/rooms" element={<RoomListPage onUserClick={handleUserClick} />} />
-          </Routes>
+          <RoomListPage onUserClick={handleUserClick} />
         </div>
       ),
     },
