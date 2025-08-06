@@ -39,6 +39,8 @@ export interface IStorage {
   // Friends management
   getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]>;
   addFriend(userId: string, friendId: string): Promise<Friendship>;
+  getFriendshipStatus(userId: string, friendId: string): Promise<Friendship | undefined>;
+  createFriendRequest(userId: string, friendId: string): Promise<Friendship>;
   acceptFriendRequest(userId: string, friendId: string): Promise<void>;
 
   // Chat rooms
@@ -159,6 +161,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addFriend(userId: string, friendId: string): Promise<Friendship> {
+    const [friendship] = await this.db
+      .insert(friendships)
+      .values({ userId, friendId, status: "pending" })
+      .returning();
+    return friendship;
+  }
+
+  async getFriendshipStatus(userId: string, friendId: string): Promise<Friendship | undefined> {
+    const [friendship] = await this.db
+      .select()
+      .from(friendships)
+      .where(
+        or(
+          and(eq(friendships.userId, userId), eq(friendships.friendId, friendId)),
+          and(eq(friendships.userId, friendId), eq(friendships.friendId, userId))
+        )
+      );
+    return friendship || undefined;
+  }
+
+  async createFriendRequest(userId: string, friendId: string): Promise<Friendship> {
     const [friendship] = await this.db
       .insert(friendships)
       .values({ userId, friendId, status: "pending" })
