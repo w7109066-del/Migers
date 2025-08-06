@@ -221,7 +221,7 @@ export default function HomePage() {
       icon: <Home className="w-5 h-5" />,
       content: (
         <div className="h-full">
-          <RoomListPage onUserClick={handleUserClick} />
+          <FriendsList onUserClick={handleUserClick} />
         </div>
       ),
     },
