@@ -101,16 +101,16 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
               className="cursor-pointer"
             />
             <div className="flex-1">
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="font-semibold text-sm" style={{ color: '#2f7853' }}>
+              <div className="text-sm text-gray-800 break-words">
+                <span className="font-semibold" style={{ color: '#2f7853' }}>
                   {message.sender.username}
                 </span>
-                <span className="text-xs text-gray-500 ml-2">
-                  {formatTime(message.createdAt)}
+                <span className="text-gray-500 ml-1">
+                  [{formatTime(message.createdAt)}]:
                 </span>
-              </div>
-              <div className="text-sm text-gray-800 break-words">
-                {message.content}
+                <span className="ml-1">
+                  {message.content}
+                </span>
               </div>
             </div>
           </div>
