@@ -32,11 +32,11 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
         className="flex-1 overflow-hidden relative"
       >
         <div 
-          className="flex h-full will-change-transform"
+          className="flex h-full"
           style={{
             transform: `translateX(-${activeTab * 100}%)`,
             width: `${tabs.length * 100}%`,
-            transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+            transition: 'transform 200ms ease-out'
           }}
         >
           {tabs.map((tab, index) => (
@@ -45,7 +45,7 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
               className="w-full h-full flex-shrink-0"
               style={{ width: `${100 / tabs.length}%` }}
             >
-              {Math.abs(index - activeTab) <= 1 ? tab.content : null}
+              {tab.content}
             </div>
           ))}
         </div>
