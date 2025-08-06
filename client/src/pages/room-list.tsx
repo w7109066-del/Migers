@@ -144,6 +144,12 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     }
   };
 
+  const handleBackToRoomList = () => {
+    setSelectedRoom(null);
+    // Force refresh room list data
+    queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+  };
+
   const categorizedRooms = {
     official: filteredRooms.filter((room: Room) => room.category === "official"),
     recent: filteredRooms.filter((room: Room) => room.category === "recent"),
@@ -244,7 +250,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setSelectedRoom(null)}
+            onClick={handleBackToRoomList}
             className="text-gray-600 absolute left-4"
           >
             ←

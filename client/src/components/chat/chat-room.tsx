@@ -48,6 +48,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { sendChatMessage, joinRoom, isConnected } = useWebSocket();
 
   // Fetch available rooms first
@@ -80,10 +81,21 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   useEffect(() => {
     if (roomId && roomName) {
       setCurrentRoom({ id: roomId, name: roomName });
+      setIsInitialized(true);
     } else if (availableRooms && availableRooms.length > 0) {
       setCurrentRoom(availableRooms[0]);
+      setIsInitialized(true);
     }
   }, [roomId, roomName, availableRooms]);
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      setMessages([]);
+      setCurrentRoom(null);
+      setIsInitialized(false);
+    };
+  }, []);
 
   useEffect(() => {
     if (roomMessages) {
@@ -92,7 +104,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   }, [roomMessages]);
 
   useEffect(() => {
-    if (isConnected && currentRoom?.id) {
+    if (isConnected && currentRoom?.id && isInitialized) {
       joinRoom(currentRoom.id);
       
       // Clear previous messages and add welcome messages only once
@@ -117,7 +129,7 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
       
       setMessages(welcomeMessages);
     }
-  }, [isConnected, joinRoom, currentRoom?.id]);
+  }, [isConnected, joinRoom, currentRoom?.id, isInitialized]);
 
   // Update the "Currently in the room" message when members change
   useEffect(() => {
