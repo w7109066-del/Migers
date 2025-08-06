@@ -18,6 +18,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Home, 
   MessageCircle, 
@@ -35,7 +41,8 @@ import {
   Share2,
   Image,
   Video,
-  X
+  X,
+  ChevronDown
 } from "lucide-react";
 
 interface MiniProfileData {
@@ -59,6 +66,57 @@ export default function HomePage() {
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [userStatus, setUserStatus] = useState(user?.status || "online");
+
+  // Update local status when user data changes
+  React.useEffect(() => {
+    if (user?.status) {
+      setUserStatus(user.status);
+    }
+  }, [user?.status]);
+
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      const response = await fetch('/api/user/status', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setUserStatus(newStatus);
+        // Update user object if needed
+        console.log(`Status changed to: ${newStatus}`);
+      } else {
+        console.error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'online': return 'bg-green-500';
+      case 'away': return 'bg-yellow-500';
+      case 'busy': return 'bg-red-500';
+      case 'offline': return 'bg-gray-400';
+      default: return 'bg-green-500';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'online': return 'Online';
+      case 'away': return 'Away';
+      case 'busy': return 'Busy';
+      case 'offline': return 'Offline';
+      default: return 'Online';
+    }
+  };
 
   // Load feed posts when component mounts or when switching to feed tab
   React.useEffect(() => {
@@ -564,10 +622,33 @@ export default function HomePage() {
                       {user.level}
                     </Badge>
                   </div>
-                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                    <div className={`w-2 h-2 rounded-full mr-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-                    {user.isOnline ? 'Online' : 'Offline'}
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 hover:bg-gray-200 transition-colors">
+                        <div className={`w-2 h-2 rounded-full mr-1 ${getStatusColor(userStatus)}`} />
+                        {getStatusText(userStatus)}
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-32">
+                      <DropdownMenuItem onClick={() => handleStatusChange('online')}>
+                        <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                        Online
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('away')}>
+                        <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
+                        Away
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('busy')}>
+                        <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
+                        Busy
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('offline')}>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
+                        Offline
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>

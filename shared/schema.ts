@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   level: integer("level").default(1),
   isOnline: boolean("is_online").default(false),
   lastSeen: timestamp("last_seen").defaultNow(),
-  status: text("status").default(""),
+  status: text("status").default("online"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

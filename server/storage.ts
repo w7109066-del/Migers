@@ -128,7 +128,10 @@ export class DatabaseStorage implements IStorage {
   async updateUserStatus(userId: string, status: string): Promise<void> {
     await this.db
       .update(users)
-      .set({ status })
+      .set({ 
+        status,
+        lastSeen: new Date()
+      })
       .where(eq(users.id, userId));
   }
 

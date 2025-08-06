@@ -292,9 +292,21 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const { status } = req.body;
+      
+      // Validate status values
+      const validStatuses = ['online', 'offline', 'away', 'busy'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status value" });
+      }
+
+      // Update both status and online status based on the new status
+      const isOnline = status !== 'offline';
       await storage.updateUserStatus(req.user!.id, status);
-      res.sendStatus(200);
+      await storage.updateUserOnlineStatus(req.user!.id, isOnline);
+      
+      res.json({ status, isOnline });
     } catch (error) {
+      console.error('Status update error:', error);
       res.status(400).json({ message: "Failed to update status" });
     }
   });
