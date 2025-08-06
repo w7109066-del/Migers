@@ -546,7 +546,7 @@ export default function HomePage() {
     <NotificationProvider>
       <WebSocketProvider>
         <div className="h-full w-full bg-white flex flex-col">
-        {/* Header - Only show on home tab */}
+        {/* Header - Only show on home tab (activeTab === 0) */}
         {activeTab === 0 && (
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
             {/* Left side - User profile */}
