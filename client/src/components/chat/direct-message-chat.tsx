@@ -193,7 +193,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Chat Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3 flex-shrink-0 sticky top-0 z-10">
         <Button
           variant="ghost"
           size="sm"
