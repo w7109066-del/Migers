@@ -382,7 +382,7 @@ export default function HomePage() {
               <Card 
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setSelectedDMUser({
-                  id: "alice",
+                  id: "3f7dd900-6b16-4990-b3a5-bef014bd6743",
                   username: "alice_spark",
                   level: 15,
                   status: "Music is my passion 🎵",
@@ -415,7 +415,7 @@ export default function HomePage() {
               <Card 
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setSelectedDMUser({
-                  id: "mike",
+                  id: "4f8ee901-7c27-5a01-c4b6-cff125ce7844",
                   username: "mike_rocket",
                   level: 23,
                   status: "Gaming enthusiast",

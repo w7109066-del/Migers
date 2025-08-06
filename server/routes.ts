@@ -157,9 +157,18 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      const messages = await storage.getDirectMessages(req.user!.id, req.params.userId);
+      const { userId } = req.params;
+      
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+
+      const messages = await storage.getDirectMessages(req.user!.id, userId);
       res.json(messages);
     } catch (error) {
+      console.error('Direct messages error:', error);
       res.status(500).json({ message: "Failed to fetch direct messages" });
     }
   });
