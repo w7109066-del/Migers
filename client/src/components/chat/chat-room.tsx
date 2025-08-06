@@ -56,16 +56,54 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     enabled: Boolean(isConnected),
   });
 
-  // Fetch room messages
+  // Mock room messages for now
   const { data: roomMessages } = useQuery<Message[]>({
     queryKey: ["/api/rooms", currentRoom?.id, "messages"],
     enabled: Boolean(isConnected && currentRoom?.id),
+    queryFn: () => {
+      // Return mock messages for demonstration
+      return Promise.resolve([
+        {
+          id: "1",
+          content: "Welcome to " + (currentRoom?.name || "this room") + "!",
+          senderId: "system",
+          createdAt: new Date().toISOString(),
+          sender: {
+            id: "system",
+            username: "System",
+            level: 1,
+            isOnline: true
+          }
+        }
+      ]);
+    }
   });
 
-  // Fetch room members
+  // Mock room members for now
   const { data: roomMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", currentRoom?.id, "members"],
     enabled: Boolean(isConnected && currentRoom?.id),
+    queryFn: () => {
+      // Return mock members for demonstration
+      return Promise.resolve([
+        {
+          user: {
+            id: "1",
+            username: "You",
+            level: 5,
+            isOnline: true
+          }
+        },
+        {
+          user: {
+            id: "2", 
+            username: "User123",
+            level: 3,
+            isOnline: true
+          }
+        }
+      ]);
+    }
   });
 
   // Set up room from props or use first available room

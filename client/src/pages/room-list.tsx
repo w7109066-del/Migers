@@ -70,7 +70,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   const { data: rooms = mockRooms, isLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
-    enabled: false // Use mock data for now
+    enabled: true // Enable API query
   });
 
   const joinRoomMutation = useMutation({
@@ -98,10 +98,13 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   const handleRoomClick = async (room: Room) => {
     try {
-      await joinRoomMutation.mutateAsync(room.id);
+      const result = await joinRoomMutation.mutateAsync(room.id);
+      console.log('Successfully joined room:', result);
       setSelectedRoom(room);
     } catch (error) {
       console.error('Failed to join room:', error);
+      // Still allow entering the room even if join fails
+      setSelectedRoom(room);
     }
   };
 

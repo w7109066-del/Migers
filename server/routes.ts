@@ -185,8 +185,47 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      const rooms = await storage.getChatRooms();
-      res.json(rooms);
+      // Return mock rooms for now
+      const mockRooms = [
+        {
+          id: "1",
+          name: "MeChat",
+          description: "Official main chat room",
+          memberCount: 1250,
+          isOfficial: true,
+          category: "official",
+          isPrivate: false
+        },
+        {
+          id: "2", 
+          name: "Indonesia",
+          description: "Chat for Indonesian users",
+          memberCount: 856,
+          isOfficial: false,
+          category: "recent",
+          isPrivate: false
+        },
+        {
+          id: "3",
+          name: "MeChat",
+          description: "Your favorite chat room",
+          memberCount: 1250,
+          isOfficial: true,
+          category: "favorite", 
+          isPrivate: false
+        },
+        {
+          id: "4",
+          name: "lowcard",
+          description: "Card game room",
+          memberCount: 45,
+          isOfficial: false,
+          category: "game",
+          isPrivate: false
+        }
+      ];
+      
+      res.json(mockRooms);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch chat rooms" });
     }
@@ -215,9 +254,27 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      await storage.joinRoom(req.params.roomId, req.user!.id);
-      res.sendStatus(200);
+      const { roomId } = req.params;
+      
+      // For mock rooms (1-4), just return success without database operation
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        res.json({ 
+          success: true, 
+          message: "Successfully joined room",
+          roomId: roomId 
+        });
+        return;
+      }
+
+      // For real rooms, use storage
+      await storage.joinRoom(roomId, req.user!.id);
+      res.json({ 
+        success: true, 
+        message: "Successfully joined room",
+        roomId: roomId 
+      });
     } catch (error) {
+      console.error('Join room error:', error);
       res.status(400).json({ message: "Failed to join room" });
     }
   });
