@@ -599,7 +599,10 @@ export function registerRoutes(app: Express): Server {
 
           case 'join_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
-              await storage.joinRoom(message.roomId, userId);
+              // For mock rooms (1-4), skip database operation
+              if (!['1', '2', '3', '4'].includes(message.roomId)) {
+                await storage.joinRoom(message.roomId, userId);
+              }
 
               // Broadcast to room members
               broadcastToRoom(message.roomId, {
@@ -612,7 +615,10 @@ export function registerRoutes(app: Express): Server {
 
           case 'leave_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
-              await storage.leaveRoom(message.roomId, userId);
+              // For mock rooms (1-4), skip database operation
+              if (!['1', '2', '3', '4'].includes(message.roomId)) {
+                await storage.leaveRoom(message.roomId, userId);
+              }
 
               // Broadcast to room members
               broadcastToRoom(message.roomId, {
@@ -682,7 +688,8 @@ export function registerRoutes(app: Express): Server {
         console.error('WebSocket message error:', error);
         ws.send(JSON.stringify({
           type: 'error',
-          message: 'Invalid message format',
+          message: 'Message processing failed',
+          details: error instanceof Error ? error.message : 'Unknown error'
         }));
       }
     });
