@@ -61,21 +61,8 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
     queryKey: ["/api/rooms", currentRoom?.id, "messages"],
     enabled: Boolean(isConnected && currentRoom?.id),
     queryFn: () => {
-      // Return mock messages for demonstration
-      return Promise.resolve([
-        {
-          id: "1",
-          content: "Welcome to " + (currentRoom?.name || "this room") + "!",
-          senderId: "system",
-          createdAt: new Date().toISOString(),
-          sender: {
-            id: "system",
-            username: "System",
-            level: 1,
-            isOnline: true
-          }
-        }
-      ]);
+      // Return empty messages initially - server will send welcome message
+      return Promise.resolve([]);
     }
   });
 
@@ -244,6 +231,36 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
           <Button variant="ghost" size="sm" className="p-2 text-gray-600">
             <Settings className="w-4 h-4" />
           </Button>
+        </div>
+      </div>
+
+      {/* Room Members Display */}
+      <div className="bg-gray-50 border-b border-gray-200 px-4 py-2">
+        <div className="text-sm text-gray-600">
+          <span className="font-medium">Currently in the room: </span>
+          {roomMembers && roomMembers.length > 0 ? (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {roomMembers.map((member, index) => (
+                <div key={member.user.id} className="inline-flex items-center">
+                  <button
+                    className="inline-flex items-center space-x-1 bg-white rounded-full px-2 py-1 text-xs border border-gray-200 hover:bg-gray-100 transition-colors"
+                    onClick={() => handleUserClick(member.user)}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${member.user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    <span className="text-gray-700">{member.user.username}</span>
+                    <Badge variant="secondary" className="bg-warning text-white text-xs ml-1 px-1 py-0">
+                      {member.user.level}
+                    </Badge>
+                  </button>
+                  {index < roomMembers.length - 1 && (
+                    <span className="text-gray-400 mx-1">•</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span className="text-gray-500">No members online</span>
+          )}
         </div>
       </div>
 

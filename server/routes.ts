@@ -648,6 +648,35 @@ export function registerRoutes(app: Express): Server {
               // Get user data for system message
               const user = await storage.getUser(userId);
               
+              // Get room name for welcome message
+              const roomNames = {
+                '1': 'MeChat',
+                '2': 'Indonesia', 
+                '3': 'MeChat',
+                '4': 'lowcard'
+              };
+              const roomName = roomNames[message.roomId as keyof typeof roomNames] || 'room';
+              
+              // Broadcast welcome message first
+              broadcastToRoom(message.roomId, {
+                type: 'new_message',
+                message: {
+                  id: `system-welcome-${Date.now()}`,
+                  content: `Selamat datang di room ${roomName}`,
+                  senderId: 'system',
+                  roomId: message.roomId,
+                  recipientId: null,
+                  messageType: 'system',
+                  createdAt: new Date().toISOString(),
+                  sender: {
+                    id: 'system',
+                    username: 'System',
+                    level: 0,
+                    isOnline: true,
+                  }
+                }
+              });
+
               // Broadcast system message about user joining
               broadcastToRoom(message.roomId, {
                 type: 'new_message',
