@@ -67,7 +67,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
   };
 
   const isGiftMessage = (content: string) => {
-    return content.includes('🎁 sent a') && content.includes('gift to');
+    return content.includes('🎁GIFT:') || (content.includes('🎁 sent a') && content.includes('gift to'));
   };
 
   const parseGiftMessage = (content: string) => {
@@ -75,9 +75,18 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
     const jsonMatch = content.match(/🎁GIFT:(.+)$/);
     if (jsonMatch) {
       try {
-        return JSON.parse(jsonMatch[1]);
+        const giftData = JSON.parse(jsonMatch[1]);
+        return {
+          senderName: giftData.senderName,
+          giftName: giftData.giftName,
+          recipientName: giftData.recipientName,
+          emoji: giftData.emoji,
+          value: giftData.value,
+          lottie: giftData.lottie
+        };
       } catch (e) {
         console.error('Failed to parse gift JSON:', e);
+        return null;
       }
     }
 
@@ -87,7 +96,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
       return {
         senderName: match[1],
         giftName: match[2],
-        recipient: match[3]
+        recipientName: match[3]
       };
     }
 
@@ -97,7 +106,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
       return {
         senderName: "Someone",
         giftName: altMatch[1],
-        recipient: altMatch[2]
+        recipientName: altMatch[2]
       };
     }
 
@@ -140,18 +149,25 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
                       <span className="text-gray-700 text-sm">to</span>
                     </div>
                     <div className="text-blue-600 font-semibold text-sm mt-1">
-                      {giftData?.recipient}
+                      {giftData?.recipientName || giftData?.recipient}
                     </div>
+                    {giftData?.value && (
+                      <div className="text-yellow-600 font-bold text-xs mt-1">
+                        {giftData.value} coins
+                      </div>
+                    )}
                   </div>
                   <div className="text-3xl animate-spin" style={{animationDuration: '2s'}}>✨</div>
                 </div>
-                {giftData && giftData.animationUrl && (
-                  <Lottie
-                    loop
-                    animationData={giftData.animationUrl}
-                    play
-                    style={{ width: 100, height: 100 }}
-                  />
+                {giftData && giftData.lottie && (
+                  <div className="flex justify-center mt-2">
+                    <Lottie
+                      loop
+                      animationData={giftData.lottie}
+                      play
+                      style={{ width: 80, height: 80 }}
+                    />
+                  </div>
                 )}
               </div>
             </div>
