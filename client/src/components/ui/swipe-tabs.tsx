@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -16,25 +17,12 @@ interface SwipeTabsProps {
 
 export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTabClick = useCallback((index: number) => {
-    if (isTransitioning || index === activeTab) return;
-    
-    setIsTransitioning(true);
     setActiveTab(index);
     onTabChange?.(index);
-    
-    // Reset transition state after animation completes
-    setTimeout(() => {
-      setIsTransitioning(false);
-    }, 500);
-  }, [onTabChange, activeTab, isTransitioning]);
-
-  
-
-  
+  }, [onTabChange]);
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
@@ -48,7 +36,7 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
           style={{
             transform: `translateX(-${activeTab * 100}%)`,
             width: `${tabs.length * 100}%`,
-            transition: 'transform 500ms ease-in-out'
+            transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         >
           {tabs.map((tab, index) => (
@@ -63,19 +51,17 @@ export function SwipeTabs({ tabs, onTabChange, className }: SwipeTabsProps) {
         </div>
       </div>
 
-      {/* Tab Navigation - Moved to bottom */}
+      {/* Tab Navigation - At bottom */}
       <div className="flex bg-white border-t border-gray-200">
         {tabs.map((tab, index) => (
           <button
             key={tab.id}
             onClick={() => handleTabClick(index)}
-            disabled={isTransitioning}
             className={cn(
               "flex-1 flex flex-col items-center py-3 px-2 text-xs font-medium transition-colors",
               activeTab === index
                 ? "text-primary border-t-2 border-primary bg-primary/5"
-                : "text-gray-500 hover:text-gray-700",
-              isTransitioning && "opacity-50 cursor-not-allowed"
+                : "text-gray-500 hover:text-gray-700"
             )}
           >
             {tab.icon}
