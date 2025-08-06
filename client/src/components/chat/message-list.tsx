@@ -51,10 +51,38 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
         
         // System message rendering
         if (isSystemMessage) {
+          const isWelcomeMessage = message.content.includes('Welcome to');
+          const isCurrentlyInRoom = message.content.includes('Currently in the room:');
+          const isRoomManaged = message.content.includes('This room is managed by');
+          const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left');
+          
           return (
-            <div key={message.id} className="flex justify-center">
-              <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
-                {message.content}
+            <div key={message.id} className="mb-2">
+              <div className="text-sm">
+                {isWelcomeMessage && (
+                  <div>
+                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-gray-800">{message.content}</span>
+                  </div>
+                )}
+                {isCurrentlyInRoom && (
+                  <div>
+                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-gray-800">{message.content}</span>
+                  </div>
+                )}
+                {isRoomManaged && (
+                  <div>
+                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-gray-800">{message.content}</span>
+                  </div>
+                )}
+                {isUserEnterLeave && (
+                  <div>
+                    <span className="text-red-500 font-medium">System [11:31]: </span>
+                    <span className="text-gray-800">{message.content}</span>
+                  </div>
+                )}
               </div>
             </div>
           );

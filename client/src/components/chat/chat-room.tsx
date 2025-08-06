@@ -111,8 +111,58 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
   useEffect(() => {
     if (isConnected && currentRoom?.id) {
       joinRoom(currentRoom.id);
+      
+      // Add welcome message and system messages when joining room
+      const welcomeMessages = [
+        {
+          id: `welcome-${Date.now()}`,
+          content: `Welcome to ${currentRoom.name} official chat room.`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        },
+        {
+          id: `room-info-${Date.now()}`,
+          content: `Currently in the room: ${roomMembers?.map(m => m.user.username).join(', ') || 'loading...'}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        },
+        {
+          id: `room-managed-${Date.now()}`,
+          content: `This room is managed by ${currentRoom.name.toLowerCase()}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        }
+      ];
+      
+      setMessages(prev => [...prev, ...welcomeMessages]);
     }
-  }, [isConnected, joinRoom, currentRoom?.id]);
+  }, [isConnected, joinRoom, currentRoom?.id, roomMembers]);
+
+  // Update the "Currently in the room" message when members change
+  useEffect(() => {
+    if (roomMembers && roomMembers.length > 0) {
+      setMessages(prev => {
+        const filteredMessages = prev.filter(msg => msg.id !== `room-info-${currentRoom?.id}`);
+        return [
+          ...filteredMessages,
+          {
+            id: `room-info-${currentRoom?.id}`,
+            content: `Currently in the room: ${roomMembers.map(m => m.user.username).join(', ')}`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          }
+        ];
+      });
+    }
+  }, [roomMembers, currentRoom?.id]);
 
   useEffect(() => {
     // Listen for new messages
@@ -123,10 +173,45 @@ export function ChatRoom({ roomId, roomName, onUserClick }: ChatRoomProps) {
       }
     };
 
+    // Listen for user join/leave events
+    const handleUserJoin = (event: CustomEvent) => {
+      const { username, roomId } = event.detail;
+      if (roomId === currentRoom?.id) {
+        const joinMessage = {
+          id: `join-${Date.now()}-${username}`,
+          content: `${username} has entered`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, joinMessage]);
+      }
+    };
+
+    const handleUserLeave = (event: CustomEvent) => {
+      const { username, roomId } = event.detail;
+      if (roomId === currentRoom?.id) {
+        const leaveMessage = {
+          id: `leave-${Date.now()}-${username}`,
+          content: `${username} has left`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, leaveMessage]);
+      }
+    };
+
     window.addEventListener('newMessage', handleNewMessage as EventListener);
+    window.addEventListener('userJoined', handleUserJoin as EventListener);
+    window.addEventListener('userLeft', handleUserLeave as EventListener);
 
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
+      window.removeEventListener('userJoined', handleUserJoin as EventListener);
+      window.removeEventListener('userLeft', handleUserLeave as EventListener);
     };
   }, [currentRoom?.id]);
 
