@@ -663,6 +663,33 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/admin/users/search', requireAdmin, async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim().length < 2) {
+        return res.json([]);
+      }
+
+      const searchQuery = `%${q.trim().toLowerCase()}%`;
+      
+      const searchResults = await db.select()
+        .from(users)
+        .where(
+          or(
+            sql`LOWER(${users.username}) LIKE ${searchQuery}`,
+            sql`LOWER(${users.email}) LIKE ${searchQuery}`
+          )
+        )
+        .limit(50);
+
+      res.json(searchResults);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      res.status(500).json({ message: 'Failed to search users' });
+    }
+  });
+
   app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     try {
       const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);

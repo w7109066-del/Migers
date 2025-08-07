@@ -38,6 +38,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<User[]>([]);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -81,6 +82,30 @@ export function AdminPage({ onBack }: AdminPageProps) {
       }
     } catch (error) {
       console.error('Error loading stats:', error);
+    }
+  };
+
+  const searchUsers = async (query: string) => {
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/search?q=${encodeURIComponent(query)}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const results = await response.json();
+        setSearchResults(results);
+      } else {
+        console.error('Failed to search users');
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSearchResults([]);
     }
   };
 
@@ -128,10 +153,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
     }
   };
 
-  const filteredUsers = users.filter(u =>
-    u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const displayUsers = searchTerm.trim().length >= 2 ? searchResults : users;
 
   if (!user?.isAdmin) {
     return (
@@ -253,7 +275,10 @@ export function AdminPage({ onBack }: AdminPageProps) {
             <Input
               placeholder="Search users by username or email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                searchUsers(e.target.value);
+              }}
               className={cn("", isDarkMode ? "bg-gray-800 border-gray-700" : "")}
             />
 
@@ -267,7 +292,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredUsers.map((u) => (
+                {displayUsers.map((u) => (
                   <div
                     key={u.id}
                     className={cn(
@@ -353,10 +378,10 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   </div>
                 ))}
 
-                {filteredUsers.length === 0 && (
+                {displayUsers.length === 0 && !loading && (
                   <div className="text-center py-8">
                     <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                      No users found.
+                      {searchTerm.trim().length >= 2 ? "No users found matching your search." : "No users found."}
                     </p>
                   </div>
                 )}
