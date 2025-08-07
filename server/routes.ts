@@ -1141,12 +1141,12 @@ export function registerRoutes(app: Express): Server {
 
                 if (meMatch) {
                   const [, actionText] = meMatch;
-                  const messageUser = await storage.getUser(userId);
+                  const senderUser = await storage.getUser(userId);
 
                   // Create /me action message
                   const meActionContent = actionText.trim() ? 
-                    `* ${messageUser.username || 'User'} ${actionText.trim()}` : 
-                    `* ${messageUser.username || 'User'}`;
+                    `* ${senderUser.username || 'User'} ${actionText.trim()}` : 
+                    `* ${senderUser.username || 'User'}`;
 
                   // For mock rooms (1-4), create a mock message
                   if (['1', '2', '3', '4'].includes(message.roomId)) {
@@ -1161,10 +1161,10 @@ export function registerRoutes(app: Express): Server {
                       createdAt: new Date().toISOString(),
                       sender: {
                         id: userId,
-                        username: messageUser.username || 'User',
-                        level: messageUser.level || 1,
-                        isOnline: messageUser.isOnline || true,
-                        profilePhotoUrl: messageUser.profilePhotoUrl || null
+                        username: senderUser.username || 'User',
+                        level: senderUser.level || 1,
+                        isOnline: senderUser.isOnline || true,
+                        profilePhotoUrl: senderUser.profilePhotoUrl || null
                       }
                     };
 
@@ -1198,7 +1198,7 @@ export function registerRoutes(app: Express): Server {
                 // For mock rooms (1-4), create a mock message instead of using database
                 if (['1', '2', '3', '4'].includes(message.roomId)) {
                   // Get user data for the mock message
-                  const messageUser = await storage.getUser(userId);
+                  const senderUser = await storage.getUser(userId);
 
                   const mockMessage = {
                     id: `mock-${Date.now()}`,
@@ -1211,10 +1211,10 @@ export function registerRoutes(app: Express): Server {
                     createdAt: new Date().toISOString(),
                     sender: {
                       id: userId,
-                      username: messageUser.username || 'User',
-                      level: messageUser.level || 1,
-                      isOnline: messageUser.isOnline || true,
-                      profilePhotoUrl: messageUser.profilePhotoUrl || null // Include profilePhotoUrl
+                      username: senderUser.username || 'User',
+                      level: senderUser.level || 1,
+                      isOnline: senderUser.isOnline || true,
+                      profilePhotoUrl: senderUser.profilePhotoUrl || null // Include profilePhotoUrl
                     }
                   };
 
