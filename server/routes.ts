@@ -598,8 +598,7 @@ export function registerRoutes(app: Express): Server {
                       id: `whois-${Date.now()}`,
                       content: `📋 User Info for ${targetUser.username}:\n` +
                                `• Level: ${targetUser.level}\n` +
-                               `• Status: ${targetUser.isOnline ? 'Online' : 'Offline'}\n` +
-                               `• User ID: ${targetUser.id}`,
+                               `• Status: ${targetUser.isOnline ? 'Online' : 'Offline'}`,
                       senderId: 'system',
                       roomId: message.roomId,
                       recipientId: null,
