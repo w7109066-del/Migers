@@ -17,9 +17,18 @@ function requireAuth(req: any, res: any, next: any) {
     return res.status(401).json({ message: "Authentication required" });
   }
   
-  // Check if user is banned
+  next();
+}
+
+// Room access middleware - check if user is banned from rooms
+function requireRoomAccess(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  // Check if user is banned from rooms
   if (req.user?.isBanned) {
-    return res.status(403).json({ message: "Account has been banned" });
+    return res.status(403).json({ message: "You are banned from accessing chat rooms" });
   }
   
   next();
@@ -99,7 +108,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Rooms API endpoints
-  app.get("/api/rooms", requireAuth, async (req, res) => {
+  app.get("/api/rooms", requireRoomAccess, async (req, res) => {
     try {
       // Get user-created rooms from database
       const userRooms = await storage.getAllRooms();
@@ -168,7 +177,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/rooms", requireAuth, async (req, res) => {
+  app.post("/api/rooms", requireRoomAccess, async (req, res) => {
     try {
       const { name, description, isPublic = true, maxMembers = 25 } = req.body;
       const userId = req.user!.id;
@@ -202,7 +211,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/rooms/:roomId/join", requireAuth, async (req, res) => {
+  app.post("/api/rooms/:roomId/join", requireRoomAccess, async (req, res) => {
     try {
       const { roomId } = req.params;
       const userId = req.user!.id;
@@ -229,7 +238,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/rooms/:roomId/members", requireAuth, async (req, res) => {
+  app.get("/api/rooms/:roomId/members", requireRoomAccess, async (req, res) => {
     try {
       const { roomId } = req.params;
 
@@ -800,6 +809,16 @@ export function registerRoutes(app: Express): Server {
 
           case 'join_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
+              // Check if user is banned from rooms
+              const currentUser = await storage.getUser(userId);
+              if (currentUser?.isBanned) {
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'You are banned from accessing chat rooms',
+                }));
+                break;
+              }
+
               // Prevent duplicate joins - check if user is already in the room
               if (currentRoomId === message.roomId) {
                 console.log(`User ${userId} already in room ${message.roomId}, skipping duplicate join`);
@@ -970,6 +989,18 @@ export function registerRoutes(app: Express): Server {
 
           case 'send_message':
             if (userId && message.content) {
+              // Check if user is banned from rooms (only for room messages)
+              if (message.roomId) {
+                const currentUser = await storage.getUser(userId);
+                if (currentUser?.isBanned) {
+                  ws.send(JSON.stringify({
+                    type: 'error',
+                    message: 'You are banned from sending messages in chat rooms',
+                  }));
+                  break;
+                }
+              }
+
               if (message.roomId) {
                 // Check if message is a whois command
                 const whoisCommandRegex = /^\/whois\s+(.+)$/i;

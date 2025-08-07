@@ -293,12 +293,12 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
               <Card>
                 <CardContent className="p-4 text-center">
-                  <Shield className="w-8 h-8 mx-auto mb-2 text-gray-500" />
+                  <Ban className="w-8 h-8 mx-auto mb-2 text-red-500" />
                   <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
                     {stats.bannedUsers}
                   </div>
                   <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                    Banned
+                    Room Banned
                   </div>
                 </CardContent>
               </Card>
@@ -385,8 +385,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
                           </Badge>
                         )}
                         {u.isBanned && (
-                          <Badge variant="destructive" className="text-xs bg-gray-600">
-                            Banned
+                          <Badge variant="destructive" className="text-xs bg-red-600">
+                            Room Banned
                           </Badge>
                         )}
                         <Badge variant="outline" className="text-xs">
@@ -445,7 +445,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                             onClick={() => banUser(u.id)}
                           >
                             <Ban className="w-3 h-3 mr-1" />
-                            Ban
+                            Ban from Rooms
                           </Button>
                         ) : (
                           <Button
@@ -454,7 +454,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                             className="text-xs text-green-600 border-green-300 hover:bg-green-50"
                             onClick={() => unbanUser(u.id)}
                           >
-                            Unban
+                            Unban from Rooms
                           </Button>
                         )}
                       </div>

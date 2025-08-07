@@ -133,11 +133,25 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to join room');
+      if (response.ok) {
+        const room = await response.json();
+        console.log('Successfully joined room:', room);
+        setSelectedRoom({ id: roomId, name: room.name }); // Assuming room object has a name property
+      } else if (response.status === 403) {
+        const errorData = await response.json();
+        toast({
+          title: "Access Denied",
+          description: errorData.message || "You are banned from accessing chat rooms.",
+          variant: "destructive",
+        });
+      } else {
+        console.error('Failed to join room:', response.status);
+        toast({
+          title: "Error",
+          description: "Failed to join room. Please try again.",
+          variant: "destructive",
+        });
       }
-
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
@@ -216,14 +230,15 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     try {
       console.log('Attempting to join room:', room.id);
       await joinRoomMutation.mutateAsync(room.id);
-      console.log('Successfully joined room:', room.id);
-
-      // Set selected room immediately
-      setSelectedRoom(room);
+      // The mutation handler itself sets selectedRoom on success or shows toast on failure
     } catch (error) {
-      console.error('Failed to join room:', error);
-      // Still allow entering the room even if join fails
-      setSelectedRoom(room);
+      console.error('An unexpected error occurred during room join attempt:', error);
+      // If the mutation itself throws an error (e.g., network issue before response), show a generic error.
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
