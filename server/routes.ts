@@ -419,6 +419,51 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Profile endpoint with complete data
+  app.get("/api/user/profile/:userId", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const currentUserId = req.user!.id;
+
+      // Get user profile data
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get fans count (followers)
+      const fansCount = await storage.getFansCount(userId);
+
+      // Get following count
+      const followingCount = await storage.getFollowingCount(userId);
+
+      // Check if current user is friend with this user
+      let isFriend = false;
+      if (currentUserId !== userId) {
+        isFriend = await storage.checkFollowStatus(currentUserId, userId);
+      }
+
+      const profileData = {
+        id: user.id,
+        username: user.username,
+        level: user.level || 1,
+        status: user.status || "",
+        bio: user.bio || "",
+        isOnline: user.isOnline || false,
+        country: user.country || "ID",
+        profilePhotoUrl: user.profilePhotoUrl,
+        fansCount: fansCount || 0,
+        followingCount: followingCount || 0,
+        isFriend
+      };
+
+      res.json(profileData);
+    } catch (error) {
+      console.error('Failed to get user profile:', error);
+      res.status(500).json({ message: "Failed to get user profile" });
+    }
+  });
+
   // Follow/Unfollow endpoints
   app.post("/api/user/follow", requireAuth, async (req, res) => {
     try {

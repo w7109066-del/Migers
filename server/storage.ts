@@ -55,6 +55,8 @@ export interface IStorage {
   getFollowerCount(userId: string): Promise<number>;
   getFollowingCount(userId: string): Promise<number>;
   isFollowing(followerId: string, followingId: string): Promise<boolean>;
+  getFansCount(userId: string): Promise<number>;
+  getFollowingCount(userId: string): Promise<number>;
 
 
   // Chat rooms
@@ -74,9 +76,6 @@ export interface IStorage {
   getDirectMessages(userId: string, otherUserId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   createMessage(message: InsertMessage): Promise<Message & { sender: User }>;
   createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }): Promise<Message & { sender: User }>;
-
-  // Direct message conversations
-  getDirectMessageConversations(userId: string): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -300,8 +299,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async unfollowUser(followerId: string, followingId: string): Promise<void> {
-    await this.db
-      .delete(followers)
+    await this.db.delete(followers)
       .where(
         and(
           eq(followers.followerId, followerId),
@@ -310,20 +308,32 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async getFollowerCount(userId: string): Promise<number> {
-    const [result] = await this.db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(followers)
-      .where(eq(followers.followingId, userId));
-    return result.count;
+  async getFansCount(userId: string): Promise<number> {
+    try {
+      const result = await this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(followers)
+        .where(eq(followers.followingId, userId));
+
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error getting fans count:', error);
+      return 0;
+    }
   }
 
   async getFollowingCount(userId: string): Promise<number> {
-    const [result] = await this.db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(followers)
-      .where(eq(followers.followerId, userId));
-    return result.count;
+    try {
+      const result = await this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(followers)
+        .where(eq(followers.followerId, userId));
+
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error getting following count:', error);
+      return 0;
+    }
   }
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
@@ -522,8 +532,11 @@ export class DatabaseStorage implements IStorage {
         .where(inArray(users.id, conversationIds));
 
       // Combine conversation data with user details
-      const conversations = userDetails.map(user => {
+      const conversations = userDetails.map(async user => {
         const convData = conversationMap.get(user.id);
+        const fans = await this.getFansCount(user.id);
+        const following = await this.getFollowingCount(user.id);
+
         return {
           id: user.id,
           username: user.username,
@@ -535,12 +548,14 @@ export class DatabaseStorage implements IStorage {
           lastMessageType: convData.lastMessageType,
           lastMessageTime: convData.lastMessageTime,
           // Add follower counts
-          fans: convData.fans !== undefined ? convData.fans : 0,
-          following: convData.following !== undefined ? convData.following : 0,
+          fans: fans,
+          following: following,
         };
       });
 
-      return conversations.sort((a, b) =>
+      const resolvedConversations = await Promise.all(conversations);
+
+      return resolvedConversations.sort((a, b) =>
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
     } catch (error) {

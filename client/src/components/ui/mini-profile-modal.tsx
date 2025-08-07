@@ -17,13 +17,12 @@ interface MiniProfileModalProps {
     username: string;
     level: number;
     status: string;
-    bio?: string; // Added bio field
+    bio?: string;
     isOnline: boolean;
     country?: string;
-    profilePhotoUrl?: string; // Added profilePhotoUrl field
-    // New fields for fan/following counts and friend status
-    fans?: number;
-    following?: number;
+    profilePhotoUrl?: string;
+    fansCount?: number;
+    followingCount?: number;
     isFriend?: boolean;
   };
   onClose: () => void;
@@ -240,11 +239,11 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           <div className="flex items-center justify-center space-x-6 mb-4">
             <div className="flex items-center text-gray-600">
               <Users className="w-4 h-4 mr-1" />
-              <span className="text-sm font-medium">{profile.fans || 0} Fans</span>
+              <span className="text-sm font-medium">{profile.fansCount || 0} Fans</span>
             </div>
             <div className="flex items-center text-gray-600">
               <Users className="w-4 h-4 mr-1" />
-              <span className="text-sm font-medium">{profile.following || 0} Following</span>
+              <span className="text-sm font-medium">{profile.followingCount || 0} Following</span>
             </div>
           </div>
 
