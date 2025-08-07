@@ -101,13 +101,17 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
 
   const loadDirectMessages = async () => {
     try {
+      console.log(`Loading direct messages with user: ${recipient.id}`);
       const response = await fetch(`/api/messages/direct/${recipient.id}`, {
         credentials: 'include',
       });
 
       if (response.ok) {
         const directMessages = await response.json();
+        console.log(`Loaded ${directMessages.length} direct messages`);
         setMessages(directMessages);
+      } else {
+        console.error('Failed to load direct messages:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Failed to load direct messages:', error);

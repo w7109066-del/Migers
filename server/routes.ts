@@ -955,6 +955,103 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get direct messages with a specific user
+  app.get('/api/messages/direct/:recipientId', requireAuth, async (req, res) => {
+    try {
+      const { recipientId } = req.params;
+      const currentUserId = req.user!.id;
+
+      console.log(`Loading direct messages between ${currentUserId} and ${recipientId}`);
+
+      const messages = await storage.getDirectMessages(currentUserId, recipientId);
+      
+      console.log(`Found ${messages.length} direct messages`);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching direct messages:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch direct messages',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        messages: []
+      });
+    }
+  });
+
+  // Send direct messages endpoint
+  app.post('/api/messages/direct', requireAuth, upload.single('media'), async (req, res) => {
+    try {
+      const { content, recipientId, messageType = 'text', giftData } = req.body;
+      const senderId = req.user!.id;
+
+      if (!recipientId) {
+        return res.status(400).json({ error: 'Recipient ID is required' });
+      }
+
+      if (!content && !req.file) {
+        return res.status(400).json({ error: 'Message content or media is required' });
+      }
+
+      let messageContent = content || '';
+      let finalMessageType = messageType;
+      let metadata = null;
+
+      // Handle media upload
+      if (req.file) {
+        const mediaUrl = `/uploads/${req.file.filename}`;
+        finalMessageType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+        
+        if (content) {
+          messageContent = `${content}\n${mediaUrl}`;
+        } else {
+          messageContent = mediaUrl;
+        }
+        
+        metadata = {
+          mediaUrl,
+          mediaType: finalMessageType,
+          originalFilename: req.file.originalname
+        };
+      }
+
+      // Handle gift messages
+      if (giftData) {
+        finalMessageType = 'gift';
+        metadata = { giftData };
+      }
+
+      const directMessage = await storage.createDirectMessage({
+        content: messageContent,
+        senderId,
+        recipientId,
+        messageType: finalMessageType
+      });
+
+      // Add metadata to the message if present
+      if (metadata) {
+        directMessage.metadata = metadata;
+        if (giftData) {
+          directMessage.giftData = giftData;
+        }
+      }
+
+      console.log(`Direct message sent from ${senderId} to ${recipientId}`);
+
+      // Broadcast to recipient via WebSocket
+      broadcastToUser(recipientId, {
+        type: 'new_direct_message',
+        message: directMessage,
+      });
+
+      res.json(directMessage);
+    } catch (error) {
+      console.error('Error sending direct message:', error);
+      res.status(500).json({ 
+        error: 'Failed to send direct message',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get user's direct message conversations
   app.get('/api/messages/conversations', requireAuth, async (req, res) => {
     try {
@@ -1555,13 +1652,17 @@ export function registerRoutes(app: Express): Server {
   }
 
   function broadcastToUser(userId: string, message: any) {
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        // In a real implementation, you'd track userId to WebSocket mapping
-        // For now, broadcasting to all clients and letting the frontend filter
-        client.send(JSON.stringify(message));
-      }
-    });
+    const userWs = userConnections.get(userId);
+    if (userWs && userWs.readyState === WebSocket.OPEN) {
+      userWs.send(JSON.stringify(message));
+    } else {
+      // Fallback: broadcast to all clients if direct connection not found
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(message));
+        }
+      });
+    }
   }
 
   return httpServer;

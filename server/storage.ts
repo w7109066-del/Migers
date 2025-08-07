@@ -475,6 +475,8 @@ export class DatabaseStorage implements IStorage {
 
   async getDirectMessageConversations(userId: string) {
     try {
+      console.log(`Getting DM conversations for user: ${userId}`);
+      
       // First, get all messages where user is involved
       const allMessages = await this.db
         .select({
@@ -497,6 +499,8 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(desc(messages.createdAt));
 
+      console.log(`Found ${allMessages.length} direct messages for user ${userId}`);
+
       // Group by conversation and get the latest message for each
       const conversationMap = new Map();
 
@@ -513,10 +517,13 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      console.log(`Found ${conversationMap.size} unique conversations`);
+
       // Now get user details for each conversation
       const conversationIds = Array.from(conversationMap.keys()).filter(id => id !== null && id !== undefined);
 
       if (conversationIds.length === 0) {
+        console.log('No conversations found');
         return [];
       }
 
@@ -532,6 +539,8 @@ export class DatabaseStorage implements IStorage {
         })
         .from(users)
         .where(inArray(users.id, conversationIds));
+
+      console.log(`Found user details for ${userDetails.length} users`);
 
       // Combine conversation data with user details
       const conversations = await Promise.all(userDetails.map(async user => {
@@ -578,6 +587,7 @@ export class DatabaseStorage implements IStorage {
       // Filter out null conversations and sort
       const validConversations = conversations.filter(conv => conv !== null);
 
+      console.log(`Returning ${validConversations.length} valid conversations`);
       return validConversations.sort((a, b) =>
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
