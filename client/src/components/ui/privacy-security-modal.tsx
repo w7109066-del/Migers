@@ -52,10 +52,7 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
           <div className="space-y-2 pt-4">
             {/* Change Password */}
             <button
-              onClick={() => {
-                console.log('Change Password clicked');
-                setShowChangePassword(true);
-              }}
+              onClick={() => setShowChangePassword(true)}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
@@ -120,13 +117,9 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
       </Dialog>
 
       {/* Sub-modals */}
-      {console.log('ChangePasswordModal isOpen:', showChangePassword)}
       <ChangePasswordModal
         isOpen={showChangePassword}
-        onClose={() => {
-          console.log('Closing Change Password modal');
-          setShowChangePassword(false);
-        }}
+        onClose={() => setShowChangePassword(false)}
       />
       
       <ChangeEmailModal
