@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -108,15 +107,15 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       const response = await fetch('/api/rooms', {
         credentials: 'include',
       });
-      
+
       console.log('API Response status:', response.status);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error:', errorText);
         throw new Error(`Failed to fetch rooms: ${response.status} - ${errorText}`);
       }
-      
+
       const data = await response.json();
       console.log('API Response data:', data);
       return data;
@@ -133,11 +132,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
         method: 'POST',
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to join room');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -160,11 +159,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           maxMembers: 25
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create room');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -190,7 +189,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   if (error) {
     console.error('Room fetch error:', error);
   }
-  
+
   // Show actual data or fallback, but log what we're using
   const displayRooms = rooms && rooms.length > 0 ? rooms : mockRoomsFallback;
   console.log('Using rooms data:', { 
@@ -207,7 +206,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   const handleRoomClick = async (room: Room) => {
     console.log('Room clicked:', room);
-    
+
     // Validate room data before proceeding
     if (!room || !room.id || !room.name) {
       console.error('Invalid room data:', room);
@@ -218,7 +217,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       console.log('Attempting to join room:', room.id);
       await joinRoomMutation.mutateAsync(room.id);
       console.log('Successfully joined room:', room.id);
-      
+
       // Set selected room immediately
       setSelectedRoom(room);
     } catch (error) {
@@ -232,7 +231,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     console.log('Returning to room list...');
     // Reset selected room immediately
     setSelectedRoom(null);
-    
+
     // Refresh room data manually (no auto-refresh)
     console.log('Manually refreshing room data...');
     queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
@@ -353,7 +352,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       hasId: !!selectedRoom.id, 
       hasName: !!selectedRoom.name 
     });
-    
+
     // Validate selected room before rendering
     if (!selectedRoom.id || !selectedRoom.name) {
       console.error('RoomList: Invalid selected room, resetting:', selectedRoom);
@@ -362,7 +361,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     }
 
     console.log('RoomList: About to render ChatRoom component');
-    
+
     return (
       <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">
         {/* Chat room header */}
@@ -384,7 +383,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
             <span className="font-semibold text-gray-800 dark:text-gray-200">{selectedRoom.name}</span>
           </div>
         </div>
-        
+
         {/* Chat room content */}
         <div className="flex-1 overflow-hidden">
           <ChatRoom 
@@ -535,7 +534,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
             </DialogContent>
           </Dialog>
         </div>
-        
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
@@ -546,7 +545,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           />
         </div>
       </div>
-      
+
       {/* Room Categories */}
       <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
         <div className="p-4 space-y-6">

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
@@ -72,13 +71,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   // Initialize room and messages
   useEffect(() => {
     console.log('ChatRoom useEffect:', { isConnected, roomId, roomName });
-    
+
     if (roomId && roomName) {
       console.log('Initializing chat room:', roomId);
-      
+
       // Clear previous messages first
       setMessages([]);
-      
+
       // Set welcome messages immediately
       const welcomeMessages = [
         {
@@ -98,10 +97,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
           messageType: 'system'
         }
       ];
-      
+
       setMessages(welcomeMessages);
       console.log('Set welcome messages for room:', roomId);
-      
+
       // Join room if connected, or wait for connection
       if (isConnected) {
         joinRoom(roomId);
@@ -110,7 +109,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     } else {
       console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
     }
-    
+
     // Cleanup when roomId changes
     return () => {
       console.log('Cleaning up chat room:', roomId);
@@ -127,7 +126,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       const timer = setTimeout(() => {
         joinRoom(roomId);
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isConnected, roomId, joinRoom]);
@@ -139,7 +138,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
         .map(m => m.user.username)
         .sort((a, b) => a.localeCompare(b))
         .join(', ');
-      
+
       setMessages(prev => {
         const filtered = prev.filter(msg => msg.id !== `room-info-${roomId}`);
         return [
@@ -304,7 +303,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center flex-shrink-0">
           <div className="w-32 h-4 bg-gray-200 rounded animate-pulse"></div>
         </div>
-        
+
         {/* Loading content */}
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -397,7 +396,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                   <span>{roomName} Settings</span>
                 </DialogTitle>
               </DialogHeader>
-              
+
               <div className="space-y-4">
                 {/* Room Info */}
                 <div className="p-4 bg-gray-50 rounded-lg">
@@ -420,7 +419,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                       <Shield className="w-4 h-4 text-orange-500" />
                       <span className="font-medium">Admin Actions</span>
                     </div>
-                    
+
                     {/* Kick Users */}
                     <div className="p-3 border rounded-lg">
                       <div className="flex items-center justify-between">
@@ -482,7 +481,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                   </AlertDialog>
                                 </div>
                               ))}
-                              
+
                               {(!roomMembers || roomMembers.filter(m => m.user.id !== user?.id).length === 0) && (
                                 <div className="text-center text-gray-500 py-4">
                                   <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -533,7 +532,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                     )}
                   </div>
                 )}
-                
+
                 {!isAdmin && (
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-700">
