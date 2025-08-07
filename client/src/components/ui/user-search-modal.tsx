@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, UserPlus, Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface User {
   id: string;
@@ -28,7 +28,7 @@ interface UserSearchModalProps {
 export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick }: UserSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { user: currentUser } = useAuth();
-  const { toast } = useToast();
+  // Using imported toast function directly
   const queryClient = useQueryClient();
 
   const { data: searchResults, isLoading, refetch } = useQuery({

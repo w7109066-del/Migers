@@ -690,7 +690,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
             className="flex items-start space-x-3 group"
           >
             <div className="flex-1">
-              <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center space-x-2 text-sm group">
                 <UserAvatar
                   username={message.sender.username}
                   size="sm"
@@ -699,12 +699,23 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                 <ContextMenu>
                   <ContextMenuTrigger asChild>
                     <button 
-                      className="font-semibold hover:bg-gray-100 rounded px-1 py-0.5 cursor-pointer transition-colors"
+                      className="font-semibold hover:bg-blue-100 hover:text-blue-800 rounded px-2 py-1 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 relative"
                       style={{ 
                         color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
                       }}
+                      title="Right-click or long press for options"
+                      onTouchStart={(e) => {
+                        // Add visual feedback for mobile
+                        e.currentTarget.classList.add('bg-blue-100');
+                      }}
+                      onTouchEnd={(e) => {
+                        setTimeout(() => {
+                          e.currentTarget.classList.remove('bg-blue-100');
+                        }, 200);
+                      }}
                     >
                       {message.sender.username}
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-400 ml-1">📋</span>
                     </button>
                   </ContextMenuTrigger>
                   <ContextMenuContent className="w-56">
