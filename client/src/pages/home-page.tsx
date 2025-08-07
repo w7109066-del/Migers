@@ -96,6 +96,9 @@ function HomePageContent() {
   const [showShareModal, setShowShareModal] = useState<any | null>(null); // Changed state to allow object with url and type
   const [userLikes, setUserLikes] = useState<{[postId: string]: boolean}>({});
   const [likeCounts, setLikeCounts] = useState<{[postId: string]: number}>({});
+  const [showReplyBox, setShowReplyBox] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState<{[commentId: string]: string}>({});
+  const [expandedReplies, setExpandedReplies] = useState<string[]>([]);
 
   // Update local status when user data changes
   React.useEffect(() => {
@@ -157,7 +160,7 @@ function HomePageContent() {
     }
   };
 
-  const handleAddComment = async (postId: string, content: string) => {
+  const handleAddComment = async (postId: string, content: string, parentCommentId?: string) => {
     if (!content?.trim()) return;
 
     try {
@@ -167,17 +170,33 @@ function HomePageContent() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ content: content.trim() }),
+        body: JSON.stringify({ content: content.trim(), parentCommentId: parentCommentId }),
       });
 
       if (response.ok) {
         const newComment = await response.json();
-        setPostComments(prev => ({
-          ...prev,
-          [postId]: [...(prev[postId] || []), newComment]
-        }));
-        setCommentText(prev => ({ ...prev, [postId]: '' }));
-        setShowCommentEmojis(null);
+        
+        if (parentCommentId) {
+          // Add reply to the correct comment
+          setPostComments(prev => ({
+            ...prev,
+            [postId]: prev[postId]?.map(comment => 
+              comment.id === parentCommentId 
+                ? { ...comment, replies: [...(comment.replies || []), newComment] }
+                : comment
+            ) || []
+          }));
+          setReplyText(prev => ({ ...prev, [parentCommentId]: '' }));
+          setShowReplyBox(null);
+        } else {
+          // Add top-level comment
+          setPostComments(prev => ({
+            ...prev,
+            [postId]: [...(prev[postId] || []), newComment]
+          }));
+          setCommentText(prev => ({ ...prev, [postId]: '' }));
+          setShowCommentEmojis(null);
+        }
 
         // Update the post's comment count
         setFeedPosts(prev => prev.map(post => 
@@ -430,6 +449,19 @@ function HomePageContent() {
 
   const handleUserClick = (user: MiniProfileData) => {
     setSelectedProfile(user);
+  };
+
+  const handleReply = (commentId: string) => {
+    setShowReplyBox(commentId);
+    setReplyText(prev => ({ ...prev, [commentId]: '' })); // Clear previous reply text for this comment
+  };
+
+  const toggleReplies = (commentId: string) => {
+    setExpandedReplies(prev => 
+      prev.includes(commentId) 
+        ? prev.filter(id => id !== commentId) 
+        : [...prev, commentId]
+    );
   };
 
   const tabs = [
@@ -772,48 +804,144 @@ function HomePageContent() {
                                 </div>
                               ) : (
                                 postComments[post.id]?.map((comment, index) => (
-                                  <div key={`${comment.id}-${index}`} className="flex items-start space-x-3">
-                                    <UserAvatar
-                                      username={comment.author?.username || 'Unknown'}
-                                      size="sm"
-                                      isOnline={false}
-                                      profilePhotoUrl={comment.author?.profilePhotoUrl}
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
-                                        <div className="font-semibold text-sm text-gray-800 mb-1">
-                                          {comment.author?.username || 'Unknown User'}
-                                        </div>
-                                        <div className="text-sm text-gray-700 leading-relaxed">
-                                          {comment.content}
-                                        </div>
-                                      </div>
-
-                                      {/* Comment Actions */}
-                                      <div className="flex items-center justify-between mt-2 px-4">
-                                        <div className="flex items-center space-x-4">
-                                          <span className="text-xs text-gray-500">
-                                            {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('id-ID', { 
-                                              month: '2-digit', 
-                                              day: '2-digit' 
-                                            }) : 'Just now'}
-                                          </span>
-                                          <button className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors">
-                                            Reply
-                                          </button>
-                                        </div>
-
-                                        <div className="flex items-center space-x-2">
-                                          <div className="flex items-center space-x-1">
-                                            <button className="text-gray-500 hover:text-red-500 transition-colors">
-                                              <Heart className="w-4 h-4" />
-                                            </button>
-                                            <span className="text-xs text-gray-500">{comment.likesCount || 0}</span>
+                                  <div key={`${comment.id}-${index}`} className="space-y-3">
+                                    {/* Main Comment */}
+                                    <div className="flex items-start space-x-3">
+                                      <UserAvatar
+                                        username={comment.author?.username || 'Unknown'}
+                                        size="sm"
+                                        isOnline={false}
+                                        profilePhotoUrl={comment.author?.profilePhotoUrl}
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
+                                          <div className="font-semibold text-sm text-gray-800 mb-1">
+                                            {comment.author?.username || 'Unknown User'}
                                           </div>
-                                          <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                                            <MessageCircle className="w-4 h-4 transform scale-x-[-1]" />
-                                          </button>
+                                          <div className="text-sm text-gray-700 leading-relaxed">
+                                            {comment.content}
+                                          </div>
                                         </div>
+
+                                        {/* Comment Actions */}
+                                        <div className="flex items-center justify-between mt-2 px-4">
+                                          <div className="flex items-center space-x-4">
+                                            <span className="text-xs text-gray-500">
+                                              {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('id-ID', { 
+                                                month: '2-digit', 
+                                                day: '2-digit' 
+                                              }) : 'Just now'}
+                                            </span>
+                                            <button 
+                                              className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors"
+                                              onClick={() => handleReply(comment.id)}
+                                            >
+                                              Reply
+                                            </button>
+                                            {comment.replies && comment.replies.length > 0 && (
+                                              <button 
+                                                className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors"
+                                                onClick={() => toggleReplies(comment.id)}
+                                              >
+                                                {expandedReplies.includes(comment.id) ? 'Hide' : 'Show'} {comment.replies.length} repl{comment.replies.length > 1 ? 'ies' : 'y'}
+                                              </button>
+                                            )}
+                                          </div>
+
+                                          <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-1">
+                                              <button className="text-gray-500 hover:text-red-500 transition-colors">
+                                                <Heart className="w-4 h-4" />
+                                              </button>
+                                              <span className="text-xs text-gray-500">{comment.likesCount || 0}</span>
+                                            </div>
+                                            <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                                              <MessageCircle className="w-4 h-4 transform scale-x-[-1]" />
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Reply Input Box */}
+                                        {showReplyBox === comment.id && (
+                                          <div className="mt-3 ml-4">
+                                            <div className="flex items-center space-x-2">
+                                              <UserAvatar
+                                                username={user.username}
+                                                size="sm"
+                                                isOnline={user.isOnline || false}
+                                                profilePhotoUrl={user.profilePhotoUrl}
+                                              />
+                                              <div className="flex-1 flex items-center space-x-2">
+                                                <Input
+                                                  placeholder={`Reply to ${comment.author?.username}...`}
+                                                  value={replyText[comment.id] || ''}
+                                                  onChange={(e) => setReplyText(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                                                  onKeyPress={(e) => {
+                                                    if (e.key === 'Enter' && (replyText[comment.id]?.trim())) {
+                                                      handleAddComment(post.id, replyText[comment.id], comment.id);
+                                                    }
+                                                  }}
+                                                  className={cn("flex-1 text-sm", isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-200")}
+                                                />
+                                                <Button
+                                                  type="button"
+                                                  size="sm"
+                                                  onClick={() => handleAddComment(post.id, replyText[comment.id], comment.id)}
+                                                  disabled={!replyText[comment.id]?.trim()}
+                                                  className="bg-primary hover:bg-primary/90 text-white px-3 py-1"
+                                                >
+                                                  <Send className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Replies */}
+                                        {comment.replies && comment.replies.length > 0 && expandedReplies.includes(comment.id) && (
+                                          <div className="mt-3 ml-6 space-y-3">
+                                            {comment.replies.map((reply, replyIndex) => (
+                                              <div key={`${reply.id}-${replyIndex}`} className="flex items-start space-x-3">
+                                                <UserAvatar
+                                                  username={reply.author?.username || 'Unknown'}
+                                                  size="sm"
+                                                  isOnline={false}
+                                                  profilePhotoUrl={reply.author?.profilePhotoUrl}
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="bg-gray-50 rounded-2xl px-4 py-3 shadow-sm border border-gray-50">
+                                                    <div className="font-semibold text-sm text-gray-800 mb-1">
+                                                      {reply.author?.username || 'Unknown User'}
+                                                    </div>
+                                                    <div className="text-sm text-gray-700 leading-relaxed">
+                                                      {reply.content}
+                                                    </div>
+                                                  </div>
+
+                                                  <div className="flex items-center justify-between mt-2 px-4">
+                                                    <div className="flex items-center space-x-4">
+                                                      <span className="text-xs text-gray-500">
+                                                        {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('id-ID', { 
+                                                          month: '2-digit', 
+                                                          day: '2-digit' 
+                                                        }) : 'Just now'}
+                                                      </span>
+                                                    </div>
+
+                                                    <div className="flex items-center space-x-2">
+                                                      <div className="flex items-center space-x-1">
+                                                        <button className="text-gray-500 hover:text-red-500 transition-colors">
+                                                          <Heart className="w-4 h-4" />
+                                                        </button>
+                                                        <span className="text-xs text-gray-500">{reply.likesCount || 0}</span>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </div>

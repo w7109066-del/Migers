@@ -99,10 +99,11 @@ export const postLikes = pgTable("post_likes", {
 });
 
 export const postComments = pgTable("post_comments", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  content: text("content").notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
   postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
   authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  parentCommentId: uuid("parent_comment_id").references(() => postComments.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -276,9 +277,10 @@ export const insertPostSchema = createInsertSchema(posts).pick({
 });
 
 export const insertCommentSchema = createInsertSchema(postComments).pick({
-  content: true,
   postId: true,
   authorId: true,
+  content: true,
+  parentCommentId: true,
 });
 
 // Types

@@ -347,10 +347,11 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      const { content } = req.body;
+      const { content, parentCommentId } = req.body;
       const comment = await storage.addComment(req.params.postId, {
         content,
         authorId: req.user!.id,
+        parentCommentId: parentCommentId || null,
       });
       res.status(201).json(comment);
     } catch (error) {

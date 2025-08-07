@@ -81,7 +81,7 @@ export interface IStorage {
   createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }): Promise<typeof posts.$inferSelect>;
   likePost(postId: string, userId: string): Promise<void>;
   unlikePost(postId: string, userId: string): Promise<void>;
-  addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect & { author: Pick<User, "id" | "username" | "level" | "isOnline"> }>;
+  addComment(postId: string, commentData: { content: string; authorId: string, parentCommentId?: string | null }): Promise<typeof postComments.$inferSelect & { author: Pick<User, "id" | "username" | "level" | "isOnline"> }>;
   getComments(postId: string): Promise<
     (Omit<typeof postComments.$inferSelect, "updatedAt"> & {
       author: Pick<User, "id" | "username" | "level" | "isOnline">;
@@ -734,45 +734,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(posts.id, postId));
   }
 
-  async addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect & { author: Pick<User, "id" | "username" | "level" | "isOnline"> }> {
+  async addComment(postId: string, commentData: { content: string; authorId: string; parentCommentId?: string | null }): Promise<typeof postComments.$inferSelect & { author: Pick<User, "id" | "username" | "level" | "isOnline"> }> {
     try {
-      const [comment] = await db
+      const newComment = await db
         .insert(postComments)
         .values({
-          id: crypto.randomUUID(),
           postId,
           content: commentData.content,
           authorId: commentData.authorId,
-          createdAt: new Date(),
+          parentCommentId: commentData.parentCommentId || null,
         })
         .returning();
 
-      // Get the author information with a fresh query to ensure we have the latest data
-      const authorData = await db
+      // Get the comment with author info
+      const [commentWithAuthor] = await db
         .select({
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
-          profilePhotoUrl: users.profilePhotoUrl,
+          id: postComments.id,
+          content: postComments.content,
+          createdAt: postComments.createdAt,
+          parentCommentId: postComments.parentCommentId,
+          author: {
+            id: users.id,
+            username: users.username,
+            level: users.level,
+            profilePhotoUrl: users.profilePhotoUrl,
+          },
+          likesCount: sql<number>`0`,
         })
-        .from(users)
-        .where(eq(users.id, commentData.authorId))
-        .limit(1);
+        .from(postComments)
+        .leftJoin(users, eq(postComments.authorId, users.id))
+        .where(eq(postComments.id, newComment[0].id));
 
-      const author = authorData[0] || {
-        id: commentData.authorId,
-        username: 'Unknown User',
-        level: 1,
-        isOnline: false,
-      };
-
-      return {
-        ...comment,
-        author
-      };
+      return commentWithAuthor;
     } catch (error) {
-      console.error('Error adding comment:', error);
+      console.error("Error adding comment:", error);
       throw error;
     }
   }
@@ -783,39 +778,52 @@ export class DatabaseStorage implements IStorage {
     })[]
   > {
     try {
-      const commentsData = await db
+      // First get all comments for the post
+      const allComments = await db
         .select({
           id: postComments.id,
           content: postComments.content,
           createdAt: postComments.createdAt,
-          authorId: postComments.authorId,
-          postId: postComments.postId,
-          authorUsername: users.username,
-          authorLevel: users.level,
-          authorIsOnline: users.isOnline,
-          authorProfilePhotoUrl: users.profilePhotoUrl,
+          parentCommentId: postComments.parentCommentId,
+          author: {
+            id: users.id,
+            username: users.username,
+            level: users.level,
+            profilePhotoUrl: users.profilePhotoUrl,
+          },
+          likesCount: sql<number>`0`, // Placeholder for future like functionality
         })
         .from(postComments)
         .leftJoin(users, eq(postComments.authorId, users.id))
         .where(eq(postComments.postId, postId))
-        .orderBy(asc(postComments.createdAt));
+        .orderBy(desc(postComments.createdAt));
 
-      return commentsData.map(comment => ({
-        id: comment.id,
-        content: comment.content,
-        createdAt: comment.createdAt,
-        authorId: comment.authorId,
-        postId: comment.postId,
-        author: {
-          id: comment.authorId,
-          username: comment.authorUsername || 'Unknown User',
-          level: comment.authorLevel || 1,
-          isOnline: comment.authorIsOnline || false,
-          profilePhotoUrl: comment.authorProfilePhotoUrl,
+      // Organize comments into parent-child structure
+      const commentMap = new Map();
+      const topLevelComments = [];
+
+      // First pass: create a map of all comments
+      allComments.forEach(comment => {
+        commentMap.set(comment.id, { ...comment, replies: [] });
+      });
+
+      // Second pass: organize into parent-child structure
+      allComments.forEach(comment => {
+        if (comment.parentCommentId) {
+          // This is a reply
+          const parent = commentMap.get(comment.parentCommentId);
+          if (parent) {
+            parent.replies.push(commentMap.get(comment.id));
+          }
+        } else {
+          // This is a top-level comment
+          topLevelComments.push(commentMap.get(comment.id));
         }
-      }));
+      });
+
+      return topLevelComments;
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      console.error("Error fetching comments:", error);
       return [];
     }
   }
