@@ -284,9 +284,15 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      const comments = await storage.getComments(req.params.postId);
-      res.json(comments);
+      const { postId } = req.params;
+      console.log('Fetching comments for post:', postId);
+      
+      const comments = await storage.getComments(postId);
+      console.log('Found comments:', comments?.length || 0, 'for post:', postId);
+      
+      res.json(comments || []);
     } catch (error) {
+      console.error('Error fetching comments:', error);
       res.status(500).json({ message: "Failed to fetch comments" });
     }
   });

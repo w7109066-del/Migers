@@ -115,15 +115,15 @@ export default function HomePage() {
       setExpandedComments(prev => prev.filter(id => id !== postId));
     } else {
       setExpandedComments(prev => [...prev, postId]);
-      // Load comments if not already loaded
-      if (!postComments[postId]) {
-        await loadComments(postId);
-      }
+      // Always reload comments to get the latest data
+      console.log('Expanding comments for post:', postId);
+      await loadComments(postId);
     }
   };
 
   const loadComments = async (postId: string) => {
     try {
+      console.log('Loading comments for post:', postId);
       const response = await fetch(`/api/feed/${postId}/comments`, {
         method: 'GET',
         credentials: 'include',
@@ -131,9 +131,12 @@ export default function HomePage() {
 
       if (response.ok) {
         const comments = await response.json();
+        console.log('Loaded comments:', comments);
         setPostComments(prev => ({ ...prev, [postId]: comments }));
       } else {
-        console.error('Failed to load comments');
+        console.error('Failed to load comments, status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Failed to load comments:', error);
@@ -611,52 +614,63 @@ export default function HomePage() {
                           <div className="mt-4 border-t pt-3">
                             {/* Comments List */}
                             <div className="space-y-3 mb-3 max-h-60 overflow-y-auto">
-                              {postComments[post.id]?.map((comment) => (
-                                <div key={comment.id} className="flex items-start space-x-3">
-                                  <UserAvatar
-                                    username={comment.author?.username || 'Unknown'}
-                                    size="sm"
-                                    isOnline={false}
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
-                                      <div className="font-semibold text-sm text-gray-800 mb-1">
-                                        {comment.author?.username}
-                                      </div>
-                                      <div className="text-sm text-gray-700 leading-relaxed">
-                                        {comment.content}
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Comment Actions */}
-                                    <div className="flex items-center justify-between mt-2 px-4">
-                                      <div className="flex items-center space-x-4">
-                                        <span className="text-xs text-gray-500">
-                                          {new Date(comment.createdAt).toLocaleDateString('id-ID', { 
-                                            month: '2-digit', 
-                                            day: '2-digit' 
-                                          })}
-                                        </span>
-                                        <button className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors">
-                                          Reply
-                                        </button>
+                              {!postComments[post.id] ? (
+                                <div className="text-center py-4 text-gray-500">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mx-auto mb-2"></div>
+                                  Loading comments...
+                                </div>
+                              ) : postComments[post.id]?.length === 0 ? (
+                                <div className="text-center py-4 text-gray-500">
+                                  No comments yet. Be the first to comment!
+                                </div>
+                              ) : (
+                                postComments[post.id]?.map((comment, index) => (
+                                  <div key={`${comment.id}-${index}`} className="flex items-start space-x-3">
+                                    <UserAvatar
+                                      username={comment.author?.username || 'Unknown'}
+                                      size="sm"
+                                      isOnline={false}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
+                                        <div className="font-semibold text-sm text-gray-800 mb-1">
+                                          {comment.author?.username || 'Unknown User'}
+                                        </div>
+                                        <div className="text-sm text-gray-700 leading-relaxed">
+                                          {comment.content}
+                                        </div>
                                       </div>
                                       
-                                      <div className="flex items-center space-x-2">
-                                        <div className="flex items-center space-x-1">
-                                          <button className="text-gray-500 hover:text-red-500 transition-colors">
-                                            <Heart className="w-4 h-4" />
+                                      {/* Comment Actions */}
+                                      <div className="flex items-center justify-between mt-2 px-4">
+                                        <div className="flex items-center space-x-4">
+                                          <span className="text-xs text-gray-500">
+                                            {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('id-ID', { 
+                                              month: '2-digit', 
+                                              day: '2-digit' 
+                                            }) : 'Just now'}
+                                          </span>
+                                          <button className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors">
+                                            Reply
                                           </button>
-                                          <span className="text-xs text-gray-500">{comment.likesCount || 0}</span>
                                         </div>
-                                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                                          <MessageCircle className="w-4 h-4 transform scale-x-[-1]" />
-                                        </button>
+                                        
+                                        <div className="flex items-center space-x-2">
+                                          <div className="flex items-center space-x-1">
+                                            <button className="text-gray-500 hover:text-red-500 transition-colors">
+                                              <Heart className="w-4 h-4" />
+                                            </button>
+                                            <span className="text-xs text-gray-500">{comment.likesCount || 0}</span>
+                                          </div>
+                                          <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                                            <MessageCircle className="w-4 h-4 transform scale-x-[-1]" />
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                ))
+                              )}
                             </div>
 
                             {/* Comment Input */}
