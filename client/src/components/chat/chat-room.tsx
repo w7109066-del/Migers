@@ -198,6 +198,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   };
 
   const handleChatUser = (user: any) => {
+    console.log('Opening private chat with:', user.username);
     // Open DM chat without disconnecting from room
     if (onUserClick) {
       onUserClick({
@@ -360,7 +361,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                 {roomMembers?.map((member) => (
                   <ContextMenu key={member.user.id}>
                     <ContextMenuTrigger asChild>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group">
+                      <div 
+                        className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group"
+                        onContextMenu={(e) => {
+                          console.log('Right click on member:', member.user.username);
+                          e.preventDefault();
+                        }}
+                      >
                         <UserAvatar 
                           username={member.user.username}
                           size="sm"
@@ -383,13 +390,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                     <ContextMenuContent className="w-64 text-base">
                       <ContextMenuGroup>
                         <ContextMenuItem 
-                          onClick={() => handleChatUser(member.user)}
-                          className="py-3 px-4 text-base"
-                        >
-                          <MessageCircle className="w-5 h-5 mr-3" />
-                          Chat
-                        </ContextMenuItem>
-                        <ContextMenuItem 
                           onClick={() => handleViewProfile(member.user)}
                           className="py-3 px-4 text-base"
                         >
@@ -402,6 +402,14 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                         >
                           <Info className="w-5 h-5 mr-3" />
                           Info
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem 
+                          onClick={() => handleChatUser(member.user)}
+                          className="py-3 px-4 text-base"
+                        >
+                          <MessageCircle className="w-5 h-5 mr-3" />
+                          Private Chat
                         </ContextMenuItem>
                       </ContextMenuGroup>
                       {/* Show kick option only for admins and not for current user */}

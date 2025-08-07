@@ -75,105 +75,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
       }
     } catch (err) {
-        console.error('Auth check failed:', err);
+      console.error('Auth check failed:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
-    },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
-    },
-    onError: (err: Error) => {
-      toast({
-        title: "Login failed",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
-  });
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-  const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
-    },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Account created!",
-        description: "Welcome to ChatMe Chatroom!",
+  const login = async (username: string, password: string) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
       });
-    },
-    onError: (err: Error) => {
-      toast({
-        title: "Registration failed",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
-  });
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
-      queryClient.clear();
-      toast({
-        title: "Logged out",
-        description: "See you next time!",
-      });
-    },
-    onError: (err: Error) => {
-      toast({
-        title: "Logout failed",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
-  });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.message };
+      }
+    } catch (err) {
+      console.error('Login failed:', err);
+      return { success: false, error: 'Login failed' };
+    }
+  };
 
-  const value = {
-    user: user ?? null,
-    login: async (email: string, password: string) => {
-      return loginMutation.mutateAsync({ username: email, password });
-    },
-    register: async (username: string, email: string, password: string) => {
-      return registerMutation.mutateAsync({ username, email, password });
-    },
-    logout: async () => {
-      return logoutMutation.mutateAsync();
-    },
-    isLoading,
-    loginMutation,
-    registerMutation,
-    logoutMutation,
-    isDarkMode,
-    toggleDarkMode,
+  const register = async (username: string, email: string, password: string, country: string) => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, email, password, country }),
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.message };
+      }
+    } catch (err) {
+      console.error('Registration failed:', err);
+      return { success: false, error: 'Registration failed' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('Logout failed:', err);
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
