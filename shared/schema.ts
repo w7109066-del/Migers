@@ -131,6 +131,19 @@ export const creditTransactions = pgTable("credit_transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// New table for notifications
+export const notifications = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 50 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  fromUserId: uuid("from_user_id").references(() => users.id),
+  data: jsonb("data"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   friendships: many(friendships, { relationName: "userFriendships" }),
@@ -142,6 +155,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(userSessions),
   followers: many(followers, { relationName: "followers" }), // Added relation for followers
   following: many(followers, { relationName: "following" }), // Added relation for following
+  notifications: many(notifications),
 }));
 
 export const friendshipsRelations = relations(friendships, ({ one }) => ({
@@ -258,6 +272,18 @@ export const followersRelations = relations(followers, ({ one }) => ({
   }),
 }));
 
+// Relation for notifications
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  fromUser: one(users, {
+    fields: [notifications.fromUserId],
+    references: [users.id],
+  }),
+}));
+
 
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -336,6 +362,16 @@ export const insertCreditTransactionSchema = createInsertSchema(creditTransactio
   amount: true,
 });
 
+// Schema for notifications
+export const insertNotificationSchema = createInsertSchema(notifications).pick({
+  userId: true,
+  type: true,
+  title: true,
+  message: true,
+  fromUserId: true,
+  data: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -358,3 +394,5 @@ export type Follower = typeof followers.$inferSelect;
 export type InsertFollower = z.infer<typeof insertFollowerSchema>;
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;

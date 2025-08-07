@@ -21,6 +21,7 @@ export function NotificationDropdown() {
       case 'gift_received':
         return <Gift className="w-4 h-4 text-purple-500" />;
       case 'credit_received':
+      case 'credit_transfer':
         return <CreditCard className="w-4 h-4 text-yellow-500" />;
       default:
         return <Bell className="w-4 h-4 text-gray-500" />;

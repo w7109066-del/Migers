@@ -4,7 +4,7 @@ import { useAuth } from './use-auth';
 
 interface Notification {
   id: string;
-  type: 'friend_request' | 'friend_accepted' | 'gift_received' | 'credit_received';
+  type: 'friend_request' | 'friend_accepted' | 'gift_received' | 'credit_received' | 'credit_transfer';
   title: string;
   message: string;
   fromUser?: {

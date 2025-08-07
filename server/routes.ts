@@ -600,6 +600,34 @@ export function registerRoutes(app: Express): Server {
       // Perform transfer
       await storage.transferCoins(senderId, recipient.id, amount);
 
+      // Create notification for recipient
+      await storage.createNotification({
+        userId: recipient.id,
+        type: 'credit_transfer',
+        title: 'Credits Received',
+        message: `You received ${amount} coins from ${sender.username}`,
+        fromUserId: senderId,
+        data: { amount, senderUsername: sender.username }
+      });
+
+      // Send real-time notification via WebSocket
+      broadcastToUser(recipient.id, {
+        type: 'new_notification',
+        notification: {
+          id: Date.now().toString(),
+          type: 'credit_transfer',
+          title: 'Credits Received',
+          message: `You received ${amount} coins from ${sender.username}`,
+          fromUser: {
+            id: senderId,
+            username: sender.username
+          },
+          data: { amount, senderUsername: sender.username },
+          isRead: false,
+          createdAt: new Date().toISOString()
+        }
+      });
+
       res.json({
         success: true,
         message: `Successfully transferred ${amount} coins to ${recipientUsername}`,

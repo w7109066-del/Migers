@@ -21,7 +21,8 @@ import {
   type UserSession,
   type Follower,
   type CreditTransaction,
-  type InsertCreditTransaction
+  type InsertCreditTransaction,
+  notifications
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, exists, count, inArray, sql, asc, isNull } from "drizzle-orm";
@@ -90,6 +91,12 @@ export interface IStorage {
   getDirectMessages(userId: string, otherUserId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   createMessage(message: InsertMessage): Promise<Message & { sender: User }>;
   createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }): Promise<Message & { sender: User }>;
+
+  // Notifications
+  createNotification(userId: string, type: string, message: string, link?: string): Promise<void>;
+  getNotifications(userId: string): Promise<any[]>;
+  markNotificationAsRead(notificationId: string): Promise<void>;
+  deleteNotification(notificationId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -476,7 +483,7 @@ export class DatabaseStorage implements IStorage {
   async getDirectMessageConversations(userId: string) {
     try {
       console.log(`Getting DM conversations for user: ${userId}`);
-      
+
       // First, get all messages where user is involved
       const allMessages = await this.db
         .select({
@@ -1191,6 +1198,23 @@ export class DatabaseStorage implements IStorage {
       console.error('Failed to update user password:', error);
       return null;
     }
+  }
+
+  // Notification methods
+  async createNotification(userId: string, type: string, message: string, link?: string): Promise<void> {
+    await this.db.insert(notifications).values({ userId, type, message, link, read: false });
+  }
+
+  async getNotifications(userId: string): Promise<any[]> {
+    return await this.db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    await this.db.update(notifications).set({ read: true }).where(eq(notifications.id, notificationId));
+  }
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    await this.db.delete(notifications).where(eq(notifications.id, notificationId));
   }
 }
 
