@@ -111,22 +111,16 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
 
         <div className="text-center">
           <div className="mb-4 relative">
-            {/* Avatar with frame */}
+            {/* Avatar with fancy frame */}
             <div className="relative inline-block">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-1">
-                <div className="w-full h-full rounded-full bg-white p-1">
-                  <UserAvatar
-                    username={profile.username}
-                    size="xl"
-                    isOnline={profile.isOnline}
-                    className="w-full h-full"
-                  />
-                </div>
-              </div>
-              {/* Online indicator */}
-              {profile.isOnline && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white" />
-              )}
+              <UserAvatar
+                username={profile.username}
+                size="xl"
+                isOnline={profile.isOnline}
+                className="w-full h-full"
+                profilePhotoUrl={profile.profilePhotoUrl}
+                fancyFrame={true}
+              />
             </div>
           </div>
 
