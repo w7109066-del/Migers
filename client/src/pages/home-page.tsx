@@ -1398,7 +1398,7 @@ function HomePageContent() {
         <CreditsPage onBack={() => setShowCredits(false)} />
       ) : (
         /* Use SwipeTabs component for proper swipe functionality */
-        <SwipeTabs tabs={tabs} className="flex-1" />
+        <SwipeTabs tabs={tabs} className="flex-1" isDarkMode={isDarkMode} />
       )}
 
       {/* Mini Profile Modal */}

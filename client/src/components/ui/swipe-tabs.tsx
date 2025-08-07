@@ -11,9 +11,10 @@ interface Tab {
 interface SwipeTabsProps {
   tabs: Tab[];
   className?: string;
+  isDarkMode?: boolean;
 }
 
-export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
+export function SwipeTabs({ tabs, className, isDarkMode }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
@@ -21,9 +22,9 @@ export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
 
   const switchTab = (tabIndex: number) => {
     if (tabIndex < 0 || tabIndex >= tabs.length) return;
-    
+
     setActiveTab(tabIndex);
-    
+
     if (containerRef.current) {
       const tabWidth = containerRef.current.clientWidth;
       containerRef.current.scrollLeft = tabIndex * tabWidth;
@@ -32,18 +33,18 @@ export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!containerRef.current) return;
-    
+
     startXRef.current = e.touches[0].pageX;
     scrollLeftRef.current = containerRef.current.scrollLeft;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!containerRef.current) return;
-    
+
     const endX = e.changedTouches[0].pageX;
     const diff = startXRef.current - endX;
     const threshold = 50;
-    
+
     if (Math.abs(diff) > threshold) {
       if (diff > 0 && activeTab < tabs.length - 1) {
         // Swipe left - next tab
@@ -98,17 +99,21 @@ export function SwipeTabs({ tabs, className }: SwipeTabsProps) {
       </div>
 
       {/* Bottom Tab Bar */}
-      <div className="bg-white border-t border-gray-200 px-4 py-2 flex-shrink-0 safe-area-inset-bottom">
+      <div className={cn("border-t px-4 py-2 flex-shrink-0 safe-area-inset-bottom",
+        isDarkMode ? "bg-black border-gray-700" : "bg-white border-gray-200"
+      )}>
         <div className="flex items-center justify-around relative">
           {/* Tab Indicator */}
           <div
-            className="absolute top-0 left-0 h-1 bg-primary rounded-full transition-transform duration-300"
+            className={cn("absolute top-0 h-1 rounded-full transition-transform duration-300",
+              isDarkMode ? "bg-primary" : "bg-primary"
+            )}
             style={{
               width: `${100 / tabs.length}%`,
               transform: `translateX(${activeTab * 100}%)`,
             }}
           />
-          
+
           {tabs.map((tab, index) => (
             <button
               key={tab.id}

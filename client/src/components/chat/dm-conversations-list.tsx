@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { Search, MessageCircle, Plus, Users } from "lucide-react";
 import Lottie from "react-lottie-player";
+import { cn } from '@/lib/utils'; // Import cn utility
 
 interface Conversation {
   id: string;
@@ -28,9 +28,10 @@ interface DMConversationsListProps {
     status: string;
     isOnline: boolean;
   }) => void;
+  isDarkMode?: boolean; // Add isDarkMode prop
 }
 
-export function DMConversationsList({ onSelectUser }: DMConversationsListProps) {
+export function DMConversationsList({ onSelectUser, isDarkMode }: DMConversationsListProps) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
@@ -82,7 +83,7 @@ export function DMConversationsList({ onSelectUser }: DMConversationsListProps) 
 
   const formatTime = (dateString?: string) => {
     if (!dateString) return '';
-    
+
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -94,7 +95,7 @@ export function DMConversationsList({ onSelectUser }: DMConversationsListProps) 
     if (diffMins < 60) return `${diffMins}m`;
     if (diffHours < 24) return `${diffHours}h`;
     if (diffDays < 7) return `${diffDays}d`;
-    
+
     return date.toLocaleDateString();
   };
 
@@ -110,231 +111,164 @@ export function DMConversationsList({ onSelectUser }: DMConversationsListProps) 
 
   if (isLoading) {
     return (
-      <div className="h-full overflow-y-auto bg-gray-50">
+      <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
+        <div className={cn("border-b p-4 flex items-center justify-between", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
+          <h2 className={cn("text-lg font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>Direct Messages</h2>
+        </div>
         <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Direct Messages</h3>
+          <div className="relative">
+            <Search className={cn("absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4", isDarkMode ? "text-gray-500" : "text-gray-400")} />
+            <Input
+              placeholder="Search conversations..."
+              className={cn("pl-10", isDarkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-100 border-gray-200")}
+            />
           </div>
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="mb-4">
-                <Lottie
-                  loop
-                  animationData={{
-                    "v": "5.7.4",
-                    "fr": 60,
-                    "ip": 0,
-                    "op": 180,
-                    "w": 100,
-                    "h": 100,
-                    "nm": "Loading Animation",
-                    "ddd": 0,
-                    "assets": [],
-                    "layers": [
-                      {
-                        "ddd": 0,
-                        "ind": 1,
-                        "ty": 4,
-                        "nm": "circle1",
-                        "sr": 1,
-                        "ks": {
-                          "o": {"a": 1, "k": [
-                            {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 0, "s": [100]},
-                            {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 60, "s": [30]},
-                            {"t": 120, "s": [100]}
-                          ]},
-                          "r": {"a": 0, "k": 0},
-                          "p": {"a": 0, "k": [30, 50, 0]},
-                          "a": {"a": 0, "k": [0, 0, 0]},
-                          "s": {"a": 1, "k": [
-                            {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 0, "s": [100, 100, 100]},
-                            {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 60, "s": [120, 120, 100]},
-                            {"t": 120, "s": [100, 100, 100]}
-                          ]}
-                        },
-                        "ao": 0,
-                        "shapes": [
-                          {
-                            "ty": "gr",
-                            "it": [
-                              {
-                                "ty": "el",
-                                "d": 1,
-                                "s": {"a": 0, "k": [8, 8]},
-                                "p": {"a": 0, "k": [0, 0]}
-                              },
-                              {
-                                "ty": "fl",
-                                "c": {"a": 0, "k": [0.3, 0.6, 1, 1]},
-                                "o": {"a": 0, "k": 100}
-                              },
-                              {
-                                "ty": "tr",
-                                "p": {"a": 0, "k": [0, 0]},
-                                "a": {"a": 0, "k": [0, 0]},
-                                "s": {"a": 0, "k": [100, 100]},
-                                "r": {"a": 0, "k": 0},
-                                "o": {"a": 0, "k": 100}
-                              }
-                            ]
-                          }
-                        ],
-                        "ip": 0,
-                        "op": 180,
-                        "st": 0
-                      },
-                      {
-                        "ddd": 0,
-                        "ind": 2,
-                        "ty": 4,
-                        "nm": "circle2",
-                        "sr": 1,
-                        "ks": {
-                          "o": {"a": 1, "k": [
-                            {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 20, "s": [100]},
-                            {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 80, "s": [30]},
-                            {"t": 140, "s": [100]}
-                          ]},
-                          "r": {"a": 0, "k": 0},
-                          "p": {"a": 0, "k": [50, 50, 0]},
-                          "a": {"a": 0, "k": [0, 0, 0]},
-                          "s": {"a": 1, "k": [
-                            {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 20, "s": [100, 100, 100]},
-                            {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 80, "s": [120, 120, 100]},
-                            {"t": 140, "s": [100, 100, 100]}
-                          ]}
-                        },
-                        "ao": 0,
-                        "shapes": [
-                          {
-                            "ty": "gr",
-                            "it": [
-                              {
-                                "ty": "el",
-                                "d": 1,
-                                "s": {"a": 0, "k": [8, 8]},
-                                "p": {"a": 0, "k": [0, 0]}
-                              },
-                              {
-                                "ty": "fl",
-                                "c": {"a": 0, "k": [0.3, 0.6, 1, 1]},
-                                "o": {"a": 0, "k": 100}
-                              },
-                              {
-                                "ty": "tr",
-                                "p": {"a": 0, "k": [0, 0]},
-                                "a": {"a": 0, "k": [0, 0]},
-                                "s": {"a": 0, "k": [100, 100]},
-                                "r": {"a": 0, "k": 0},
-                                "o": {"a": 0, "k": 100}
-                              }
-                            ]
-                          }
-                        ],
-                        "ip": 0,
-                        "op": 180,
-                        "st": 0
-                      },
-                      {
-                        "ddd": 0,
-                        "ind": 3,
-                        "ty": 4,
-                        "nm": "circle3",
-                        "sr": 1,
-                        "ks": {
-                          "o": {"a": 1, "k": [
-                            {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 40, "s": [100]},
-                            {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 100, "s": [30]},
-                            {"t": 160, "s": [100]}
-                          ]},
-                          "r": {"a": 0, "k": 0},
-                          "p": {"a": 0, "k": [70, 50, 0]},
-                          "a": {"a": 0, "k": [0, 0, 0]},
-                          "s": {"a": 1, "k": [
-                            {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 40, "s": [100, 100, 100]},
-                            {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 100, "s": [120, 120, 100]},
-                            {"t": 160, "s": [100, 100, 100]}
-                          ]}
-                        },
-                        "ao": 0,
-                        "shapes": [
-                          {
-                            "ty": "gr",
-                            "it": [
-                              {
-                                "ty": "el",
-                                "d": 1,
-                                "s": {"a": 0, "k": [8, 8]},
-                                "p": {"a": 0, "k": [0, 0]}
-                              },
-                              {
-                                "ty": "fl",
-                                "c": {"a": 0, "k": [0.3, 0.6, 1, 1]},
-                                "o": {"a": 0, "k": 100}
-                              },
-                              {
-                                "ty": "tr",
-                                "p": {"a": 0, "k": [0, 0]},
-                                "a": {"a": 0, "k": [0, 0]},
-                                "s": {"a": 0, "k": [100, 100]},
-                                "r": {"a": 0, "k": 0},
-                                "o": {"a": 0, "k": 100}
-                              }
-                            ]
-                          }
-                        ],
-                        "ip": 0,
-                        "op": 180,
-                        "st": 0
-                      }
-                    ]
-                  }}
-                  play
-                  style={{ width: 80, height: 80 }}
-                />
+        </div>
+
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="p-4">
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center space-x-3 p-3 rounded-lg">
+                    <div className={cn("w-12 h-12 rounded-full animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")} />
+                    <div className="flex-1">
+                      <div className={cn("h-4 rounded w-1/3 mb-2 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")} />
+                      <div className={cn("h-3 rounded w-2/3 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")} />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="text-gray-500">Loading conversations...</div>
             </div>
-          </div>
+          ) : conversations.length === 0 ? (
+            <div className={cn("flex items-center justify-center h-full", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+              <div className="text-center">
+                <MessageCircle className={cn("w-12 h-12 mx-auto mb-4", isDarkMode ? "text-gray-600" : "text-gray-300")} />
+                <p>No conversations yet</p>
+                <p className="text-sm">Start a new conversation by searching for users</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1 p-2">
+              {conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  onClick={() => onSelectUser({
+                    id: conversation.id,
+                    username: conversation.username,
+                    level: conversation.level,
+                    status: conversation.status,
+                    isOnline: conversation.isOnline,
+                  })}
+                  className={cn("w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100")}
+                >
+                  {/* Avatar with online indicator */}
+                  <div className="relative">
+                    <UserAvatar
+                      username={conversation.username}
+                      size="md"
+                      isOnline={conversation.isOnline}
+                    />
+                    {/* Status indicator */}
+                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(conversation.status)}`} />
+
+                    {/* Unread count badge */}
+                    {conversation.unreadCount && conversation.unreadCount > 0 && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Conversation details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className={cn("font-medium truncate", isDarkMode ? "text-gray-200" : "text-gray-900")}>
+                        {conversation.username}
+                      </h3>
+                      {conversation.unreadCount && conversation.unreadCount > 0 && (
+                        <Badge variant="default" className="bg-primary text-white text-xs">
+                          {conversation.unreadCount}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className={cn("text-sm truncate", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                        {conversation.lastMessage || 'No messages yet'}
+                      </p>
+                      {conversation.lastMessageTime && (
+                        <span className={cn("text-xs ml-2 flex-shrink-0", isDarkMode ? "text-gray-500" : "text-gray-400")}>
+                          {formatTime(conversation.lastMessageTime)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gray-50">
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Direct Messages</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary p-2"
-            onClick={() => setShowNewChat(!showNewChat)}
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
-        </div>
+    <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
+      <div className={cn("border-b p-4 flex items-center justify-between", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
+        <h2 className={cn("text-lg font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>Direct Messages</h2>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn("p-2", isDarkMode ? "text-primary-foreground" : "text-primary")}
+          onClick={() => setShowNewChat(!showNewChat)}
+        >
+          <Plus className="w-5 h-5" />
+        </Button>
+      </div>
 
-        {/* Search Bar */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      {/* Search Bar */}
+      <div className="p-4">
+        <div className="relative">
+          <Search className={cn("absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4", isDarkMode ? "text-gray-500" : "text-gray-400")} />
           <Input
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white border-gray-200 rounded-lg"
+            className={cn("pl-10", isDarkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-100 border-gray-200")}
           />
         </div>
+      </div>
 
-        {/* Conversations List */}
-        {filteredConversations.length > 0 ? (
-          <div className="space-y-2">
+      {/* Conversations List */}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="p-4">
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center space-x-3 p-3 rounded-lg">
+                  <div className={cn("w-12 h-12 rounded-full animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")} />
+                  <div className="flex-1">
+                    <div className={cn("h-4 rounded w-1/3 mb-2 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")} />
+                    <div className={cn("h-3 rounded w-2/3 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : conversations.length === 0 ? (
+          <div className={cn("flex items-center justify-center h-full", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+            <div className="text-center">
+              <MessageCircle className={cn("w-12 h-12 mx-auto mb-4", isDarkMode ? "text-gray-600" : "text-gray-300")} />
+              <p>No conversations yet</p>
+              <p className="text-sm">Start a new conversation by searching for users</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1 p-2">
             {filteredConversations.map((conversation) => (
-              <Card 
+              <button
                 key={conversation.id}
-                className="cursor-pointer hover:shadow-md transition-all duration-200 border-0 bg-white hover:bg-gray-50"
                 onClick={() => onSelectUser({
                   id: conversation.id,
                   username: conversation.username,
@@ -342,275 +276,70 @@ export function DMConversationsList({ onSelectUser }: DMConversationsListProps) 
                   status: conversation.status,
                   isOnline: conversation.isOnline,
                 })}
+                className={cn("w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100")}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    {/* Avatar with online indicator */}
-                    <div className="relative">
-                      <UserAvatar 
-                        username={conversation.username} 
-                        size="md"
-                        isOnline={conversation.isOnline}
-                      />
-                      {/* Status indicator */}
-                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(conversation.status)}`} />
-                      
-                      {/* Unread count badge */}
-                      {conversation.unreadCount && conversation.unreadCount > 0 && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                          {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Conversation details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-semibold text-gray-800 truncate">{conversation.username}</span>
-                        <Badge variant="secondary" className="bg-primary text-white text-xs px-1.5 py-0.5">
-                          {conversation.level}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-600 truncate flex-1 mr-2">
-                          {conversation.lastMessage || 'No messages yet'}
-                        </p>
-                        <span className="text-xs text-gray-400 whitespace-nowrap">
-                          {formatTime(conversation.lastMessageTime)}
-                        </span>
-                      </div>
-                      
-                      {/* Online status text */}
-                      <div className="flex items-center space-x-1 mt-1">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(conversation.status)}`} />
-                        <span className="text-xs text-gray-500 capitalize">{conversation.status || 'offline'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              {!searchQuery ? (
-                <div className="mb-4">
-                  <Lottie
-                    loop
-                    animationData={{
-                      "v": "5.7.4",
-                      "fr": 30,
-                      "ip": 0,
-                      "op": 120,
-                      "w": 150,
-                      "h": 150,
-                      "nm": "Message Animation",
-                      "ddd": 0,
-                      "assets": [],
-                      "layers": [
-                        {
-                          "ddd": 0,
-                          "ind": 1,
-                          "ty": 4,
-                          "nm": "message",
-                          "sr": 1,
-                          "ks": {
-                            "o": {"a": 0, "k": 100},
-                            "r": {"a": 1, "k": [
-                              {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 0, "s": [0]},
-                              {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 60, "s": [10]},
-                              {"t": 120, "s": [0]}
-                            ]},
-                            "p": {"a": 0, "k": [75, 75, 0]},
-                            "a": {"a": 0, "k": [0, 0, 0]},
-                            "s": {"a": 1, "k": [
-                              {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 0, "s": [100, 100, 100]},
-                              {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 30, "s": [110, 110, 100]},
-                              {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 60, "s": [100, 100, 100]},
-                              {"i": {"x": [0.667, 0.667, 0.667], "y": [1, 1, 1]}, "o": {"x": [0.333, 0.333, 0.333], "y": [0, 0, 0]}, "t": 90, "s": [110, 110, 100]},
-                              {"t": 120, "s": [100, 100, 100]}
-                            ]}
-                          },
-                          "ao": 0,
-                          "shapes": [
-                            {
-                              "ty": "gr",
-                              "it": [
-                                {
-                                  "ty": "rc",
-                                  "d": 1,
-                                  "s": {"a": 0, "k": [60, 40]},
-                                  "p": {"a": 0, "k": [0, 0]},
-                                  "r": {"a": 0, "k": 8}
-                                },
-                                {
-                                  "ty": "fl",
-                                  "c": {"a": 0, "k": [0.3, 0.6, 1, 1]},
-                                  "o": {"a": 0, "k": 100}
-                                },
-                                {
-                                  "ty": "tr",
-                                  "p": {"a": 0, "k": [0, 0]},
-                                  "a": {"a": 0, "k": [0, 0]},
-                                  "s": {"a": 0, "k": [100, 100]},
-                                  "r": {"a": 0, "k": 0},
-                                  "o": {"a": 0, "k": 100}
-                                }
-                              ]
-                            }
-                          ],
-                          "ip": 0,
-                          "op": 120,
-                          "st": 0
-                        },
-                        {
-                          "ddd": 0,
-                          "ind": 2,
-                          "ty": 4,
-                          "nm": "dots",
-                          "sr": 1,
-                          "ks": {
-                            "o": {"a": 1, "k": [
-                              {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 0, "s": [0]},
-                              {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 30, "s": [100]},
-                              {"i": {"x": [0.833], "y": [0.833]}, "o": {"x": [0.167], "y": [0.167]}, "t": 90, "s": [100]},
-                              {"t": 120, "s": [0]}
-                            ]},
-                            "r": {"a": 0, "k": 0},
-                            "p": {"a": 0, "k": [75, 75, 0]},
-                            "a": {"a": 0, "k": [0, 0, 0]},
-                            "s": {"a": 0, "k": [100, 100, 100]}
-                          },
-                          "ao": 0,
-                          "shapes": [
-                            {
-                              "ty": "gr",
-                              "it": [
-                                {
-                                  "ty": "el",
-                                  "d": 1,
-                                  "s": {"a": 0, "k": [4, 4]},
-                                  "p": {"a": 0, "k": [-12, 0]}
-                                },
-                                {
-                                  "ty": "fl",
-                                  "c": {"a": 0, "k": [1, 1, 1, 1]},
-                                  "o": {"a": 0, "k": 100}
-                                },
-                                {
-                                  "ty": "tr",
-                                  "p": {"a": 0, "k": [0, 0]},
-                                  "a": {"a": 0, "k": [0, 0]},
-                                  "s": {"a": 0, "k": [100, 100]},
-                                  "r": {"a": 0, "k": 0},
-                                  "o": {"a": 0, "k": 100}
-                                }
-                              ]
-                            },
-                            {
-                              "ty": "gr",
-                              "it": [
-                                {
-                                  "ty": "el",
-                                  "d": 1,
-                                  "s": {"a": 0, "k": [4, 4]},
-                                  "p": {"a": 0, "k": [0, 0]}
-                                },
-                                {
-                                  "ty": "fl",
-                                  "c": {"a": 0, "k": [1, 1, 1, 1]},
-                                  "o": {"a": 0, "k": 100}
-                                },
-                                {
-                                  "ty": "tr",
-                                  "p": {"a": 0, "k": [0, 0]},
-                                  "a": {"a": 0, "k": [0, 0]},
-                                  "s": {"a": 0, "k": [100, 100]},
-                                  "r": {"a": 0, "k": 0},
-                                  "o": {"a": 0, "k": 100}
-                                }
-                              ]
-                            },
-                            {
-                              "ty": "gr",
-                              "it": [
-                                {
-                                  "ty": "el",
-                                  "d": 1,
-                                  "s": {"a": 0, "k": [4, 4]},
-                                  "p": {"a": 0, "k": [12, 0]}
-                                },
-                                {
-                                  "ty": "fl",
-                                  "c": {"a": 0, "k": [1, 1, 1, 1]},
-                                  "o": {"a": 0, "k": 100}
-                                },
-                                {
-                                  "ty": "tr",
-                                  "p": {"a": 0, "k": [0, 0]},
-                                  "a": {"a": 0, "k": [0, 0]},
-                                  "s": {"a": 0, "k": [100, 100]},
-                                  "r": {"a": 0, "k": 0},
-                                  "o": {"a": 0, "k": 100}
-                                }
-                              ]
-                            }
-                          ],
-                          "ip": 0,
-                          "op": 120,
-                          "st": 0
-                        }
-                      ]
-                    }}
-                    play
-                    style={{ width: 120, height: 120 }}
+                {/* Avatar with online indicator */}
+                <div className="relative">
+                  <UserAvatar
+                    username={conversation.username}
+                    size="md"
+                    isOnline={conversation.isOnline}
                   />
-                </div>
-              ) : (
-                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              )}
-              <div className="text-gray-500 mb-2 font-medium">
-                {searchQuery ? 'No conversations found' : 'No conversations yet'}
-              </div>
-              <div className="text-sm text-gray-400 mb-4">
-                {searchQuery 
-                  ? `No results for "${searchQuery}"`
-                  : 'Send a message to start chatting!'
-                }
-              </div>
-              {!searchQuery && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-primary border-primary hover:bg-primary hover:text-white"
-                  onClick={() => setShowNewChat(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Start New Chat
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
+                  {/* Status indicator */}
+                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(conversation.status)}`} />
 
-        {/* Quick stats */}
-        {filteredConversations.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
-              <div className="flex items-center space-x-1">
-                <Users className="w-3 h-3" />
-                <span>{filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                <span>{filteredConversations.filter(c => c.isOnline).length} online</span>
-              </div>
-            </div>
+                  {/* Unread count badge */}
+                  {conversation.unreadCount && conversation.unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
+                    </div>
+                  )}
+                </div>
+
+                {/* Conversation details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h3 className={cn("font-medium truncate", isDarkMode ? "text-gray-200" : "text-gray-900")}>
+                      {conversation.username}
+                    </h3>
+                    {conversation.unreadCount && conversation.unreadCount > 0 && (
+                      <Badge variant="default" className="bg-primary text-white text-xs">
+                        {conversation.unreadCount}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className={cn("text-sm truncate", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                      {conversation.lastMessage || 'No messages yet'}
+                    </p>
+                    {conversation.lastMessageTime && (
+                      <span className={cn("text-xs ml-2 flex-shrink-0", isDarkMode ? "text-gray-500" : "text-gray-400")}>
+                        {formatTime(conversation.lastMessageTime)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
         )}
       </div>
+
+      {/* Quick stats */}
+      {filteredConversations.length > 0 && (
+        <div className={cn("mt-6 pt-4 border-t", isDarkMode ? "border-gray-700" : "border-gray-200")}>
+          <div className={cn("flex items-center justify-center space-x-4 text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+            <div className="flex items-center space-x-1">
+              <Users className="w-3 h-3" />
+              <span>{filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className={cn("w-2 h-2 rounded-full", isDarkMode ? "bg-green-400" : "bg-green-500")} />
+              <span>{filteredConversations.filter(c => c.isOnline).length} online</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
