@@ -610,25 +610,49 @@ export default function HomePage() {
                         {expandedComments.includes(post.id) && (
                           <div className="mt-4 border-t pt-3">
                             {/* Comments List */}
-                            <div className="space-y-2 mb-3 max-h-60 overflow-y-auto">
+                            <div className="space-y-3 mb-3 max-h-60 overflow-y-auto">
                               {postComments[post.id]?.map((comment) => (
-                                <div key={comment.id} className="flex items-start space-x-2 text-sm">
+                                <div key={comment.id} className="flex items-start space-x-3">
                                   <UserAvatar
                                     username={comment.author?.username || 'Unknown'}
                                     size="sm"
                                     isOnline={false}
                                   />
                                   <div className="flex-1 min-w-0">
-                                    <div className={cn("rounded-lg px-3 py-2", isDarkMode ? "bg-gray-700" : "bg-gray-100")}>
-                                      <span className={cn("font-medium text-xs", isDarkMode ? "text-blue-300" : "text-blue-600")}>
+                                    <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
+                                      <div className="font-semibold text-sm text-gray-800 mb-1">
                                         {comment.author?.username}
-                                      </span>
-                                      <div className={cn("text-sm", isDarkMode ? "text-gray-200" : "text-gray-800")}>
+                                      </div>
+                                      <div className="text-sm text-gray-700 leading-relaxed">
                                         {comment.content}
                                       </div>
                                     </div>
-                                    <div className={cn("text-xs mt-1 px-3", isDarkMode ? "text-gray-400" : "text-gray-500")}>
-                                      {new Date(comment.createdAt).toLocaleDateString()}
+                                    
+                                    {/* Comment Actions */}
+                                    <div className="flex items-center justify-between mt-2 px-4">
+                                      <div className="flex items-center space-x-4">
+                                        <span className="text-xs text-gray-500">
+                                          {new Date(comment.createdAt).toLocaleDateString('id-ID', { 
+                                            month: '2-digit', 
+                                            day: '2-digit' 
+                                          })}
+                                        </span>
+                                        <button className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors">
+                                          Reply
+                                        </button>
+                                      </div>
+                                      
+                                      <div className="flex items-center space-x-2">
+                                        <div className="flex items-center space-x-1">
+                                          <button className="text-gray-500 hover:text-red-500 transition-colors">
+                                            <Heart className="w-4 h-4" />
+                                          </button>
+                                          <span className="text-xs text-gray-500">{comment.likesCount || 0}</span>
+                                        </div>
+                                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                                          <MessageCircle className="w-4 h-4 transform scale-x-[-1]" />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
