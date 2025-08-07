@@ -87,8 +87,7 @@ function HomePageContent() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
-  const [openRoomTabs, setOpenRoomTabs] = useState<{ id: string; name: string }[]>([]);
-  const [activeRoomTab, setActiveRoomTab] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string } | null>(null);
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
@@ -109,38 +108,7 @@ function HomePageContent() {
   const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState<{url: string, type: string} | null>(null);
 
-  // Keyboard shortcuts for room tab navigation
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey) {
-        // Ctrl/Cmd + W to close active tab
-        if (event.key === 'w' && activeRoomTab) {
-          event.preventDefault();
-          handleCloseRoomTab(activeRoomTab);
-        }
-
-        // Ctrl/Cmd + Tab to switch between tabs
-        if (event.key === 'Tab' && openRoomTabs.length > 1) {
-          event.preventDefault();
-          const currentIndex = openRoomTabs.findIndex(tab => tab.id === activeRoomTab);
-          const nextIndex = event.shiftKey 
-            ? (currentIndex - 1 + openRoomTabs.length) % openRoomTabs.length
-            : (currentIndex + 1) % openRoomTabs.length;
-          setActiveRoomTab(openRoomTabs[nextIndex].id);
-        }
-
-        // Ctrl/Cmd + 1-9 to switch to specific tab
-        const numKey = parseInt(event.key);
-        if (numKey >= 1 && numKey <= 9 && openRoomTabs[numKey - 1]) {
-          event.preventDefault();
-          setActiveRoomTab(openRoomTabs[numKey - 1].id);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeRoomTab, openRoomTabs]);
+  
 
 
   // Update local status when user data changes
@@ -575,24 +543,8 @@ function HomePageContent() {
 
   const handleRoomSelect = (room: { id: string; name: string }) => {
     console.log('Room selected:', room);
-
-    // Check if room is already open
-    if (!openRoomTabs.find(tab => tab.id === room.id)) {
-      setOpenRoomTabs(prev => [...prev, room]);
-    }
-
-    setActiveRoomTab(room.id);
+    setSelectedRoom(room);
     setSelectedDirectMessage(null); // Clear DM when entering room
-  };
-
-  const handleCloseRoomTab = (roomId: string) => {
-    setOpenRoomTabs(prev => prev.filter(tab => tab.id !== roomId));
-
-    // If closing active tab, switch to another tab or none
-    if (activeRoomTab === roomId) {
-      const remainingTabs = openRoomTabs.filter(tab => tab.id !== roomId);
-      setActiveRoomTab(remainingTabs.length > 0 ? remainingTabs[0].id : null);
-    }
   };
 
   const tabs = [
@@ -694,7 +646,7 @@ function HomePageContent() {
     },
     {
       id: "chatroom",
-      label: `Rooms${openRoomTabs.length > 0 ? ` (${openRoomTabs.length})` : ''}`,
+      label: "Rooms",
       icon: <MessageCircle className="w-5 h-5" />,
       content: <RoomListPage onRoomSelect={handleRoomSelect} />,
     },
@@ -1371,74 +1323,13 @@ function HomePageContent() {
     <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {openRoomTabs.length > 0 ? (
-          <div className="flex-1 flex flex-col">
-            {/* Room Tabs Header */}
-            <div className="bg-white border-b border-gray-200 px-2 py-2 flex-shrink-0">
-              <div className="flex space-x-1 overflow-x-auto pb-1">
-                {openRoomTabs.map((room) => (
-                  <div
-                    key={room.id}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg cursor-pointer transition-all min-w-0 flex-shrink-0 ${
-                      activeRoomTab === room.id
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                    }`}
-                    onClick={() => setActiveRoomTab(room.id)}
-                  >
-                    <Hash className="w-4 h-4 flex-shrink-0" />
-                    <span className="font-medium text-sm truncate max-w-16 sm:max-w-24">{room.name}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCloseRoomTab(room.id);
-                      }}
-                      className={`p-1 rounded transition-colors flex-shrink-0 ${
-                        activeRoomTab === room.id
-                          ? 'hover:bg-white/20'
-                          : 'hover:bg-black/10'
-                      }`}
-                      title={`Close ${room.name}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-
-                {/* Close All Rooms Button */}
-                {openRoomTabs.length > 1 && (
-                  <button
-                    onClick={() => {
-                      setOpenRoomTabs([]);
-                      setActiveRoomTab(null);
-                    }}
-                    className="flex items-center space-x-1 px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors flex-shrink-0 text-sm"
-                    title="Close all rooms"
-                  >
-                    <X className="w-4 h-4" />
-                    <span className="hidden sm:inline">Close All</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Active Room Content */}
-            {activeRoomTab && (
-              <div className="flex-1">
-                {openRoomTabs
-                  .filter(room => room.id === activeRoomTab)
-                  .map(room => (
-                    <ChatRoom
-                      key={room.id}
-                      roomId={room.id}
-                      roomName={room.name}
-                      onUserClick={handleUserProfileClick}
-                      onLeaveRoom={() => handleCloseRoomTab(room.id)}
-                    />
-                  ))}
-              </div>
-            )}
-          </div>
+        {selectedRoom ? (
+          <ChatRoom
+            roomId={selectedRoom.id}
+            roomName={selectedRoom.name}
+            onUserClick={handleUserProfileClick}
+            onLeaveRoom={() => setSelectedRoom(null)}
+          />
         ) : selectedDirectMessage ? (
           <DirectMessageChat
             recipient={selectedDirectMessage}
