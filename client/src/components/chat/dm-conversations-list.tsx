@@ -36,7 +36,7 @@ export function DMConversationsList({ onSelectUser, isDarkMode }: DMConversation
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [showNewChat, setShowNewChat] = useState(false);
 
   useEffect(() => {
@@ -120,6 +120,8 @@ export function DMConversationsList({ onSelectUser, isDarkMode }: DMConversation
             <Search className={cn("absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4", isDarkMode ? "text-gray-500" : "text-gray-400")} />
             <Input
               placeholder="Search conversations..."
+              value=""
+              readOnly
               className={cn("pl-10", isDarkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-100 border-gray-200")}
             />
           </div>
@@ -233,8 +235,8 @@ export function DMConversationsList({ onSelectUser, isDarkMode }: DMConversation
           <Search className={cn("absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4", isDarkMode ? "text-gray-500" : "text-gray-400")} />
           <Input
             placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchQuery || ""}
+            onChange={(e) => setSearchQuery(e.target.value || "")}
             className={cn("pl-10", isDarkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-100 border-gray-200")}
           />
         </div>
