@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +105,7 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Search Users</DialogTitle>
+          <DialogDescription>Enter a username to find other users.</DialogDescription>
         </DialogHeader>
 
         <Command className="rounded-lg border shadow-md">
