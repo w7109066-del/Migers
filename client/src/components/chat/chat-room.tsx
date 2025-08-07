@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { MiniProfileModal } from "@/components/ui/mini-profile-modal";
+import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,7 +18,11 @@ import {
   Info,
   UserMinus,
   X,
-  Shield
+  Shield,
+  MessageCircle,
+  Eye,
+  Flag,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +60,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
   const { user } = useAuth();
 
@@ -192,26 +195,34 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     }
   };
 
-  const handleUserClick = (user: any) => {
-    // Handle profile internally to prevent room from closing
-    setSelectedProfile({
-      id: user.id,
-      username: user.username,
-      level: user.level,
-      status: "Available for chat",
-      isOnline: user.isOnline,
-    });
-  };
-
-  const handleProfileModalClose = () => {
-    setSelectedProfile(null);
-  };
-
-  const handleMessageClick = (profile: any) => {
-    // This will open DM chat - we can call the parent's onUserClick if needed
+  const handleChatUser = (user: any) => {
+    // Open DM chat without disconnecting from room
     if (onUserClick) {
-      onUserClick(profile);
+      onUserClick({
+        id: user.id,
+        username: user.username,
+        level: user.level,
+        status: "Available for chat",
+        isOnline: user.isOnline,
+      });
     }
+  };
+
+  const handleViewProfile = (user: any) => {
+    // Open detailed profile view
+    console.log('View profile for:', user.username);
+    // You can implement profile modal here if needed
+  };
+
+  const handleUserInfo = (username: string) => {
+    // Send whois command
+    sendChatMessage(`/whois ${username}`, roomId);
+  };
+
+  const handleReportUser = (user: any) => {
+    // Handle user reporting
+    console.log('Report user:', user.username);
+    // You can implement reporting functionality here
   };
 
   const handleKickUser = async (userId: string, username: string) => {
@@ -327,28 +338,61 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
               </SheetHeader>
               <div className="mt-4 space-y-3">
                 {roomMembers?.map((member) => (
-                  <div
-                    key={member.user.id}
-                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
-                      handleUserClick(member.user);
-                      setIsUserListOpen(false); // Close user list when profile opens
-                    }}
-                  >
-                    <UserAvatar 
-                      username={member.user.username}
-                      size="sm"
-                      isOnline={member.user.isOnline}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-800">{member.user.username}</span>
+                  <ContextMenu key={member.user.id}>
+                    <ContextMenuTrigger>
+                      <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                        <UserAvatar 
+                          username={member.user.username}
+                          size="sm"
+                          isOnline={member.user.isOnline}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium text-gray-800">{member.user.username}</span>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {member.user.isOnline ? "Online" : "Offline"}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {member.user.isOnline ? "Online" : "Offline"}
-                      </div>
-                    </div>
-                  </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-56">
+                      <ContextMenuGroup>
+                        <ContextMenuItem onClick={() => handleChatUser(member.user)}>
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Chat
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleViewProfile(member.user)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Profile
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleUserInfo(member.user.username)}>
+                          <Info className="w-4 h-4 mr-2" />
+                          Info
+                        </ContextMenuItem>
+                      </ContextMenuGroup>
+                      <ContextMenuSeparator />
+                      {isAdmin && member.user.id !== user?.id && (
+                        <>
+                          <ContextMenuItem 
+                            onClick={() => handleKickUser(member.user.id, member.user.username)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <UserMinus className="w-4 h-4 mr-2" />
+                            Kick
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                        </>
+                      )}
+                      <ContextMenuItem 
+                        onClick={() => handleReportUser(member.user)}
+                        className="text-orange-600 focus:text-orange-600"
+                      >
+                        <Flag className="w-4 h-4 mr-2" />
+                        Report
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
 
                 {(!roomMembers || roomMembers.length === 0) && (
@@ -526,7 +570,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} onUserClick={handleUserClick} roomName={roomName} />
+        <MessageList 
+          messages={messages} 
+          onUserClick={handleChatUser} 
+          roomName={roomName}
+          isAdmin={isAdmin}
+          currentUserId={user?.id}
+        />
       </div>
 
       {/* Message Input */}
@@ -534,14 +584,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
         <MessageInput onSendMessage={handleSendMessage} roomId={roomId} />
       </div>
 
-      {/* Mini Profile Modal */}
-      {selectedProfile && (
-        <MiniProfileModal
-          profile={selectedProfile}
-          onClose={handleProfileModalClose}
-          onMessageClick={handleMessageClick}
-        />
-      )}
+      
     </div>
   );
 }

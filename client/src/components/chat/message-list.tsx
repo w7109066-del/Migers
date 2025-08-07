@@ -5,6 +5,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { ChevronDown, MoreVertical, Reply, Forward, Copy } from "lucide-react";
 import Lottie from "react-lottie-player";
+import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDistanceToNow } from "date-fns";
+import { Heart, Gift, Crown, Star, MessageCircle, Eye, Info, Flag, UserMinus } from "lucide-react";
 
 interface Message {
   id: string;
@@ -21,11 +25,13 @@ interface Message {
 
 interface MessageListProps {
   messages: Message[];
-  onUserClick: (user: any) => void;
+  onUserClick?: (user: { id: string; username: string; level: number; isOnline: boolean }) => void;
   roomName?: string;
+  isAdmin?: boolean;
+  currentUserId?: string;
 }
 
-export function MessageList({ messages, onUserClick, roomName }: MessageListProps) {
+export function MessageList({ messages, onUserClick, roomName, isAdmin, currentUserId }: MessageListProps) {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hiddenGiftMessages, setHiddenGiftMessages] = useState<Set<string>>(new Set());
@@ -515,6 +521,34 @@ export function MessageList({ messages, onUserClick, roomName }: MessageListProp
     }
   ];
 
+  const handleKickUser = (user: any) => {
+    console.log("Kick user:", user.username);
+    // Implement kick logic here
+  };
+
+  const handleReportUser = (user: any) => {
+    console.log("Report user:", user.username);
+    // Implement report logic here
+  };
+
+  const handleUserInfo = (username: string) => {
+    console.log("Show info for user:", username);
+    // Implement info logic here
+    if (onUserClick) {
+      // Find the user in the messages to get their full data
+      const userInfo = messages.find(msg => msg.sender.username === username)?.sender;
+      if (userInfo) {
+        onUserClick(userInfo);
+      }
+    }
+  };
+
+  const handleViewProfile = (user: any) => {
+    console.log("View profile for user:", user.username);
+    // Implement view profile logic here
+    onUserClick && onUserClick(user);
+  };
+
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
@@ -623,18 +657,64 @@ export function MessageList({ messages, onUserClick, roomName }: MessageListProp
           );
         }
 
+        // Regular message rendering with context menu
         return (
           <div
             key={message.id}
-            className="flex items-start space-x-3 animate-in slide-in-from-bottom-2 duration-300"
+            className="flex items-start space-x-3 group"
           >
-            <UserAvatar
-              username={message.sender.username}
-              size="sm"
-              isOnline={message.sender.isOnline}
-              onClick={() => onUserClick(message.sender)}
-              className="cursor-pointer"
-            />
+            <ContextMenu>
+              <ContextMenuTrigger>
+                <div className="flex-shrink-0 cursor-pointer">
+                  <UserAvatar
+                    username={message.sender.username}
+                    size="sm"
+                    isOnline={message.sender.isOnline}
+                  />
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent className="w-56">
+                <ContextMenuGroup>
+                  <ContextMenuItem onClick={() => onUserClick && onUserClick({
+                    id: message.senderId,
+                    username: message.sender.username,
+                    level: message.sender.level,
+                    isOnline: message.sender.isOnline,
+                  })}>
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Chat
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleViewProfile(message.sender)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Profile
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleUserInfo(message.sender.username)}>
+                    <Info className="w-4 h-4 mr-2" />
+                    Info
+                  </ContextMenuItem>
+                </ContextMenuGroup>
+                <ContextMenuSeparator />
+                {isAdmin && message.senderId !== currentUserId && (
+                  <>
+                    <ContextMenuItem 
+                      onClick={() => handleKickUser(message.sender)}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <UserMinus className="w-4 h-4 mr-2" />
+                      Kick
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                  </>
+                )}
+                <ContextMenuItem 
+                  onClick={() => handleReportUser(message.sender)}
+                  className="text-orange-600 focus:text-orange-600"
+                >
+                  <Flag className="w-4 h-4 mr-2" />
+                  Report
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
             <div className="flex-1">
               <div className="flex items-center space-x-2 text-sm">
                 <span 
