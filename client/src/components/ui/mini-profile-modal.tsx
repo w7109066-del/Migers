@@ -20,6 +20,7 @@ interface MiniProfileModalProps {
     bio?: string; // Added bio field
     isOnline: boolean;
     country?: string;
+    profilePhotoUrl?: string; // Added profilePhotoUrl field
   };
   onClose: () => void;
   onMessageClick?: (user: any) => void;

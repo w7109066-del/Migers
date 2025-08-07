@@ -60,6 +60,7 @@ interface MiniProfileData {
   status: string;
   isOnline: boolean;
   country?: string;
+  profilePhotoUrl?: string;
 }
 
 function HomePageContent() {
@@ -671,6 +672,7 @@ function HomePageContent() {
                           status: post.author?.status || "",
                           isOnline: post.author?.isOnline || false,
                           country: post.author?.country || "ID",
+                          profilePhotoUrl: post.author?.profilePhotoUrl,
                         })}
                       />
                       <div className="flex-1">
