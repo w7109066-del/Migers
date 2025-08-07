@@ -53,7 +53,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   const { user } = useAuth();
   const { sendDirectMessage, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
-  const [newMessage, setNewMessage] = useState("");
+  const [newMessage, setNewMessage] = useState<string>("");
   const [showGifts, setShowGifts] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
@@ -115,13 +115,14 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() && !selectedMedia) return;
+    if ((!newMessage || !newMessage.trim()) && !selectedMedia) return;
+    if (!user?.id || !recipient?.id) return;
 
     try {
       if (selectedMedia) {
         // Handle media message
         const formData = new FormData();
-        if (newMessage.trim()) {
+        if (newMessage && newMessage.trim()) {
           formData.append('content', newMessage);
         }
         formData.append('media', selectedMedia);
@@ -135,7 +136,6 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
 
         if (response.ok) {
           const sentMessage = await response.json();
-          // Add message for sender immediately
           setMessages(prev => {
             const messageExists = prev.some(msg => msg.id === sentMessage.id);
             if (messageExists) {
@@ -149,7 +149,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
         } else {
           console.error('Failed to send media message');
         }
-      } else {
+      } else if (newMessage && newMessage.trim()) {
         // Handle text message via API
         const response = await fetch('/api/messages/direct', {
           method: 'POST',
@@ -165,7 +165,6 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
 
         if (response.ok) {
           const sentMessage = await response.json();
-          // Add message for sender immediately
           setMessages(prev => {
             const messageExists = prev.some(msg => msg.id === sentMessage.id);
             if (messageExists) {
@@ -884,7 +883,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  if (newMessage.trim() || selectedMedia) {
+                  if ((newMessage && newMessage.trim()) || selectedMedia) {
                     handleSendMessage();
                   }
                 }
@@ -895,8 +894,8 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
             <Button
               type="button"
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() && !selectedMedia}
-              className="bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 flex-shrink-0"
+              disabled={(!newMessage || !newMessage.trim()) && !selectedMedia}
+              className="bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="w-4 h-4" />
             </Button>
