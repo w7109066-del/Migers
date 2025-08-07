@@ -217,7 +217,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           {rooms.map((room) => (
             <Card 
               key={room.id} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
+              className="cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
               onClick={() => handleRoomClick(room)}
             >
               <CardContent className="p-4">
@@ -237,7 +237,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-gray-800">{room.name}</span>
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">{room.name}</span>
                         {room.category === "favorite" && (
                           <Star className="w-4 h-4 text-yellow-500 fill-current" />
                         )}
@@ -245,11 +245,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
                           <Gamepad2 className="w-4 h-4 text-blue-500" />
                         )}
                       </div>
-                      <div className="text-sm text-gray-600 truncate">{room.description}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 truncate">{room.description}</div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-1 text-gray-500">
+                    <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
                       <Users className="w-4 h-4" />
                       <span className="text-sm">
                         {roomMemberCounts[room.id] !== undefined ? roomMemberCounts[room.id] : room.memberCount}/{room.capacity}
@@ -288,14 +288,14 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     console.log('RoomList: About to render ChatRoom component');
     
     return (
-      <div className="h-full w-full bg-white flex flex-col">
+      <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">
         {/* Chat room header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center relative flex-shrink-0">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-center relative flex-shrink-0">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleBackToRoomList}
-            className="text-gray-600 absolute left-4 hover:bg-gray-100"
+            className="text-gray-600 dark:text-gray-300 absolute left-4 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             ← Back
           </Button>
@@ -305,7 +305,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
               size="sm"
               isOnline={true}
             />
-            <span className="font-semibold text-gray-800">{selectedRoom.name}</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-200">{selectedRoom.name}</span>
           </div>
         </div>
         
@@ -326,11 +326,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="h-full w-full bg-white flex flex-col">
-        <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">
+        <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p className="text-gray-600">Loading rooms...</p>
+            <p className="text-gray-600 dark:text-gray-300">Loading rooms...</p>
           </div>
         </div>
       </div>
@@ -340,11 +340,14 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   // Show error state for debugging
   if (error) {
     return (
-      <div className="h-full w-full bg-white flex flex-col">
-        <div className="flex-1 flex items-center justify-center bg-red-50">
+      <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">
+        <div className="flex-1 flex items-center justify-center bg-red-50 dark:bg-red-900/20">
           <div className="text-center p-4">
-            <div className="text-red-500 mb-2">⚠️ Error Loading Rooms</div>
-            <p className="text-red-600 text-sm mb-4">{error.message}</p>
+            <div className="text-red-500 dark:text-red-400 mb-2">⚠️ Error Loading Rooms</div>
+            <p className="text-red-600 dark:text-red-400 text-sm mb-4">{error.message}</p></div>
+        </div>
+      </div>
+    );
             <Button 
               onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/rooms"] })}
               variant="outline"
@@ -428,9 +431,9 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
           {safeFilteredRooms.length === 0 && (
             <div className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No rooms found</p>
-              <p className="text-sm text-gray-400">Try adjusting your search</p>
+              <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400">No rooms found</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Try adjusting your search</p>
             </div>
           )}
         </div>
