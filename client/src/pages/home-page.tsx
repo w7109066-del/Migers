@@ -361,9 +361,24 @@ export default function HomePage() {
                   <div>
                     <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>
                     <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className={cn("text-white border-0 text-xs", isDarkMode ? "bg-gradient-to-r from-yellow-600 to-orange-700" : "bg-gradient-to-r from-yellow-400 to-orange-500")}>
-                        Level {user.level || 1}
-                      </Badge>
+                      <div className="relative">
+                        <Badge variant="secondary" className={cn(
+                          "text-white border-0 text-xs font-bold px-3 py-1.5 shadow-lg transform transition-all duration-300 hover:scale-105", 
+                          isDarkMode 
+                            ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500" 
+                            : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400"
+                        )}>
+                          <span className="flex items-center space-x-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                            </svg>
+                            <span>Level {user.level || 1}</span>
+                          </span>
+                        </Badge>
+                        {/* Sparkle effect */}
+                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
+                        <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-300 rounded-full"></div>
+                      </div>
                       {/* Status Dropdown */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -585,9 +600,21 @@ export default function HomePage() {
                             {post.author?.username || 'Unknown'}
                           </span>
                           {post.author?.level && (
-                            <Badge variant="secondary" className={cn("text-white text-xs", isDarkMode ? "bg-yellow-700" : "bg-warning")}>
-                              {post.author.level}
-                            </Badge>
+                            <div className="relative">
+                              <Badge variant="secondary" className={cn(
+                                "text-white border-0 text-xs font-semibold px-2 py-0.5 shadow-sm", 
+                                isDarkMode 
+                                  ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600" 
+                                  : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+                              )}>
+                                <span className="flex items-center space-x-1">
+                                  <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                  </svg>
+                                  <span>{post.author.level}</span>
+                                </span>
+                              </Badge>
+                            </div>
                           )}
                         </div>
 
@@ -823,9 +850,22 @@ export default function HomePage() {
                     <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>
                     <div className={cn("text-sm", isDarkMode ? "text-gray-300" : "text-gray-600")}>{user.email}</div>
                     <div className="flex items-center space-x-2 mt-1">
-                      <Badge variant="secondary" className={cn("text-white text-xs", isDarkMode ? "bg-yellow-700" : "bg-warning")}>
-                        Level {user.level}
-                      </Badge>
+                      <div className="relative">
+                        <Badge variant="secondary" className={cn(
+                          "text-white border-0 text-xs font-bold px-2.5 py-1 shadow-md", 
+                          isDarkMode 
+                            ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600" 
+                            : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+                        )}>
+                          <span className="flex items-center space-x-1">
+                            <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                            </svg>
+                            <span>Level {user.level}</span>
+                          </span>
+                        </Badge>
+                        <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-yellow-400 rounded-full"></div>
+                      </div>
                       <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                         <div className={`w-2 h-2 rounded-full mr-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
                         {user.isOnline ? 'Online' : 'Offline'}
