@@ -62,7 +62,7 @@ interface MiniProfileData {
   country?: string;
 }
 
-export default function HomePage() {
+function HomePageContent() {
   const { user, logout, isLoading: authLoading, isDarkMode, toggleDarkMode } = useAuth();
   const {
     sendChatMessage,
@@ -955,124 +955,112 @@ export default function HomePage() {
     },
   ];
 
-  try {
-    return (
-      <NotificationProvider>
-        <WebSocketProvider>
-          <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
-            {/* Use SwipeTabs component for proper swipe functionality */}
-            <SwipeTabs tabs={tabs} className="flex-1" />
+  return (
+    <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
+      {/* Use SwipeTabs component for proper swipe functionality */}
+      <SwipeTabs tabs={tabs} className="flex-1" />
 
-            {/* Mini Profile Modal */}
-            {selectedProfile && (
-              <MiniProfileModal
-                profile={selectedProfile}
-                isOpen={!!selectedProfile}
-                onClose={() => setSelectedProfile(null)}
-              />
-            )}
+      {/* Mini Profile Modal */}
+      {selectedProfile && (
+        <MiniProfileModal
+          profile={selectedProfile}
+          isOpen={!!selectedProfile}
+          onClose={() => setSelectedProfile(null)}
+        />
+      )}
 
-            {/* Edit Profile Modal */}
-            <EditProfileModal 
-              isOpen={showEditProfile} 
-              onClose={() => setShowEditProfile(false)} 
-            />
+      {/* Edit Profile Modal */}
+      <EditProfileModal 
+        isOpen={showEditProfile} 
+        onClose={() => setShowEditProfile(false)} 
+      />
 
-            {/* User Search Modal */}
-            <UserSearchModal 
-              isOpen={showUserSearch} 
-              onClose={() => setShowUserSearch(false)} 
-            />
+      {/* User Search Modal */}
+      <UserSearchModal 
+        isOpen={showUserSearch} 
+        onClose={() => setShowUserSearch(false)} 
+      />
 
-            {/* Status Update Modal */}
-            <StatusUpdateModal 
-              isOpen={showStatusUpdate} 
-              onClose={() => setShowStatusUpdate(false)} 
-            />
+      {/* Status Update Modal */}
+      <StatusUpdateModal 
+        isOpen={showStatusUpdate} 
+        onClose={() => setShowStatusUpdate(false)} 
+      />
 
-            {/* Share Modal */}
-            {showShareModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className={cn("rounded-lg max-w-md w-full p-6", isDarkMode ? "bg-gray-800" : "bg-white")}>
-                  <h2 className={cn("text-lg font-semibold mb-4", isDarkMode ? "text-white" : "text-gray-900")}>
-                    Share {showShareModal.type === 'room' ? 'Room' : 'Post'}
-                  </h2>
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={cn("rounded-lg max-w-md w-full p-6", isDarkMode ? "bg-gray-800" : "bg-white")}>
+            <h2 className={cn("text-lg font-semibold mb-4", isDarkMode ? "text-white" : "text-gray-900")}>
+              Share {showShareModal.type === 'room' ? 'Room' : 'Post'}
+            </h2>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className={cn("block text-sm font-medium mb-2", isDarkMode ? "text-gray-300" : "text-gray-700")}>
-                        Share Link
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          value={showShareModal.url}
-                          readOnly
-                          className={cn("flex-1", isDarkMode ? "bg-gray-700 text-white" : "")}
-                        />
-                        <Button
-                          onClick={() => {
-                            navigator.clipboard.writeText(showShareModal.url);
-                            // toast notification would go here
-                          }}
-                          size="sm"
-                        >
-                          Copy
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-center space-x-4 pt-4">
-                      <Button
-                        onClick={() => window.open(`https://twitter.com/intent/tweet?text=Check this out: ${encodeURIComponent(showShareModal.url)}`, '_blank')}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center space-x-2"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        <span>Twitter</span>
-                      </Button>
-
-                      <Button
-                        onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(showShareModal.url)}`, '_blank')}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center space-x-2"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        <span>WhatsApp</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Close button */}
-                  <button
-                    onClick={() => setShowShareModal(null)}
-                    className={cn("absolute top-4 right-4 p-1 rounded-full", isDarkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500")}
+            <div className="space-y-4">
+              <div>
+                <label className={cn("block text-sm font-medium mb-2", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                  Share Link
+                </label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    value={showShareModal.url}
+                    readOnly
+                    className={cn("flex-1", isDarkMode ? "bg-gray-700 text-white" : "")}
+                  />
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(showShareModal.url);
+                      // toast notification would go here
+                    }}
+                    size="sm"
                   >
-                    <X className="w-5 h-5" />
-                  </button>
+                    Copy
+                  </Button>
                 </div>
               </div>
-            )}
+
+              <div className="flex items-center justify-center space-x-4 pt-4">
+                <Button
+                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=Check this out: ${encodeURIComponent(showShareModal.url)}`, '_blank')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Twitter</span>
+                </Button>
+
+                <Button
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(showShareModal.url)}`, '_blank')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>WhatsApp</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowShareModal(null)}
+              className={cn("absolute top-4 right-4 p-1 rounded-full", isDarkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500")}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        </WebSocketProvider>
-      </NotificationProvider>
-    );
-  } catch (error) {
-    console.error('HomePage render error:', error);
-    return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-secondary">
-        <div className="text-center text-white">
-          <p className="text-lg font-semibold mb-2">Something went wrong</p>
-          <p className="text-sm opacity-80">Please refresh the page</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-white text-primary rounded-lg hover:bg-gray-100"
-          >
-            Refresh Page
-          </button>
         </div>
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <NotificationProvider>
+      <WebSocketProvider>
+        <HomePageContent />
+      </WebSocketProvider>
+    </NotificationProvider>
+  );
 }
