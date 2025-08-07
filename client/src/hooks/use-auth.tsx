@@ -74,7 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
         console.error('Auth check failed:', err);
         setUser(null);
-        setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
@@ -109,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (username: string, email: string, password: string, country: string) => {
+  const register = async (username: string, email: string, password: string) => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -117,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ username, email, password, country }),
+        body: JSON.stringify({ username, email, password }),
       });
 
       if (response.ok) {
