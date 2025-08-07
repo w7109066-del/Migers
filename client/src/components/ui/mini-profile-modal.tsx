@@ -190,11 +190,22 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
 
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-white rounded-2xl mx-4 p-4 max-w-xs w-full relative shadow-2xl">
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 p-1 rounded-full hover:bg-gray-100"
         >
           <X className="w-5 h-5" />
         </button>
