@@ -627,7 +627,7 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
               className="cursor-pointer"
             />
             <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
+              <div className="flex items-center space-x-2 text-sm">
                 <span 
                   className="font-semibold" 
                   style={{ 
@@ -636,20 +636,20 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
                 >
                   {message.sender.username}
                 </span>
-                <span className="text-gray-500 ml-1">
-                  [{formatTime(message.createdAt)}]
+                <span className="text-gray-500">
+                  [{formatTime(message.createdAt)}]:
                 </span>
-              </div>
-              <div className="text-gray-700 text-sm break-words">
-                {message.content.includes('🎁 sent') ? (
-                  <div className="flex items-center space-x-2 p-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-lg border border-orange-200">
-                    <span className="text-sm font-medium text-orange-700">
-                      {message.content}
-                    </span>
-                  </div>
-                ) : (
-                  message.content
-                )}
+                <div className="text-gray-700 break-words flex-1">
+                  {message.content.includes('🎁 sent') ? (
+                    <div className="inline-block p-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-lg border border-orange-200 ml-1">
+                      <span className="text-sm font-medium text-orange-700">
+                        {message.content}
+                      </span>
+                    </div>
+                  ) : (
+                    message.content
+                  )}
+                </div>
               </div>
             </div>
           </div>
