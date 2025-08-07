@@ -372,6 +372,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                           username={member.user.username}
                           size="sm"
                           isOnline={member.user.isOnline}
+                          profilePhotoUrl={member.user.profilePhotoUrl}
                         />
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
@@ -518,6 +519,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                       username={member.user.username}
                                       size="sm"
                                       isOnline={member.user.isOnline}
+                                      profilePhotoUrl={member.user.profilePhotoUrl}
                                     />
                                     <div>
                                       <span className="font-medium text-sm">{member.user.username}</span>

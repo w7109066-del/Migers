@@ -20,12 +20,13 @@ interface Message {
     username: string;
     level: number;
     isOnline: boolean;
+    profilePhotoUrl?: string; // Added profilePhotoUrl to sender interface
   };
 }
 
 interface MessageListProps {
   messages: Message[];
-  onUserClick?: (user: { id: string; username: string; level: number; isOnline: boolean }) => void;
+  onUserClick?: (user: { id: string; username: string; level: number; isOnline: boolean; profilePhotoUrl?: string }) => void;
   roomName?: string;
   isAdmin?: boolean;
   currentUserId?: string;
@@ -557,7 +558,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
       roomId: roomId,
       recipientId: null
     };
-    
+
     // Trigger whois command through websocket or API call
     window.dispatchEvent(new CustomEvent('sendWhoisCommand', { detail: whoisMessage }));
   };
@@ -571,6 +572,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
         username: user.username,
         level: user.level,
         isOnline: user.isOnline,
+        profilePhotoUrl: user.profilePhotoUrl
       });
     }
   };
@@ -691,10 +693,12 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           >
             <div className="flex-1">
               <div className="flex items-center space-x-2 text-sm group">
-                <UserAvatar
+                <UserAvatar 
                   username={message.sender.username}
                   size="sm"
                   isOnline={message.sender.isOnline}
+                  onClick={() => onUserClick?.(message.sender)}
+                  profilePhotoUrl={message.sender.profilePhotoUrl}
                 />
                 <span 
                   className="font-semibold"

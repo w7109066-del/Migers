@@ -9,7 +9,7 @@ import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
-import { directMessages, users } from "@shared/schema";
+import { directMessages, users, messages } from "@shared/schema";
 
 // Authentication middleware
 function requireAuth(req: any, res: any, next: any) {
@@ -58,7 +58,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const userId = req.user!.id;
       const { bio, country } = req.body;
-      
+
       let profilePhotoUrl = null;
       if (req.file) {
         profilePhotoUrl = `/uploads/${req.file.filename}`;
@@ -86,7 +86,7 @@ export function registerRoutes(app: Express): Server {
     try {
       // Get user-created rooms from database
       const userRooms = await storage.getAllRooms();
-      
+
       // Return mock rooms data plus user-created rooms
       const mockRooms = [
         {
@@ -364,10 +364,10 @@ export function registerRoutes(app: Express): Server {
     try {
       const { postId } = req.params;
       console.log('Fetching comments for post:', postId);
-      
+
       const comments = await storage.getComments(postId);
       console.log('Found comments:', comments?.length || 0, 'for post:', postId);
-      
+
       res.json(comments || []);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -381,7 +381,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const { postIds } = req.body;
       const userId = req.user!.id;
-      
+
       const likedPosts = await storage.getUserLikes(userId, postIds);
       res.json(likedPosts);
     } catch (error) {
@@ -460,22 +460,23 @@ export function registerRoutes(app: Express): Server {
 
               // Check if user is already in this specific room to prevent duplicates
               let userAlreadyInRoom = false;
-              
+
               // For mock rooms (1-4), track in memory with user data
               if (['1', '2', '3', '4'].includes(message.roomId)) {
                 if (!mockRoomMembers.has(message.roomId)) {
                   mockRoomMembers.set(message.roomId, new Map());
                 }
-                
+
                 // Check if user already exists in room
                 userAlreadyInRoom = mockRoomMembers.get(message.roomId)!.has(userId);
-                
+
                 if (!userAlreadyInRoom) {
                   mockRoomMembers.get(message.roomId)!.set(userId, {
                     id: userId,
                     username: currentUser.username || 'User',
                     level: currentUser.level || 1,
-                    isOnline: true
+                    isOnline: true,
+                    profilePhotoUrl: currentUser.profilePhotoUrl || null // Include profilePhotoUrl
                   });
                   currentRoomId = message.roomId;
 
@@ -485,7 +486,7 @@ export function registerRoutes(app: Express): Server {
                 // For real rooms, check membership first
                 const existingMembers = await storage.getRoomMembers(message.roomId);
                 userAlreadyInRoom = existingMembers?.some(member => member.user.id === userId) || false;
-                
+
                 if (!userAlreadyInRoom) {
                   await storage.joinRoom(message.roomId, userId);
                   currentRoomId = message.roomId;
@@ -612,10 +613,10 @@ export function registerRoutes(app: Express): Server {
 
                 if (whoisMatch) {
                   const [, targetUsername] = whoisMatch;
-                  
+
                   // Find user in current room
                   let targetUser = null;
-                  
+
                   if (['1', '2', '3', '4'].includes(message.roomId)) {
                     // Search in mock room members
                     const roomMembers = mockRoomMembers.get(message.roomId);
@@ -714,6 +715,7 @@ export function registerRoutes(app: Express): Server {
                       username: user?.username || 'User',
                       level: user?.level || 1,
                       isOnline: user?.isOnline || true,
+                      profilePhotoUrl: user?.profilePhotoUrl || null // Include profilePhotoUrl
                     }
                   };
 
@@ -825,7 +827,7 @@ export function registerRoutes(app: Express): Server {
             });
 
             // Broadcast room count update to all clients
-            const currentCount = getRoomMemberCount(currentRoomId);
+            const currentCount = await getRoomMemberCount(currentRoomId);
             wss.clients.forEach((client) => {
               if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify({
