@@ -32,7 +32,7 @@ export const chatRooms = pgTable("chat_rooms", {
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   isPublic: boolean("is_public").default(true),
-  maxMembers: integer("max_members").default(100),
+  maxMembers: integer("max_members").default(25),
   createdBy: uuid("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });

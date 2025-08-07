@@ -50,6 +50,8 @@ export interface IStorage {
   getChatRooms(): Promise<ChatRoom[]>;
   getChatRoom(roomId: string): Promise<ChatRoom | undefined>;
   createChatRoom(room: InsertChatRoom): Promise<ChatRoom>;
+  createRoom(roomData: InsertChatRoom, createdBy: string): Promise<ChatRoom>;
+  getAllRooms(): Promise<ChatRoom[]>;
   joinRoom(roomId: string, userId: string): Promise<void>;
   leaveRoom(roomId: string, userId: string): Promise<void>;
   getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]>;
@@ -576,16 +578,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createRoom(roomData: { name: string; description: string; capacity: number }, createdBy: string) {
+  async createRoom(roomData: InsertChatRoom, createdBy: string): Promise<ChatRoom> {
     try {
       const [room] = await this.db
         .insert(chatRooms)
         .values({
-          name: roomData.name,
-          description: roomData.description,
+          ...roomData,
           createdBy,
-          capacity: roomData.capacity, // Use the provided capacity
-          isPublic: true, // Assuming new rooms are public by default
         })
         .returning();
 
@@ -595,7 +594,7 @@ export class DatabaseStorage implements IStorage {
         .values({
           roomId: room.id,
           userId: createdBy,
-          role: 'admin', // Creator is an admin
+          role: 'admin',
         });
 
       return room;
