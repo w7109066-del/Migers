@@ -22,9 +22,10 @@ interface Message {
 interface MessageListProps {
   messages: Message[];
   onUserClick: (user: any) => void;
+  roomName?: string;
 }
 
-export function MessageList({ messages, onUserClick }: MessageListProps) {
+export function MessageList({ messages, onUserClick, roomName }: MessageListProps) {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hiddenGiftMessages, setHiddenGiftMessages] = useState<Set<string>>(new Set());
@@ -587,25 +588,25 @@ export function MessageList({ messages, onUserClick }: MessageListProps) {
               <div className="text-sm">
                 {isWelcomeMessage && (
                   <div>
-                    <span className="text-red-500 font-medium">System: </span>
+                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}
                 {isCurrentlyInRoom && (
                   <div>
-                    <span className="text-red-500 font-medium">System: </span>
+                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}
                 {isRoomManaged && (
                   <div>
-                    <span className="text-red-500 font-medium">System: </span>
+                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}
                 {isUserEnterLeave && (
                   <div>
-                    <span className="text-red-500 font-medium">System: </span>
+                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
                     <span className="text-gray-800">{message.content}</span>
                   </div>
                 )}

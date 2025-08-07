@@ -549,7 +549,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} onUserClick={handleUserClick} />
+        <MessageList messages={messages} onUserClick={handleUserClick} roomName={roomName} />
       </div>
 
       {/* Message Input */}
