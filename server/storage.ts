@@ -1084,26 +1084,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   async transferCoins(senderId: string, recipientId: string, amount: number): Promise<void> {
-    // Start transaction
-    await this.db.transaction(async (tx) => {
-      // Deduct from sender
-      await tx.update(users)
-        .set({ coins: sql`${users.coins} - ${amount}` })
-        .where(eq(users.id, senderId));
+    try {
+      // Start transaction
+      await this.db.transaction(async (tx) => {
+        // Verify sender has sufficient balance before transfer
+        const sender = await tx.select({ coins: users.coins })
+          .from(users)
+          .where(eq(users.id, senderId))
+          .limit(1);
 
-      // Add to recipient
-      await tx.update(users)
-        .set({ coins: sql`${users.coins} + ${amount}` })
-        .where(eq(users.id, recipientId));
+        if (!sender[0] || (sender[0].coins || 0) < amount) {
+          throw new Error('Insufficient balance');
+        }
 
-      // Record the transaction
-      await tx.insert(creditTransactions)
-        .values({
-          senderId,
-          recipientId,
-          amount,
-        });
-    });
+        // Verify recipient exists
+        const recipient = await tx.select({ id: users.id })
+          .from(users)
+          .where(eq(users.id, recipientId))
+          .limit(1);
+
+        if (!recipient[0]) {
+          throw new Error('Recipient not found');
+        }
+
+        // Deduct from sender
+        await tx.update(users)
+          .set({ coins: sql`${users.coins} - ${amount}` })
+          .where(eq(users.id, senderId));
+
+        // Add to recipient
+        await tx.update(users)
+          .set({ coins: sql`${users.coins} + ${amount}` })
+          .where(eq(users.id, recipientId));
+
+        // Record the transaction
+        await tx.insert(creditTransactions)
+          .values({
+            senderId,
+            recipientId,
+            amount,
+          });
+      });
+    } catch (error) {
+      console.error('Transfer coins error:', error);
+      throw error;
+    }
   }
 
   async getCreditTransactionHistory(userId: string): Promise<any[]> {
@@ -1196,6 +1221,20 @@ export class DatabaseStorage implements IStorage {
       return result[0] || null;
     } catch (error) {
       console.error('Failed to update user password:', error);
+      return null;
+    }
+  }
+
+  async getUserByUsername(username: string): Promise<User | null> {
+    try {
+      const user = await this.db.select()
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
+
+      return user[0] || null;
+    } catch (error) {
+      console.error('Failed to get user by username:', error);
       return null;
     }
   }

@@ -913,7 +913,7 @@ export function registerRoutes(app: Express): Server {
   // Change password
   app.post('/api/user/change-password', requireAuth, async (req, res) => {
     try {
-      const userId = req.headers['x-replit-user-id'] as string;
+      const userId = req.user!.id;
       const { oldPassword, newPassword, phoneNumber, otpCode } = req.body;
 
       if (!oldPassword || !newPassword || !phoneNumber || !otpCode) {
@@ -956,7 +956,7 @@ export function registerRoutes(app: Express): Server {
 
   // Get user notifications
   app.get('/api/notifications', requireAuth, async (req, res) => {
-    const userId = req.headers['x-replit-user-id'] as string;
+    const userId = req.user!.id;
 
     // Fetch notifications for the user
     try {
