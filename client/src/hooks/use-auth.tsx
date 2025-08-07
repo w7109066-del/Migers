@@ -24,6 +24,9 @@ type AuthContextType = {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  loginMutation: any;
+  registerMutation: any;
+  logoutMutation: any;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
 };
@@ -153,6 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return logoutMutation.mutateAsync();
     },
     isLoading,
+    loginMutation,
+    registerMutation,
+    logoutMutation,
     isDarkMode,
     toggleDarkMode,
   };
