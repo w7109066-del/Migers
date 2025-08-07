@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { CreditsPage } from "@/pages/credits-page";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,6 +91,7 @@ function HomePageContent() {
   const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string } | null>(null);
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [userStatus, setUserStatus] = useState(user?.status || 'online');
   const [postContent, setPostContent] = useState('');
@@ -1266,7 +1268,10 @@ function HomePageContent() {
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Help & Support</span>
                   </button>
 
-                  <button className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
+                  <button 
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    onClick={() => setShowCredits(true)}
+                  >
                     <svg className="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                     </svg>
@@ -1338,8 +1343,13 @@ function HomePageContent() {
         ) : null}
       </div>
 
-      {/* Use SwipeTabs component for proper swipe functionality */}
-      <SwipeTabs tabs={tabs} className="flex-1" />
+      {/* Credits Page */}
+      {showCredits ? (
+        <CreditsPage onBack={() => setShowCredits(false)} />
+      ) : (
+        /* Use SwipeTabs component for proper swipe functionality */
+        <SwipeTabs tabs={tabs} className="flex-1" />
+      )}
 
       {/* Mini Profile Modal */}
       {selectedProfile && (

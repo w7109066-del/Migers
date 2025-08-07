@@ -21,7 +21,7 @@ import {
   type Follower
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, and, or, isNull, isNotNull, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, or, exists, count, inArray, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -76,6 +76,9 @@ export interface IStorage {
   getDirectMessages(userId: string, otherUserId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   createMessage(message: InsertMessage): Promise<Message & { sender: User }>;
   createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }): Promise<Message & { sender: User }>;
+
+  // Coin transfer
+  transferCoins(senderId: string, recipientId: string, amount: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -299,13 +302,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async unfollowUser(followerId: string, followingId: string): Promise<void> {
-    await this.db.delete(followers)
-      .where(
-        and(
-          eq(followers.followerId, followerId),
-          eq(followers.followingId, followingId)
-        )
-      );
+    await this.db.delete(followers).where(
+      and(
+        eq(followers.followerId, followerId),
+        eq(followers.followingId, followingId)
+      )
+    );
   }
 
   async getFansCount(userId: string): Promise<number> {
@@ -917,6 +919,28 @@ export class DatabaseStorage implements IStorage {
       console.error('Error fetching user likes:', error);
       return [];
     }
+  }
+
+  async getUserByUsername(username: string): Promise<User | null> {
+    const user = await this.db.query.users.findFirst({
+      where: eq(users.username, username),
+    });
+    return user || null;
+  }
+
+  async transferCoins(senderId: string, recipientId: string, amount: number): Promise<void> {
+    // Start transaction
+    await this.db.transaction(async (tx) => {
+      // Deduct from sender
+      await tx.update(users)
+        .set({ coins: sql`${users.coins} - ${amount}` })
+        .where(eq(users.id, senderId));
+
+      // Add to recipient
+      await tx.update(users)
+        .set({ coins: sql`${users.coins} + ${amount}` })
+        .where(eq(users.id, recipientId));
+    });
   }
 }
 

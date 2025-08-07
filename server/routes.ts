@@ -505,6 +505,61 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Credits transfer endpoint
+  app.post("/api/credits/transfer", requireAuth, async (req, res) => {
+    try {
+      const { recipientUsername, amount, pin } = req.body;
+      const senderId = req.user!.id;
+
+      if (!recipientUsername || !amount || !pin) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      if (amount <= 0) {
+        return res.status(400).json({ message: "Amount must be greater than 0" });
+      }
+
+      if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+        return res.status(400).json({ message: "PIN must be exactly 6 digits" });
+      }
+
+      // Get sender
+      const sender = await storage.getUser(senderId);
+      if (!sender) {
+        return res.status(404).json({ message: "Sender not found" });
+      }
+
+      // Check sender balance
+      if ((sender.coins || 0) < amount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      // Find recipient by username
+      const recipient = await storage.getUserByUsername(recipientUsername);
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+
+      if (sender.id === recipient.id) {
+        return res.status(400).json({ message: "Cannot transfer to yourself" });
+      }
+
+      // TODO: Validate PIN against user's stored PIN
+      // For now, we'll accept any 6-digit PIN
+
+      // Perform transfer
+      await storage.transferCoins(senderId, recipient.id, amount);
+
+      res.json({
+        success: true,
+        message: `Successfully transferred ${amount} coins to ${recipientUsername}`,
+      });
+    } catch (error) {
+      console.error("Failed to transfer credits:", error);
+      res.status(500).json({ message: "Failed to transfer credits" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time features
