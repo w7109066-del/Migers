@@ -60,11 +60,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
   const { user } = useAuth();
 
-  // Mocking isDarkMode and tabs for demonstration purposes, as they are not defined in the provided snippet.
-  // In a real scenario, these would likely come from context or props.
-  const isDarkMode = false; 
-  const tabs = [{ id: "chat", title: "Chat" }, { id: "members", title: "Members" }];
-
   // Room members data
   const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", roomId, "members"],
