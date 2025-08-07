@@ -402,26 +402,7 @@ function HomePageContent() {
     );
   }
 
-  const showMiniProfile = async (profileData: MiniProfileData) => {
-    try {
-      // Fetch complete profile data from API
-      const response = await fetch(`/api/user/profile/${profileData.id}`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const completeProfile = await response.json();
-        setSelectedProfile(completeProfile);
-      } else {
-        // Fallback to basic data if API fails
-        setSelectedProfile(profileData);
-      }
-    } catch (error) {
-      console.error('Failed to fetch complete profile:', error);
-      // Fallback to basic data if API fails
-      setSelectedProfile(profileData);
-    }
-  };
+  
 
   const closeMiniProfile = () => {
     setSelectedProfile(null);

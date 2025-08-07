@@ -217,13 +217,17 @@ export function registerRoutes(app: Express): Server {
       const { roomId } = req.params;
 
       // For mock rooms, return members from memory
-      if (['1', '2', '3', '4'].includes(roomId) && mockRoomMembers.has(roomId)) {
-        const members = Array.from(mockRoomMembers.get(roomId)!.values()).map(userData => ({
-          user: userData
-        }));
-        res.json(members);
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        if (mockRoomMembers.has(roomId)) {
+          const members = Array.from(mockRoomMembers.get(roomId)!.values()).map(userData => ({
+            user: userData
+          }));
+          res.json(members);
+        } else {
+          res.json([]);
+        }
       } else {
-        // For real rooms, use storage
+        // For real rooms, use storage (these should have valid UUID format)
         const members = await storage.getRoomMembers(roomId);
         res.json(members || []);
       }
