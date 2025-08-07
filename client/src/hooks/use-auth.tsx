@@ -93,10 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "You have successfully logged in.",
       });
     },
-    onError: (error: Error) => {
+    onError: (err: Error) => {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     },
@@ -114,10 +114,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Welcome to ChatMe Chatroom!",
       });
     },
-    onError: (error: Error) => {
+    onError: (err: Error) => {
       toast({
         title: "Registration failed",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     },
@@ -135,10 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "See you next time!",
       });
     },
-    onError: (error: Error) => {
+    onError: (err: Error) => {
       toast({
         title: "Logout failed",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     },
