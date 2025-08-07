@@ -87,6 +87,7 @@ export interface IStorage {
       author: Pick<User, "id" | "username" | "level" | "isOnline">;
     })[]
   >;
+  getUserLikes(userId: string, postIds: string[]): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -815,6 +816,27 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error('Error fetching comments:', error);
+      return [];
+    }
+  }
+
+  async getUserLikes(userId: string, postIds: string[]): Promise<string[]> {
+    try {
+      const likes = await this.db
+        .select({
+          postId: postLikes.postId
+        })
+        .from(postLikes)
+        .where(
+          and(
+            eq(postLikes.userId, userId),
+            inArray(postLikes.postId, postIds)
+          )
+        );
+
+      return likes.map(like => like.postId);
+    } catch (error) {
+      console.error('Error fetching user likes:', error);
       return [];
     }
   }

@@ -375,6 +375,21 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post("/api/user/likes", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const { postIds } = req.body;
+      const userId = req.user!.id;
+      
+      const likedPosts = await storage.getUserLikes(userId, postIds);
+      res.json(likedPosts);
+    } catch (error) {
+      console.error('Error fetching user likes:', error);
+      res.status(500).json({ message: "Failed to fetch user likes" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time features

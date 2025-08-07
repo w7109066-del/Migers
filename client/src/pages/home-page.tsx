@@ -93,6 +93,8 @@ function HomePageContent() {
   const [commentText, setCommentText] = useState<{[postId: string]: string}>({});
   const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState<any | null>(null); // Changed state to allow object with url and type
+  const [userLikes, setUserLikes] = useState<{[postId: string]: boolean}>({});
+  const [likeCounts, setLikeCounts] = useState<{[postId: string]: number}>({});
 
   // Update local status when user data changes
   React.useEffect(() => {
@@ -219,6 +221,56 @@ function HomePageContent() {
     setShowShareModal(null);
   };
 
+  const loadUserLikes = async (postIds: string[]) => {
+    try {
+      const response = await fetch('/api/user/likes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ postIds }),
+      });
+
+      if (response.ok) {
+        const likedPosts = await response.json();
+        const likes: {[postId: string]: boolean} = {};
+        likedPosts.forEach((postId: string) => {
+          likes[postId] = true;
+        });
+        setUserLikes(likes);
+      }
+    } catch (error) {
+      console.error('Failed to load user likes:', error);
+    }
+  };
+
+  const handleLikePost = async (postId: string) => {
+    const isLiked = userLikes[postId];
+    const endpoint = `/api/feed/${postId}/like`;
+    const method = isLiked ? 'DELETE' : 'POST';
+
+    try {
+      const response = await fetch(endpoint, {
+        method,
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Update local state immediately for better UX
+        setUserLikes(prev => ({ ...prev, [postId]: !isLiked }));
+        setLikeCounts(prev => ({
+          ...prev,
+          [postId]: isLiked ? (prev[postId] || 1) - 1 : (prev[postId] || 0) + 1
+        }));
+      } else {
+        console.error('Failed to like/unlike post');
+      }
+    } catch (error) {
+      console.error('Failed to like/unlike post:', error);
+    }
+  };
+
   const handleStatusChange = async (newStatus: string) => {
     try {
       const response = await fetch('/api/user/status', {
@@ -322,6 +374,16 @@ function HomePageContent() {
       if (response.ok) {
         const posts = await response.json();
         setFeedPosts(posts);
+        
+        // Initialize like counts
+        const counts: {[postId: string]: number} = {};
+        posts.forEach((post: any) => {
+          counts[post.id] = post.likesCount || 0;
+        });
+        setLikeCounts(counts);
+        
+        // Load user's likes for these posts
+        loadUserLikes(posts.map((post: any) => post.id));
       } else {
         console.error('Failed to load feed posts');
       }
@@ -663,10 +725,19 @@ function HomePageContent() {
                         </div>
 
                         <div className="flex items-center space-x-4 mt-2">
-                          <div className="flex items-center space-x-1">
-                            <Heart className="w-4 h-4 text-gray-500 cursor-pointer hover:text-red-500" />
-                            <span className="text-xs text-gray-500">{post.likesCount || 0}</span>
-                          </div>
+                          <button 
+                            className="flex items-center space-x-1 hover:text-red-600 transition-colors"
+                            onClick={() => handleLikePost(post.id)}
+                          >
+                            <Heart 
+                              className={`w-4 h-4 cursor-pointer transition-colors ${
+                                userLikes[post.id] 
+                                  ? 'text-red-500 fill-red-500' 
+                                  : 'text-gray-500 hover:text-red-500'
+                              }`} 
+                            />
+                            <span className="text-xs text-gray-500">{likeCounts[post.id] || post.likesCount || 0}</span>
+                          </button>
                           <button 
                             className="flex items-center space-x-1 hover:text-blue-600"
                             onClick={() => toggleComments(post.id)}
