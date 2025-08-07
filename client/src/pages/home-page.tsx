@@ -454,16 +454,6 @@ function HomePageContent() {
 
                 {/* Notification Dropdown */}
                 <NotificationDropdown />
-
-                {/* Edit Profile Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEditProfile(true)}
-                  className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
-                >
-                  <Edit className="w-5 h-5" />
-                </Button>
               </div>
             </div>
           </div>
