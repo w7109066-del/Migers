@@ -22,7 +22,8 @@ import {
   MessageCircle,
   Eye,
   Flag,
-  User
+  User,
+  Crown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ interface RoomMember {
     level: number;
     isOnline: boolean;
   };
+  role?: string;
 }
 
 export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoomProps) {
@@ -358,7 +360,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                 {roomMembers?.map((member) => (
                   <ContextMenu key={member.user.id}>
                     <ContextMenuTrigger asChild>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200">
+                      <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group">
                         <UserAvatar 
                           username={member.user.username}
                           size="sm"
@@ -367,7 +369,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-800">{member.user.username}</span>
-                            {member.role === 'admin' && (
+                            {(member.role === 'admin' || member.user.level >= 5) && (
                               <Crown className="w-4 h-4 text-yellow-500" />
                             )}
                           </div>
