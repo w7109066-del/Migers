@@ -208,7 +208,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
                 username={profile.username}
                 size="sm"
                 isOnline={profile.isOnline}
-                className="w-full h-full"
+                className="w-10 h-10"
                 profilePhotoUrl={profile.profilePhotoUrl}
               />
             </div>
