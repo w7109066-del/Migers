@@ -15,6 +15,7 @@ import { NotificationDropdown } from "@/components/ui/notification-dropdown";
 import { EditProfileModal } from "@/components/ui/edit-profile-modal";
 import { UserSearchModal } from "@/components/ui/user-search-modal";
 import { StatusUpdateModal } from "@/components/ui/status-update-modal";
+import { PrivacySecurityModal } from "@/components/ui/privacy-security-modal";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,7 @@ function HomePageContent() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
+  const [showPrivacySecurity, setShowPrivacySecurity] = useState(false);
 
   const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string } | null>(null);
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
@@ -1284,7 +1286,10 @@ function HomePageContent() {
                     <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
                   </div>
 
-                  <button className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
+                  <button 
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    onClick={() => setShowPrivacySecurity(true)}
+                  >
                     <Shield className="h-5 w-5 text-primary" />
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Privacy & Security</span>
                   </button>
@@ -1423,6 +1428,12 @@ function HomePageContent() {
       <StatusUpdateModal
         isOpen={showStatusUpdate}
         onClose={() => setShowStatusUpdate(false)}
+      />
+
+      {/* Privacy & Security Modal */}
+      <PrivacySecurityModal
+        isOpen={showPrivacySecurity}
+        onClose={() => setShowPrivacySecurity(false)}
       />
 
       {/* Change Password Modal */}
