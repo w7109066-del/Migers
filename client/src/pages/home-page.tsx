@@ -270,8 +270,21 @@ export default function HomePage() {
 
   if (authLoading) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-secondary">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+          <p className="text-white text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-secondary">
+        <div className="text-center">
+          <p className="text-white text-sm">Authentication required...</p>
+        </div>
       </div>
     );
   }
@@ -942,12 +955,13 @@ export default function HomePage() {
     },
   ];
 
-  return (
-    <NotificationProvider>
-      <WebSocketProvider>
-        <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
-          {/* Use SwipeTabs component for proper swipe functionality */}
-          <SwipeTabs tabs={tabs} className="flex-1" />
+  try {
+    return (
+      <NotificationProvider>
+        <WebSocketProvider>
+          <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
+            {/* Use SwipeTabs component for proper swipe functionality */}
+            <SwipeTabs tabs={tabs} className="flex-1" />
 
           {/* Mini Profile Modal */}
           {selectedProfile && (
@@ -1044,7 +1058,24 @@ export default function HomePage() {
             </div>
           )}
         </div>
-      </WebSocketProvider>
-    </NotificationProvider>
-  );
+        </WebSocketProvider>
+      </NotificationProvider>
+    );
+  } catch (error) {
+    console.error('HomePage render error:', error);
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-secondary">
+        <div className="text-center text-white">
+          <p className="text-lg font-semibold mb-2">Something went wrong</p>
+          <p className="text-sm opacity-80">Please refresh the page</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-white text-primary rounded-lg hover:bg-gray-100"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 }

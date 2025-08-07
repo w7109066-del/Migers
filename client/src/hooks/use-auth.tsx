@@ -97,14 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        return { success: true };
       } else {
         const errorData = await response.json();
-        return { success: false, error: errorData.message };
+        throw new Error(errorData.message || 'Login failed');
       }
     } catch (err) {
       console.error('Login failed:', err);
-      return { success: false, error: 'Login failed' };
+      throw err;
     }
   };
 
@@ -122,14 +121,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        return { success: true };
       } else {
         const errorData = await response.json();
-        return { success: false, error: errorData.message };
+        throw new Error(errorData.message || 'Registration failed');
       }
     } catch (err) {
       console.error('Registration failed:', err);
-      return { success: false, error: 'Registration failed' };
+      throw err;
     }
   };
 
