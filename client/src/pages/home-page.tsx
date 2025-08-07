@@ -1335,16 +1335,7 @@ function HomePageContent() {
             recipient={selectedDirectMessage}
             onBack={() => setSelectedDirectMessage(null)}
           />
-        ) : (
-          // Default content if no room or DM is selected
-          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
-            <div className="text-center">
-              <MessageCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg font-medium text-gray-600 dark:text-gray-300">Welcome to the Chat!</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Select a room or start a direct message.</p>
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
 
       {/* Use SwipeTabs component for proper swipe functionality */}
