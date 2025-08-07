@@ -19,6 +19,10 @@ type User = {
   level?: number;
   status?: string;
   profilePhotoUrl?: string;
+  isMentor?: boolean;
+  mentorSpecialty?: string;
+  fansCount?: number;
+  followingCount?: number;
 };
 
 type AuthContextType = {

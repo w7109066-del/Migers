@@ -24,7 +24,7 @@ import {
   type InsertCreditTransaction
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, exists, count, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, or, exists, count, inArray, sql, asc, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -42,6 +42,10 @@ export interface IStorage {
   updateUserStatus(userId: string, status: string): Promise<void>;
   searchUsers(query: string, currentUserId: string): Promise<User[]>;
   updateUserProfile(userId: string, profileData: { bio?: string | null; country?: string | null; profilePhotoUrl?: string | null }): Promise<void>;
+  updateUserCoins(userId: string, newCoinAmount: number): Promise<User | undefined>;
+  updateUserMentorStatus(userId: string, isMentor: boolean, specialty?: string): Promise<User | undefined>;
+  getMentors(): Promise<User[]>;
+
 
   // Friends management
   getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]>;
@@ -282,19 +286,6 @@ export class DatabaseStorage implements IStorage {
         )
       );
   }
-
-  // async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
-  //   await this.db
-  //     .update(friendships)
-  //     .set({ status: "accepted" })
-  //     .where(
-  //       and(
-  //         eq(friendships.userId, friendId),
-  //         eq(friendships.friendId, userId)
-  //       )
-  //     );
-  // }
-
 
   // Followers management
   async followUser(followerId: string, followingId: string): Promise<Follower> {
@@ -982,14 +973,14 @@ export class DatabaseStorage implements IStorage {
 
       // Combine and get user details for other users
       const allTransactions = [...sentTransactions, ...receivedTransactions];
-      
+
       if (allTransactions.length === 0) {
         return [];
       }
 
       // Get unique other user IDs
       const otherUserIds = [...new Set(allTransactions.map(t => t.otherUserId))];
-      
+
       // Get usernames for other users
       const otherUsers = await this.db
         .select({

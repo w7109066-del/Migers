@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { CreditsPage } from "@/pages/credits-page";
+import { MentorPage } from "@/pages/mentor-page";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,6 +93,7 @@ function HomePageContent() {
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
+  const [showMentor, setShowMentor] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [userStatus, setUserStatus] = useState(user?.status || 'online');
   const [postContent, setPostContent] = useState('');
@@ -1288,11 +1290,26 @@ function HomePageContent() {
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Credits</span>
                   </button>
 
-                  <button className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
-                    <svg className="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button 
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    onClick={() => setShowMentor(true)}
+                  >
+                    <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Mentor</span>
+                    <div className="flex items-center justify-between flex-1">
+                      <span className={cn("font-medium", user?.isMentor ? "text-red-600" : (isDarkMode ? "text-gray-200" : "text-gray-800"))}>
+                        Mentor
+                      </span>
+                      {user?.isMentor && (
+                        <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/20">
+                          <svg className="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-xs font-medium text-red-600">Active</span>
+                        </div>
+                      )}
+                    </div>
                   </button>
 
                   <button className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
@@ -1353,8 +1370,10 @@ function HomePageContent() {
         ) : null}
       </div>
 
-      {/* Credits Page */}
-      {showCredits ? (
+      {/* Mentor Page */}
+      {showMentor ? (
+        <MentorPage onBack={() => setShowMentor(false)} />
+      ) : showCredits ? (
         <CreditsPage onBack={() => setShowCredits(false)} />
       ) : (
         /* Use SwipeTabs component for proper swipe functionality */

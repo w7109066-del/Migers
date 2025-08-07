@@ -21,6 +21,8 @@ export const users = pgTable("users", {
   profilePhotoUrl: text("profile_photo_url"),
   fansCount: integer("fans_count").default(0),
   followingCount: integer("following_count").default(0),
+  isMentor: boolean("is_mentor").default(false),
+  mentorSpecialty: text("mentor_specialty"),
 });
 
 export const friendships = pgTable("friendships", {

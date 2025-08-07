@@ -289,16 +289,16 @@ export function registerRoutes(app: Express): Server {
       console.log('Loading feed posts for user:', req.user!.id);
       const posts = await storage.getFeedPosts();
       console.log('Found posts:', posts.length);
-      
+
       // Ensure we always return an array
       const safePosts = Array.isArray(posts) ? posts : [];
-      
+
       // Add cache headers for better performance
       res.set({
         'Cache-Control': 'private, no-cache',
         'Content-Type': 'application/json'
       });
-      
+
       res.json(safePosts);
     } catch (error) {
       console.error('Feed loading error:', error);
@@ -340,7 +340,7 @@ export function registerRoutes(app: Express): Server {
         mediaType,
         mediaUrl,
       });
-      
+
       console.log('Post created successfully:', post.id);
       res.status(201).json(post);
     } catch (error) {
@@ -509,7 +509,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/credits/history", requireAuth, async (req, res) => {
     try {
       const userId = req.user!.id;
-      
+
       const transactions = await storage.getCreditTransactionHistory(userId);
       res.json(transactions);
     } catch (error) {
@@ -570,6 +570,36 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Failed to transfer credits:", error);
       res.status(500).json({ message: "Failed to transfer credits" });
+    }
+  });
+
+  // Mentor routes
+  app.get('/api/mentors', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    try {
+      const mentors = await storage.getMentors();
+      res.json(mentors);
+    } catch (error) {
+      console.error('Error fetching mentors:', error);
+      res.status(500).json({ message: 'Failed to fetch mentors' });
+    }
+  });
+
+  app.post('/api/mentor/register', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    try {
+      const { specialty } = req.body;
+      const updatedUser = await storage.updateUserMentorStatus(req.user.id, true, specialty);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error registering as mentor:', error);
+      res.status(500).json({ message: 'Failed to register as mentor' });
     }
   });
 
