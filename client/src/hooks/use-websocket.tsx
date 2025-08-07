@@ -116,6 +116,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               title: 'New Friend Request',
               message: `${message.fromUser?.username || 'Someone'} sent you a friend request`,
               fromUser: message.fromUser,
+              actionRequired: true,
             });
             break;
           case 'friend_request_accepted':

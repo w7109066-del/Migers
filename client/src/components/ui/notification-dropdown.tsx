@@ -127,7 +127,7 @@ export function NotificationDropdown() {
                               </div>
                             )}
 
-                            {notification.type === 'friend_request' && notification.fromUser && (
+                            {notification.type === 'friend_request' && notification.fromUser && notification.actionRequired && (
                               <div className="flex items-center space-x-2 mt-3">
                                 <Button
                                   size="sm"
