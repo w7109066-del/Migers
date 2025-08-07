@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, Lock, Smartphone, Send } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
@@ -276,6 +276,9 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
           </Button>
           <DialogTitle className="flex-1 text-center">Change Password</DialogTitle>
           <div className="w-8"></div> {/* Spacer to center the title */}
+          <DialogDescription className="sr-only">
+            Change your account password by providing your current password and entering a new one. Phone verification is required for security.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6 pt-4">
