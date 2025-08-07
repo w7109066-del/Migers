@@ -57,31 +57,66 @@ export function UserAvatar({
 
   return (
     <div className="relative">
-      <div
+      {/* Decorative Frame */}
+      <div 
         className={cn(
-          "rounded-full flex items-center justify-center text-white font-semibold overflow-hidden",
+          "absolute inset-0 rounded-full",
           sizeClasses[size],
-          !profilePhotoUrl && `bg-gradient-to-br ${gradientColor}`,
-          onClick && "cursor-pointer hover:scale-105 transition-transform",
-          className
+          "bg-contain bg-center bg-no-repeat pointer-events-none z-10"
         )}
-        onClick={onClick}
-      >
-        {profilePhotoUrl ? (
-          <img 
-            src={profilePhotoUrl} 
-            alt={username} 
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span>{initials}</span>
+        style={{
+          backgroundImage: `url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==')`,
+          mixBlendMode: 'multiply'
+        }}
+      />
+      
+      {/* Avatar Frame Background */}
+      <div 
+        className={cn(
+          "absolute inset-0 rounded-full z-0",
+          sizeClasses[size]
         )}
+        style={{
+          background: `
+            radial-gradient(circle at 25% 25%, #ff6b6b, transparent 50%),
+            radial-gradient(circle at 75% 25%, #4ecdc4, transparent 50%),
+            radial-gradient(circle at 25% 75%, #45b7d1, transparent 50%),
+            radial-gradient(circle at 75% 75%, #96ceb4, transparent 50%),
+            linear-gradient(45deg, #ffd93d, #ff6b6b, #4ecdc4, #45b7d1)
+          `,
+          padding: '3px'
+        }}
+      />
+      
+      {/* Main Avatar */}
+      <div className="relative z-5">
+        <div
+          className={cn(
+            "rounded-full flex items-center justify-center text-white font-semibold overflow-hidden relative",
+            sizeClasses[size],
+            !profilePhotoUrl && `bg-gradient-to-br ${gradientColor}`,
+            onClick && "cursor-pointer hover:scale-105 transition-transform",
+            className
+          )}
+          style={{ margin: '3px' }}
+          onClick={onClick}
+        >
+          {profilePhotoUrl ? (
+            <img 
+              src={profilePhotoUrl} 
+              alt={username} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span>{initials}</span>
+          )}
+        </div>
       </div>
       
       {isOnline !== undefined && (
         <div
           className={cn(
-            "absolute -bottom-1 -right-1 rounded-full border-2 border-white",
+            "absolute -bottom-1 -right-1 rounded-full border-2 border-white z-20",
             indicatorSizes[size],
             isOnline ? "bg-accent" : "bg-gray-400"
           )}
