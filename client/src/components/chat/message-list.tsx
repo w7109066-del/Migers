@@ -7,7 +7,7 @@ import { ChevronDown, MoreVertical, Reply, Forward, Copy } from "lucide-react";
 import Lottie from "react-lottie-player";
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { Heart, Gift, Crown, Star, MessageCircle, Eye, Info, Flag, UserMinus } from "lucide-react";
 
 interface Message {
@@ -22,6 +22,7 @@ interface Message {
     isOnline: boolean;
     profilePhotoUrl?: string; // Added profilePhotoUrl to sender interface
   };
+  messageType?: 'action' | 'normal'; // Added messageType for '/me' commands
 }
 
 interface MessageListProps {
@@ -577,6 +578,22 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
     }
   };
 
+  const renderMessageContent = (message: Message) => {
+    if (message.content.startsWith('/me ')) {
+      return message.content.substring(4); // Remove '/me ' prefix
+    }
+    if (message.content.includes('🎁 sent')) {
+      return (
+        <div className="inline-block p-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-lg border border-orange-200 ml-1">
+          <span className="text-sm font-medium text-orange-700">
+            {message.content}
+          </span>
+        </div>
+      );
+    }
+    return message.content;
+  };
+
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
@@ -685,44 +702,67 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           );
         }
 
-        // Regular message rendering with context menu
+        // Render /me action messages or regular messages
         return (
           <div
             key={message.id}
-            className="flex items-start space-x-3 group"
+            className={cn(
+              "flex items-start space-x-3 group",
+              message.messageType === 'action' && "italic text-purple-700"
+            )}
           >
             <div className="flex-1">
-              <div className="flex items-center space-x-2 text-sm group">
-                <UserAvatar 
-                  username={message.sender.username}
-                  size="sm"
-                  isOnline={message.sender.isOnline}
-                  onClick={() => onUserClick?.(message.sender)}
-                  profilePhotoUrl={message.sender.profilePhotoUrl}
-                />
-                <span 
-                  className="font-semibold"
-                  style={{ 
-                    color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
-                  }}
-                >
-                  {message.sender.username}
-                </span>
-                <span className="text-gray-500">
-                  [{formatTime(message.createdAt)}]:
-                </span>
-                <div className="text-gray-700 break-words flex-1">
-                  {message.content.includes('🎁 sent') ? (
-                    <div className="inline-block p-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-lg border border-orange-200 ml-1">
-                      <span className="text-sm font-medium text-orange-700">
-                        {message.content}
-                      </span>
-                    </div>
-                  ) : (
-                    message.content
-                  )}
+              {message.messageType === 'action' ? (
+                // Special rendering for /me action messages
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {format(new Date(message.createdAt), 'HH:mm')}
+                  </span>
+                  <div className="italic text-purple-700 dark:text-purple-400 break-words">
+                    {message.content}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                // Normal message rendering
+                <>
+                  <div className="flex items-baseline space-x-2">
+                    <UserAvatar 
+                      username={message.sender.username}
+                      size="sm"
+                      isOnline={message.sender.isOnline}
+                      onClick={() => onUserClick?.(message.sender)}
+                      profilePhotoUrl={message.sender.profilePhotoUrl}
+                    />
+                    <span 
+                      className={cn(
+                        "font-semibold text-sm",
+                        message.senderId === user?.id ? "text-[#2f7853]" : "text-[#3f94d9]"
+                      )}
+                      onClick={() => {
+                        if (message.senderId !== 'system' && onUserClick) {
+                          onUserClick({
+                            id: message.sender.id,
+                            username: message.sender.username,
+                            level: message.sender.level,
+                            status: "Available for chat", // Assuming a default status if not provided
+                            isOnline: message.sender.isOnline,
+                            profilePhotoUrl: message.sender.profilePhotoUrl
+                          });
+                        }
+                      }}
+                    >
+                      {message.sender.username}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatTime(message.createdAt)}
+                    </span>
+                  </div>
+
+                  <div className="mt-1 text-gray-700 dark:text-gray-300 break-words">
+                    {renderMessageContent(message)}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         );

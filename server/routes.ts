@@ -696,6 +696,66 @@ export function registerRoutes(app: Express): Server {
                   break;
                 }
 
+                // Check if message is a /me command
+                const meCommandRegex = /^\/me\s*(.*)$/i;
+                const meMatch = message.content.match(meCommandRegex);
+
+                if (meMatch) {
+                  const [, actionText] = meMatch;
+                  const user = await storage.getUser(userId);
+
+                  // Create /me action message
+                  const meActionContent = actionText.trim() ? 
+                    `* ${user?.username || 'User'} ${actionText.trim()}` : 
+                    `* ${user?.username || 'User'}`;
+
+                  // For mock rooms (1-4), create a mock message
+                  if (['1', '2', '3', '4'].includes(message.roomId)) {
+                    const meMessage = {
+                      id: `me-${Date.now()}`,
+                      content: meActionContent,
+                      senderId: userId,
+                      roomId: message.roomId,
+                      recipientId: null,
+                      messageType: 'action',
+                      metadata: { isAction: true },
+                      createdAt: new Date().toISOString(),
+                      sender: {
+                        id: userId,
+                        username: user?.username || 'User',
+                        level: user?.level || 1,
+                        isOnline: user?.isOnline || true,
+                        profilePhotoUrl: user?.profilePhotoUrl || null
+                      }
+                    };
+
+                    // Broadcast to room
+                    broadcastToRoom(message.roomId, {
+                      type: 'new_message',
+                      message: meMessage,
+                    });
+                  } else {
+                    // Real room message
+                    const messageData = insertMessageSchema.parse({
+                      content: meActionContent,
+                      senderId: userId,
+                      roomId: message.roomId,
+                      recipientId: null,
+                      messageType: 'action',
+                      metadata: { isAction: true },
+                    });
+
+                    const newMessage = await storage.createMessage(messageData);
+
+                    // Broadcast to room
+                    broadcastToRoom(message.roomId, {
+                      type: 'new_message',
+                      message: newMessage,
+                    });
+                  }
+                  break;
+                }
+
                 // For mock rooms (1-4), create a mock message instead of using database
                 if (['1', '2', '3', '4'].includes(message.roomId)) {
                   // Get user data for the mock message
