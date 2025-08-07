@@ -127,7 +127,7 @@ export function NotificationDropdown() {
                               </div>
                             )}
 
-                            {notification.type === 'friend_request' && notification.fromUser && notification.actionRequired && (
+                            {notification.type === 'friend_request_received' && notification.fromUser && notification.actionRequired && (
                               <div className="flex items-center space-x-2 mt-3">
                                 <Button
                                   size="sm"
@@ -144,7 +144,9 @@ export function NotificationDropdown() {
                                       if (response.ok) {
                                         removeNotification(notification.id);
                                         // Invalidate the friend list query to refetch
-                                        queryClient.invalidateQueries(['friends']);
+                                        queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+                                        // Trigger friend list update event
+                                        window.dispatchEvent(new CustomEvent('friendListUpdate'));
                                       }
                                     } catch (error) {
                                       console.error('Failed to accept friend request:', error);

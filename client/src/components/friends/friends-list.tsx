@@ -7,7 +7,7 @@ import { User } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
 import { RefreshCw, Search, Bell } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { NotificationDropdown } from "../ui/notification-dropdown";
 
@@ -43,6 +43,18 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
       setIsRefreshing(false);
     }
   };
+
+  // Listen for friend list updates
+  useEffect(() => {
+    const handleFriendListUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+    };
+
+    window.addEventListener('friendListUpdate', handleFriendListUpdate);
+    return () => {
+      window.removeEventListener('friendListUpdate', handleFriendListUpdate);
+    };
+  }, [queryClient]);
 
   const handleUserClick = (friend: Friend) => {
     onUserClick({

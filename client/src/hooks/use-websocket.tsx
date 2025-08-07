@@ -112,7 +112,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
           case 'friend_request_received':
             addNotification({
-              type: 'friend_request',
+              type: 'friend_request_received',
               title: 'New Friend Request',
               message: `${message.fromUser?.username || 'Someone'} sent you a friend request`,
               fromUser: message.fromUser,
@@ -126,6 +126,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               message: `${message.fromUser?.username || 'Someone'} accepted your friend request`,
               fromUser: message.fromUser,
             });
+            // Refresh friend list
+            window.dispatchEvent(new CustomEvent('friendListUpdate'));
             break;
           case 'gift_received':
             addNotification({
