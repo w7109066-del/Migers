@@ -978,7 +978,7 @@ export function registerRoutes(app: Express): Server {
           case 'leave_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
               // Get user data for system message before leaving
-              const user = await storage.getUser(userId);
+              const disconnectedUser = await storage.getUser(userId);
 
               // For mock rooms (1-4), remove from memory tracking
               if (['1', '2', '3', '4'].includes(message.roomId)) {
@@ -995,7 +995,7 @@ export function registerRoutes(app: Express): Server {
                 type: 'new_message',
                 message: {
                   id: `system-leave-${Date.now()}`,
-                  content: `${user?.username || 'User'} has left`,
+                  content: `${disconnectedUser?.username || 'User'} has left`,
                   senderId: 'system',
                   roomId: message.roomId,
                   recipientId: null,
@@ -1300,17 +1300,17 @@ export function registerRoutes(app: Express): Server {
         // Clean up mock room membership
         if (currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
           if (mockRoomMembers.has(currentRoomId)) {
-            const user = await storage.getUser(userId);
+            const disconnectedUser = await storage.getUser(userId);
             mockRoomMembers.get(currentRoomId)!.delete(userId);
 
-            console.log(`User ${user?.username} left room ${currentRoomId}. Remaining members:`, mockRoomMembers.get(currentRoomId)!.size);
+            console.log(`User ${disconnectedUser?.username} left room ${currentRoomId}. Remaining members:`, mockRoomMembers.get(currentRoomId)!.size);
 
             // Broadcast system message about user leaving
             broadcastToRoom(currentRoomId, {
               type: 'new_message',
               message: {
                 id: `system-leave-${Date.now()}`,
-                content: `${user?.username || 'User'} has left`,
+                content: `${disconnectedUser?.username || 'User'} has left`,
                 senderId: 'system',
                 roomId: currentRoomId,
                 recipientId: null,
