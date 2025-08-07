@@ -1343,7 +1343,11 @@ function HomePageContent() {
                     </button>
                   )}
 
-                  00")}>Set PIN</span>
+                  <button 
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    onClick={() => setPin("00")}
+                  >
+                    <span>Set PIN</span>
                   </button>
 
                   <button
