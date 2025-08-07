@@ -505,6 +505,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Credits transaction history endpoint
+  app.get("/api/credits/history", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      const transactions = await storage.getCreditTransactionHistory(userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Failed to fetch transaction history:", error);
+      res.status(500).json({ message: "Failed to fetch transaction history" });
+    }
+  });
+
   // Credits transfer endpoint
   app.post("/api/credits/transfer", requireAuth, async (req, res) => {
     try {

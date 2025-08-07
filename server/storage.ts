@@ -8,6 +8,7 @@ import {
   postLikes,
   postComments,
   followers,
+  creditTransactions,
   type User,
   type InsertUser,
   type Friendship,
@@ -18,7 +19,9 @@ import {
   type InsertMessage,
   type RoomMember,
   type UserSession,
-  type Follower
+  type Follower,
+  type CreditTransaction,
+  type InsertCreditTransaction
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, exists, count, inArray, sql } from "drizzle-orm";
@@ -79,6 +82,7 @@ export interface IStorage {
 
   // Coin transfer
   transferCoins(senderId: string, recipientId: string, amount: number): Promise<void>;
+  getCreditTransactionHistory(userId: string): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -940,7 +944,80 @@ export class DatabaseStorage implements IStorage {
       await tx.update(users)
         .set({ coins: sql`${users.coins} + ${amount}` })
         .where(eq(users.id, recipientId));
+
+      // Record the transaction
+      await tx.insert(creditTransactions)
+        .values({
+          senderId,
+          recipientId,
+          amount,
+        });
     });
+  }
+
+  async getCreditTransactionHistory(userId: string): Promise<any[]> {
+    try {
+      // Get all transactions where user is either sender or recipient
+      const sentTransactions = await this.db
+        .select({
+          id: creditTransactions.id,
+          type: sql<string>`'sent'`,
+          amount: creditTransactions.amount,
+          otherUserId: creditTransactions.recipientId,
+          createdAt: creditTransactions.createdAt,
+        })
+        .from(creditTransactions)
+        .where(eq(creditTransactions.senderId, userId));
+
+      const receivedTransactions = await this.db
+        .select({
+          id: creditTransactions.id,
+          type: sql<string>`'received'`,
+          amount: creditTransactions.amount,
+          otherUserId: creditTransactions.senderId,
+          createdAt: creditTransactions.createdAt,
+        })
+        .from(creditTransactions)
+        .where(eq(creditTransactions.recipientId, userId));
+
+      // Combine and get user details for other users
+      const allTransactions = [...sentTransactions, ...receivedTransactions];
+      
+      if (allTransactions.length === 0) {
+        return [];
+      }
+
+      // Get unique other user IDs
+      const otherUserIds = [...new Set(allTransactions.map(t => t.otherUserId))];
+      
+      // Get usernames for other users
+      const otherUsers = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+        })
+        .from(users)
+        .where(inArray(users.id, otherUserIds));
+
+      const userMap = new Map(otherUsers.map(u => [u.id, u.username]));
+
+      // Map transactions with usernames
+      const transactionsWithUsernames = allTransactions.map(transaction => ({
+        id: transaction.id,
+        type: transaction.type,
+        amount: transaction.amount,
+        otherUser: userMap.get(transaction.otherUserId) || 'Unknown User',
+        createdAt: transaction.createdAt,
+      }));
+
+      // Sort by creation date (newest first)
+      return transactionsWithUsernames.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch (error) {
+      console.error('Error getting credit transaction history:', error);
+      return [];
+    }
   }
 }
 

@@ -117,6 +117,15 @@ export const followers = pgTable('followers', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// New table for credit transactions
+export const creditTransactions = pgTable("credit_transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  senderId: uuid("sender_id").notNull().references(() => users.id),
+  recipientId: uuid("recipient_id").notNull().references(() => users.id),
+  amount: integer("amount").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   friendships: many(friendships, { relationName: "userFriendships" }),
@@ -315,6 +324,13 @@ export const insertFollowerSchema = createInsertSchema(followers).pick({
   followingId: true,
 });
 
+// Schema for credit transactions
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).pick({
+  senderId: true,
+  recipientId: true,
+  amount: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -335,3 +351,5 @@ export type PostComment = typeof postComments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Follower = typeof followers.$inferSelect;
 export type InsertFollower = z.infer<typeof insertFollowerSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
