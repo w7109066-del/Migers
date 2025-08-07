@@ -533,14 +533,15 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
   const handleUserInfo = (username: string) => {
     console.log("Show info for user:", username);
-    // Implement info logic here
-    if (onUserClick) {
-      // Find the user in the messages to get their full data
-      const userInfo = messages.find(msg => msg.sender.username === username)?.sender;
-      if (userInfo) {
-        onUserClick(userInfo);
-      }
-    }
+    // Send whois command to get user info
+    const whoisMessage = {
+      content: `/whois ${username}`,
+      roomId: window.location.pathname.split('/').pop(), // Get current room ID from URL
+      recipientId: null
+    };
+    
+    // Trigger whois command through websocket or API call
+    window.dispatchEvent(new CustomEvent('sendWhoisCommand', { detail: whoisMessage }));
   };
 
   const handleViewProfile = (user: any) => {
@@ -663,68 +664,68 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
             key={message.id}
             className="flex items-start space-x-3 group"
           >
-            <ContextMenu>
-              <ContextMenuTrigger>
-                <div className="flex-shrink-0 cursor-pointer">
-                  <UserAvatar
-                    username={message.sender.username}
-                    size="sm"
-                    isOnline={message.sender.isOnline}
-                  />
-                </div>
-              </ContextMenuTrigger>
-              <ContextMenuContent className="w-56">
-                <ContextMenuGroup>
-                  <ContextMenuItem onClick={() => onUserClick && onUserClick({
-                    id: message.senderId,
-                    username: message.sender.username,
-                    level: message.sender.level,
-                    isOnline: message.sender.isOnline,
-                  })}>
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Chat
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => handleViewProfile(message.sender)}>
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Profile
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => handleUserInfo(message.sender.username)}>
-                    <Info className="w-4 h-4 mr-2" />
-                    Info
-                  </ContextMenuItem>
-                </ContextMenuGroup>
-                <ContextMenuSeparator />
-                {isAdmin && message.senderId !== currentUserId && (
-                  <>
-                    <ContextMenuItem 
-                      onClick={() => handleKickUser(message.sender)}
-                      className="text-red-600 focus:text-red-600"
-                    >
-                      <UserMinus className="w-4 h-4 mr-2" />
-                      Kick
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                  </>
-                )}
-                <ContextMenuItem 
-                  onClick={() => handleReportUser(message.sender)}
-                  className="text-orange-600 focus:text-orange-600"
-                >
-                  <Flag className="w-4 h-4 mr-2" />
-                  Report
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
             <div className="flex-1">
               <div className="flex items-center space-x-2 text-sm">
-                <span 
-                  className="font-semibold" 
-                  style={{ 
-                    color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
-                  }}
-                >
-                  {message.sender.username}
-                </span>
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
+                    <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 rounded-lg p-1 -m-1">
+                      <UserAvatar
+                        username={message.sender.username}
+                        size="sm"
+                        isOnline={message.sender.isOnline}
+                      />
+                      <span 
+                        className="font-semibold" 
+                        style={{ 
+                          color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
+                        }}
+                      >
+                        {message.sender.username}
+                      </span>
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-56">
+                    <ContextMenuGroup>
+                      <ContextMenuItem onClick={() => onUserClick && onUserClick({
+                        id: message.senderId,
+                        username: message.sender.username,
+                        level: message.sender.level,
+                        isOnline: message.sender.isOnline,
+                      })}>
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Chat
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => handleViewProfile(message.sender)}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Profile
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => handleUserInfo(message.sender.username)}>
+                        <Info className="w-4 h-4 mr-2" />
+                        Info
+                      </ContextMenuItem>
+                    </ContextMenuGroup>
+                    <ContextMenuSeparator />
+                    {isAdmin && message.senderId !== currentUserId && (
+                      <>
+                        <ContextMenuItem 
+                          onClick={() => handleKickUser(message.sender)}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          <UserMinus className="w-4 h-4 mr-2" />
+                          Kick
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                      </>
+                    )}
+                    <ContextMenuItem 
+                      onClick={() => handleReportUser(message.sender)}
+                      className="text-orange-600 focus:text-orange-600"
+                    >
+                      <Flag className="w-4 h-4 mr-2" />
+                      Report
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
                 <span className="text-gray-500">
                   [{formatTime(message.createdAt)}]:
                 </span>

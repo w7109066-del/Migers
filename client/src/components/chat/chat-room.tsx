@@ -216,8 +216,26 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
   const handleUserInfo = (username: string) => {
     // Send whois command
-    sendChatMessage(`/whois ${username}`, roomId);
+    if (roomId) {
+      sendChatMessage(`/whois ${username}`, roomId);
+    }
   };
+
+  // Listen for whois commands from message list
+  useEffect(() => {
+    const handleWhoisCommand = (event: CustomEvent) => {
+      const { content, roomId: commandRoomId } = event.detail;
+      if (commandRoomId === roomId || !commandRoomId) {
+        sendChatMessage(content, roomId);
+      }
+    };
+
+    window.addEventListener('sendWhoisCommand', handleWhoisCommand as EventListener);
+
+    return () => {
+      window.removeEventListener('sendWhoisCommand', handleWhoisCommand as EventListener);
+    };
+  }, [roomId, sendChatMessage]);
 
   const handleReportUser = (user: any) => {
     // Handle user reporting
