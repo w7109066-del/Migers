@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -44,15 +43,20 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
             <DialogTitle className="flex-1 text-center">Privacy & Security</DialogTitle>
             <div className="w-8"></div> {/* Spacer to center the title */}
           </DialogHeader>
-          
+
           <DialogDescription className="sr-only">
             Manage your privacy and security settings including password, email, and PIN.
           </DialogDescription>
-          
+
           <div className="space-y-2 pt-4">
             {/* Change Password */}
             <button
-              onClick={() => setShowChangePassword(true)}
+              onClick={() => {
+                console.log('Change Password clicked');
+                setShowChangePassword(true);
+                // Close parent modal to avoid conflicts
+                handleClose();
+              }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
@@ -73,7 +77,12 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
 
             {/* Change Email */}
             <button
-              onClick={() => setShowChangeEmail(true)}
+              onClick={() => {
+                console.log('Change Email clicked');
+                setShowChangeEmail(true);
+                // Close parent modal to avoid conflicts
+                handleClose();
+              }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
@@ -94,7 +103,12 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
 
             {/* Set PIN */}
             <button
-              onClick={() => setShowSetPin(true)}
+              onClick={() => {
+                console.log('Set PIN clicked');
+                setShowSetPin(true);
+                // Close parent modal to avoid conflicts
+                handleClose();
+              }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
@@ -121,12 +135,12 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
         isOpen={showChangePassword}
         onClose={() => setShowChangePassword(false)}
       />
-      
+
       <ChangeEmailModal
         isOpen={showChangeEmail}
         onClose={() => setShowChangeEmail(false)}
       />
-      
+
       <SetPinModal
         isOpen={showSetPin}
         onClose={() => setShowSetPin(false)}
