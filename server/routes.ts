@@ -57,7 +57,7 @@ export function registerRoutes(app: Express): Server {
   app.put("/api/user/profile", requireAuth, upload.single('profilePhoto'), async (req, res) => {
     try {
       const userId = req.user!.id;
-      const { status, country } = req.body;
+      const { bio, country } = req.body;
       
       let profilePhotoUrl = null;
       if (req.file) {
@@ -66,7 +66,7 @@ export function registerRoutes(app: Express): Server {
 
       // Update user profile in database
       await storage.updateUserProfile(userId, {
-        status: status || null,
+        bio: bio || null,
         country: country || null,
         profilePhotoUrl
       });

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils"; // Assuming cn is imported from utils
 
 interface MiniProfileModalProps {
   profile: {
@@ -16,6 +17,7 @@ interface MiniProfileModalProps {
     username: string;
     level: number;
     status: string;
+    bio?: string; // Added bio field
     isOnline: boolean;
     country?: string;
   };
@@ -28,6 +30,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const isDarkMode = false; // Placeholder for dark mode, assuming it might be needed for styling consistency
 
   const handleSendMessage = () => {
     onMessageClick(profile);
@@ -134,6 +137,12 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
               <p className="text-gray-600 text-sm italic mb-2">"{profile.status}"</p>
             ) : (
               <p className="text-gray-600 text-sm">{profile.isOnline ? 'Online' : 'Offline'}</p>
+            )}
+            {profile.bio && (
+              <div className={cn("text-sm mb-3 p-3 rounded-lg", isDarkMode ? "bg-gray-700 text-gray-200" : "bg-gray-50 text-gray-700")}>
+                <div className={cn("text-xs font-medium mb-1", isDarkMode ? "text-gray-400" : "text-gray-500")}>Bio</div>
+                <div>{profile.bio}</div>
+              </div>
             )}
           </div>
 

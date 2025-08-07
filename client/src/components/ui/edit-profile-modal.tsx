@@ -20,7 +20,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
-    status: user?.status || "",
+    bio: user?.bio || "",
     country: user?.country || "",
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
@@ -76,7 +76,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       const formDataToSend = new FormData();
       
       // Add form fields
-      formDataToSend.append('status', formData.status);
+      formDataToSend.append('bio', formData.bio);
       if (showCountryField) {
         formDataToSend.append('country', formData.country);
       } else {
@@ -214,19 +214,19 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               <p className="text-xs text-gray-500">Email cannot be modified</p>
             </div>
 
-            {/* Status */}
+            {/* Bio */}
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="bio">Bio</Label>
               <Textarea
-                id="status"
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
-                placeholder="What's on your mind?"
+                id="bio"
+                value={formData.bio}
+                onChange={(e) => handleInputChange('bio', e.target.value)}
+                placeholder="Tell us about yourself..."
                 className="resize-none"
                 rows={3}
                 maxLength={200}
               />
-              <p className="text-xs text-gray-500">{formData.status.length}/200 characters</p>
+              <p className="text-xs text-gray-500">{formData.bio.length}/200 characters</p>
             </div>
 
             {/* Country Toggle */}

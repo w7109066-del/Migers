@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   gender: varchar("gender", { length: 10 }),
   level: integer("level").default(1),
   coins: integer("coins").default(1000), // Starting coins for new users
+  bio: text("bio"),
   isOnline: boolean("is_online").default(false),
   lastSeen: timestamp("last_seen").defaultNow(),
   status: text("status").default("online"),

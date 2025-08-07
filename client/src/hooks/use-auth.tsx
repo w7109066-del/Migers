@@ -12,7 +12,7 @@ type User = {
   id: string;
   username: string;
   email: string;
-  status?: string;
+  bio?: string;
   country?: string;
   isOnline?: boolean;
   coins?: number;

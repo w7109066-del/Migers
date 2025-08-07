@@ -154,7 +154,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserProfile(userId: string, profileData: { 
-    status?: string | null; 
+    bio?: string | null; 
     country?: string | null; 
     profilePhotoUrl?: string | null;
   }): Promise<void> {
@@ -162,8 +162,8 @@ export class DatabaseStorage implements IStorage {
       lastSeen: new Date()
     };
 
-    if (profileData.status !== undefined) {
-      updateData.status = profileData.status;
+    if (profileData.bio !== undefined) {
+      updateData.bio = profileData.bio;
     }
 
     if (profileData.country !== undefined) {
