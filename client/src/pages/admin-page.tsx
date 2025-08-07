@@ -174,53 +174,55 @@ export function AdminPage({ onBack }: AdminPageProps) {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats ? (
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Users className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-                <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
-                  {stats.totalUsers}
-                </div>
-                <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                  Total Users
-                </div>
-              </CardContent>
-            </Card>
+            <>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Users className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                  <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                    {stats.totalUsers}
+                  </div>
+                  <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    Total Users
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Activity className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
-                  {stats.onlineUsers}
-                </div>
-                <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                  Online
-                </div>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Activity className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                  <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                    {stats.onlineUsers}
+                  </div>
+                  <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    Online
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4 text-center">
-                <BookOpen className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-                <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
-                  {stats.totalMentors}
-                </div>
-                <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                  Mentors
-                </div>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <BookOpen className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+                  <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                    {stats.totalMentors}
+                  </div>
+                  <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    Mentors
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Shield className="w-8 h-8 mx-auto mb-2 text-red-500" />
-                <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
-                  {stats.totalAdmins}
-                </div>
-                <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                  Admins
-                </div>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Shield className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                  <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                    {stats.totalAdmins}
+                  </div>
+                  <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    Admins
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           ) : (
             <>
               {[1, 2, 3, 4].map((i) => (
