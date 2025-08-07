@@ -71,6 +71,7 @@ interface MiniProfileData {
   fansCount?: number;
   followingCount?: number;
   isFriend?: boolean;
+  isAdmin?: boolean;
 }
 
 function HomePageContent() {
@@ -91,7 +92,7 @@ function HomePageContent() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
-  
+
   const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string } | null>(null);
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -115,8 +116,7 @@ function HomePageContent() {
   const [expandedReplies, setExpandedReplies] = useState<string[]>([]);
   const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState<{url: string, type: string} | null>(null);
-
-  
+  const [pin, setPin] = useState<string>(""); // Added for PIN functionality
 
 
   // Update local status when user data changes
@@ -199,8 +199,8 @@ function HomePageContent() {
           // Add reply to the correct comment
           setPostComments(prev => ({
             ...prev,
-            [postId]: prev[postId]?.map(comment => 
-              comment.id === parentCommentId 
+            [postId]: prev[postId]?.map(comment =>
+              comment.id === parentCommentId
                 ? { ...comment, replies: [...(comment.replies || []), newComment] }
                 : comment
             ) || []
@@ -218,8 +218,8 @@ function HomePageContent() {
         }
 
         // Update the post's comment count
-        setFeedPosts(prev => prev.map(post => 
-          post.id === postId 
+        setFeedPosts(prev => prev.map(post =>
+          post.id === postId
             ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
             : post
         ));
@@ -395,7 +395,7 @@ function HomePageContent() {
     );
   }
 
-  
+
 
   const closeMiniProfile = () => {
     setSelectedProfile(null);
@@ -542,9 +542,9 @@ function HomePageContent() {
   };
 
   const toggleReplies = (commentId: string) => {
-    setExpandedReplies(prev => 
-      prev.includes(commentId) 
-        ? prev.filter(id => id !== commentId) 
+    setExpandedReplies(prev =>
+      prev.includes(commentId)
+        ? prev.filter(id => id !== commentId)
         : [...prev, commentId]
     );
   };
@@ -579,9 +579,9 @@ function HomePageContent() {
                     <div className="flex items-center space-x-2">
                       <div className="relative">
                         <Badge variant="secondary" className={cn(
-                          "text-white border-0 text-xs font-medium px-1.5 py-0.5 shadow-sm transform transition-all duration-300 hover:scale-105 w-4 h-4 flex items-center justify-center", 
-                          isDarkMode 
-                            ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500" 
+                          "text-white border-0 text-xs font-medium px-1.5 py-0.5 shadow-sm transform transition-all duration-300 hover:scale-105 w-4 h-4 flex items-center justify-center",
+                          isDarkMode
+                            ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500"
                             : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400"
                         )}>
                           <span className="text-xs leading-none">{user.level || 1}</span>
@@ -643,7 +643,7 @@ function HomePageContent() {
                   {/* Notification Dropdown */}
                   <NotificationDropdown />
                 </div>
-                
+
                 {/* Coins Display */}
                 <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 shadow-sm">
                   <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -809,9 +809,9 @@ function HomePageContent() {
                 ))}
                 <div className="text-center py-4">
                   <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-500")}>Loading posts...</p>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setIsLoadingFeed(false);
                       setTimeout(() => loadFeedPosts(), 100);
@@ -851,9 +851,9 @@ function HomePageContent() {
                           {post.author?.level && (
                             <div className="relative">
                               <Badge variant="secondary" className={cn(
-                                "text-white border-0 text-xs font-semibold px-2 py-0.5 shadow-sm", 
-                                isDarkMode 
-                                  ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600" 
+                                "text-white border-0 text-xs font-semibold px-2 py-0.5 shadow-sm",
+                                isDarkMode
+                                  ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600"
                                   : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
                               )}>
                                 <span className="flex items-center space-x-1">
@@ -900,27 +900,27 @@ function HomePageContent() {
                         </div>
 
                         <div className="flex items-center space-x-4 mt-2">
-                          <button 
+                          <button
                             className="flex items-center space-x-1 hover:text-red-600 transition-colors"
                             onClick={() => handleLikePost(post.id)}
                           >
-                            <Heart 
+                            <Heart
                               className={`w-4 h-4 cursor-pointer transition-colors ${
-                                userLikes[post.id] 
-                                  ? 'text-red-500 fill-red-500' 
+                                userLikes[post.id]
+                                  ? 'text-red-500 fill-red-500'
                                   : 'text-gray-500 hover:text-red-500'
-                              }`} 
+                              }`}
                             />
                             <span className="text-xs text-gray-500">{likeCounts[post.id] || post.likesCount || 0}</span>
                           </button>
-                          <button 
+                          <button
                             className="flex items-center space-x-1 hover:text-blue-600"
                             onClick={() => toggleComments(post.id)}
                           >
                             <MessageCircle className="w-4 h-4 text-gray-500" />
                             <span className="text-xs text-gray-500">{post.commentsCount || 0} Comments</span>
                           </button>
-                          <button 
+                          <button
                             className="flex items-center space-x-1 hover:text-green-600"
                             onClick={() => setShowShareModal({ url: `${window.location.origin}/post/${post.id}`, type: 'post' })}
                           >
@@ -968,19 +968,19 @@ function HomePageContent() {
                                         <div className="flex items-center justify-between mt-2 px-4">
                                           <div className="flex items-center space-x-4">
                                             <span className="text-xs text-gray-500">
-                                              {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('id-ID', { 
-                                                month: '2-digit', 
-                                                day: '2-digit' 
+                                              {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('id-ID', {
+                                                month: '2-digit',
+                                                day: '2-digit'
                                               }) : 'Just now'}
                                             </span>
-                                            <button 
+                                            <button
                                               className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors"
                                               onClick={() => handleReply(comment.id)}
                                             >
                                               Reply
                                             </button>
                                             {comment.replies && comment.replies.length > 0 && (
-                                              <button 
+                                              <button
                                                 className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors"
                                                 onClick={() => toggleReplies(comment.id)}
                                               >
@@ -1062,9 +1062,9 @@ function HomePageContent() {
                                                   <div className="flex items-center justify-between mt-2 px-4">
                                                     <div className="flex items-center space-x-4">
                                                       <span className="text-xs text-gray-500">
-                                                        {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('id-ID', { 
-                                                          month: '2-digit', 
-                                                          day: '2-digit' 
+                                                        {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('id-ID', {
+                                                          month: '2-digit',
+                                                          day: '2-digit'
                                                         }) : 'Just now'}
                                                       </span>
                                                     </div>
@@ -1173,9 +1173,9 @@ function HomePageContent() {
                   <p>No posts available.</p>
                   <p className="text-sm">Be the first to post or try refreshing!</p>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     setIsLoadingFeed(false);
                     loadFeedPosts();
@@ -1230,9 +1230,9 @@ function HomePageContent() {
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="relative">
                         <Badge variant="secondary" className={cn(
-                          "text-white border-0 text-xs font-bold px-2.5 py-1 shadow-md", 
-                          isDarkMode 
-                            ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600" 
+                          "text-white border-0 text-xs font-bold px-2.5 py-1 shadow-md",
+                          isDarkMode
+                            ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600"
                             : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
                         )}>
                           <span className="flex items-center space-x-1">
@@ -1291,7 +1291,7 @@ function HomePageContent() {
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Help & Support</span>
                   </button>
 
-                  <button 
+                  <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
                     onClick={() => setShowCredits(true)}
                   >
@@ -1301,7 +1301,7 @@ function HomePageContent() {
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Credits</span>
                   </button>
 
-                  <button 
+                  <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
                     onClick={() => setShowMentor(true)}
                   >
@@ -1324,7 +1324,7 @@ function HomePageContent() {
                   </button>
 
                   {user?.isAdmin && (
-                    <button 
+                    <button
                       className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
                       onClick={() => setShowAdmin(true)}
                     >
@@ -1343,9 +1343,9 @@ function HomePageContent() {
                     </button>
                   )}
 
-                  <button 
+                  <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
-                    onClick={() => setPin("00")}
+                    onClick={() => setPin("00")} // Placeholder for PIN functionality
                   >
                     <span>Set PIN</span>
                   </button>
@@ -1410,25 +1410,25 @@ function HomePageContent() {
       )}
 
       {/* Edit Profile Modal */}
-      <EditProfileModal 
-        isOpen={showEditProfile} 
-        onClose={() => setShowEditProfile(false)} 
+      <EditProfileModal
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
       />
 
       {/* User Search Modal */}
-      <UserSearchModal 
-        isOpen={showUserSearch} 
-        onClose={() => setShowUserSearch(false)} 
+      <UserSearchModal
+        isOpen={showUserSearch}
+        onClose={() => setShowUserSearch(false)}
       />
 
       {/* Status Update Modal */}
-      <StatusUpdateModal 
-        isOpen={showStatusUpdate} 
-        onClose={() => setShowStatusUpdate(false)} 
+      <StatusUpdateModal
+        isOpen={showStatusUpdate}
+        onClose={() => setShowStatusUpdate(false)}
       />
 
       {/* Change Password Modal */}
-      
+
 
       {/* Share Modal */}
       {showShareModal && (
