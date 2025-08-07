@@ -47,7 +47,9 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
   // Listen for friend list updates
   useEffect(() => {
     const handleFriendListUpdate = () => {
+      console.log('Friend list update event received');
       queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+      queryClient.refetchQueries({ queryKey: ["/api/friends"] });
     };
 
     window.addEventListener('friendListUpdate', handleFriendListUpdate);

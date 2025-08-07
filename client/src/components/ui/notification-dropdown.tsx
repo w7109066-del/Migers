@@ -146,10 +146,15 @@ export function NotificationDropdown() {
                                       });
                                       if (response.ok) {
                                         removeNotification(notification.id);
-                                        // Invalidate the friend list query to refetch
+                                        
+                                        // Force refresh friend list with multiple methods
                                         queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+                                        queryClient.refetchQueries({ queryKey: ["/api/friends"] });
+                                        
                                         // Trigger friend list update event
                                         window.dispatchEvent(new CustomEvent('friendListUpdate'));
+                                        
+                                        console.log('Friend request accepted, friend list should refresh');
                                       } else {
                                         toast({
                                           title: "Error",

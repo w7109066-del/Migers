@@ -1056,6 +1056,9 @@ export function registerRoutes(app: Express): Server {
             type: 'friend_list_updated'
           });
 
+          console.log(`Friend request accepted: ${userId} accepted by ${currentUserId}`);
+          console.log('Sent friend_list_updated to both users');
+
         } catch (notificationError) {
           console.error('Failed to create acceptance notification:', notificationError);
         }

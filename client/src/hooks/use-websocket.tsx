@@ -149,7 +149,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               message: `${message.fromUser?.username || 'Someone'} accepted your friend request`,
               fromUser: message.fromUser,
             });
-            // Refresh friend list
+            // Refresh friend list immediately
             window.dispatchEvent(new CustomEvent('friendListUpdate'));
             break;
           case 'new_notification':
@@ -159,6 +159,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               
               // If it's a friend request accepted, also refresh friend list
               if (message.notification.type === 'friend_request_accepted') {
+                console.log('Triggering friend list update for accepted request');
                 window.dispatchEvent(new CustomEvent('friendListUpdate'));
               }
             }
