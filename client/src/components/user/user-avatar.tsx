@@ -6,6 +6,7 @@ interface UserAvatarProps {
   isOnline?: boolean;
   onClick?: () => void;
   className?: string;
+  profilePhotoUrl?: string;
 }
 
 const sizeClasses = {
@@ -29,7 +30,8 @@ export function UserAvatar({
   size = "md", 
   isOnline, 
   onClick, 
-  className 
+  className,
+  profilePhotoUrl 
 }: UserAvatarProps) {
   const initials = username
     .split(/[\s_]+/)
@@ -57,15 +59,23 @@ export function UserAvatar({
     <div className="relative">
       <div
         className={cn(
-          "bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold",
+          "rounded-full flex items-center justify-center text-white font-semibold overflow-hidden",
           sizeClasses[size],
-          gradientColor,
+          !profilePhotoUrl && `bg-gradient-to-br ${gradientColor}`,
           onClick && "cursor-pointer hover:scale-105 transition-transform",
           className
         )}
         onClick={onClick}
       >
-        <span>{initials}</span>
+        {profilePhotoUrl ? (
+          <img 
+            src={profilePhotoUrl} 
+            alt={username} 
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span>{initials}</span>
+        )}
       </div>
       
       {isOnline !== undefined && (

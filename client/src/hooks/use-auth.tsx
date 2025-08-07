@@ -16,6 +16,8 @@ type User = {
   country?: string;
   isOnline?: boolean;
   coins?: number;
+  level?: number;
+  status?: string;
   profilePhotoUrl?: string;
 };
 

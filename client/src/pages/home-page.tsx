@@ -386,6 +386,7 @@ function HomePageContent() {
                     username={user.username}
                     size="md"
                     isOnline={user.isOnline || false}
+                    profilePhotoUrl={user.profilePhotoUrl}
                   />
                   <div>
                     <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>
@@ -494,6 +495,7 @@ function HomePageContent() {
                     username={user.username}
                     size="md"
                     isOnline={user.isOnline || false}
+                    profilePhotoUrl={user.profilePhotoUrl}
                   />
                   <div className="flex-1 space-y-3">
                     <div className="relative">
@@ -599,6 +601,7 @@ function HomePageContent() {
                         username={post.author?.username || 'Unknown'}
                         size="md"
                         isOnline={post.author?.isOnline || false}
+                        profilePhotoUrl={post.author?.profilePhotoUrl}
                         onClick={() => showMiniProfile({
                           id: post.author?.id || 'unknown',
                           username: post.author?.username || 'Unknown',
@@ -701,6 +704,7 @@ function HomePageContent() {
                                       username={comment.author?.username || 'Unknown'}
                                       size="sm"
                                       isOnline={false}
+                                      profilePhotoUrl={comment.author?.profilePhotoUrl}
                                     />
                                     <div className="flex-1 min-w-0">
                                       <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
@@ -750,6 +754,7 @@ function HomePageContent() {
                                 username={user.username}
                                 size="sm"
                                 isOnline={user.isOnline || false}
+                                profilePhotoUrl={user.profilePhotoUrl}
                               />
                               <div className="flex-1 relative">
                                 {/* Emoji Picker for Comments */}
@@ -859,6 +864,7 @@ function HomePageContent() {
                     username={user.username}
                     size="lg"
                     isOnline={user.isOnline || false}
+                    profilePhotoUrl={user.profilePhotoUrl}
                   />
                   <div>
                     <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>
