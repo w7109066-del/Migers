@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, Shield, Lock, Mail, Key } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { ChangePasswordModal } from "@/components/ui/change-password-modal";
-import { ChangeEmailModal } from "@/components/ui/change-email-modal";
-import { SetPinModal } from "@/components/ui/set-pin-modal";
+import { ChangePasswordModal } from "./change-password-modal";
+import { ChangeEmailModal } from "./change-email-modal";
+import { SetPinModal } from "./set-pin-modal";
 import { cn } from "@/lib/utils";
 
 interface PrivacySecurityModalProps {
@@ -21,6 +21,10 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
   const [showSetPin, setShowSetPin] = useState(false);
 
   const handleClose = () => {
+    // Reset all modal states when closing main modal
+    setShowChangePassword(false);
+    setShowChangeEmail(false);
+    setShowSetPin(false);
     onClose();
   };
 
@@ -48,7 +52,10 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
           <div className="space-y-2 pt-4">
             {/* Change Password */}
             <button
-              onClick={() => setShowChangePassword(true)}
+              onClick={() => {
+                console.log('Change Password clicked');
+                setShowChangePassword(true);
+              }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
@@ -113,9 +120,13 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
       </Dialog>
 
       {/* Sub-modals */}
+      {console.log('ChangePasswordModal isOpen:', showChangePassword)}
       <ChangePasswordModal
         isOpen={showChangePassword}
-        onClose={() => setShowChangePassword(false)}
+        onClose={() => {
+          console.log('Closing Change Password modal');
+          setShowChangePassword(false);
+        }}
       />
       
       <ChangeEmailModal
