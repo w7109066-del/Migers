@@ -1,12 +1,13 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { UserAvatar } from "@/components/user/user-avatar";
-import { X, Camera, Save } from "lucide-react";
+import { X, Camera, Save, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 
@@ -17,12 +18,14 @@ interface EditProfileModalProps {
 
 export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
-    username: user?.username || "",
-    email: user?.email || "",
     status: user?.status || "",
     country: user?.country || "",
   });
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [showCountryField, setShowCountryField] = useState(!!user?.country);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
@@ -32,17 +35,63 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     }));
   };
 
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedPhoto(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setIsLoading(true);
       
+      const formDataToSend = new FormData();
+      
+      // Add form fields
+      formDataToSend.append('status', formData.status);
+      if (showCountryField) {
+        formDataToSend.append('country', formData.country);
+      } else {
+        formDataToSend.append('country', ''); // Clear country if toggle is off
+      }
+      
+      // Add photo if selected
+      if (selectedPhoto) {
+        formDataToSend.append('profilePhoto', selectedPhoto);
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         credentials: 'include',
-        body: JSON.stringify(formData),
+        body: formDataToSend, // Don't set Content-Type, let browser set it for FormData
       });
 
       if (response.ok) {
@@ -77,59 +126,95 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center">Edit Profile</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Avatar Section */}
+          {/* Avatar Section with Photo Upload */}
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
               <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-1">
-                <div className="w-full h-full rounded-full bg-white p-1">
-                  <UserAvatar 
-                    username={user.username} 
-                    size="xl"
-                    isOnline={user.isOnline || false}
-                    className="w-full h-full"
-                  />
+                <div className="w-full h-full rounded-full bg-white p-1 overflow-hidden">
+                  {photoPreview ? (
+                    <img 
+                      src={photoPreview} 
+                      alt="Profile preview" 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : user.profilePhotoUrl ? (
+                    <img 
+                      src={user.profilePhotoUrl} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <UserAvatar 
+                      username={user.username} 
+                      size="xl"
+                      isOnline={user.isOnline || false}
+                      className="w-full h-full"
+                    />
+                  )}
                 </div>
               </div>
               <Button
                 size="sm"
                 variant="outline"
                 className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                onClick={() => fileInputRef.current?.click()}
               >
                 <Camera className="w-4 h-4" />
               </Button>
             </div>
-            <p className="text-sm text-gray-500">Click to change profile picture</p>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoSelect}
+              className="hidden"
+            />
+            
+            <div className="text-center">
+              <p className="text-sm text-gray-500 mb-2">Click camera icon to change photo</p>
+              {selectedPhoto && (
+                <p className="text-xs text-green-600">New photo selected: {selectedPhoto.name}</p>
+              )}
+            </div>
           </div>
 
           {/* Form Fields */}
           <div className="space-y-4">
+            {/* Read-only Username */}
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
-                value={formData.username}
-                onChange={(e) => handleInputChange('username', e.target.value)}
-                placeholder="Enter your username"
+                value={user.username}
+                disabled
+                className="bg-gray-100 cursor-not-allowed"
+                placeholder="Username cannot be changed"
               />
+              <p className="text-xs text-gray-500">Username cannot be modified</p>
             </div>
 
+            {/* Read-only Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="Enter your email"
+                value={user.email}
+                disabled
+                className="bg-gray-100 cursor-not-allowed"
+                placeholder="Email cannot be changed"
               />
+              <p className="text-xs text-gray-500">Email cannot be modified</p>
             </div>
 
+            {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Textarea
@@ -139,17 +224,34 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 placeholder="What's on your mind?"
                 className="resize-none"
                 rows={3}
+                maxLength={200}
               />
+              <p className="text-xs text-gray-500">{formData.status.length}/200 characters</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
-              <Input
-                id="country"
-                value={formData.country}
-                onChange={(e) => handleInputChange('country', e.target.value)}
-                placeholder="Enter your country"
-              />
+            {/* Country Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-country">Show Country</Label>
+                <Switch
+                  id="show-country"
+                  checked={showCountryField}
+                  onCheckedChange={setShowCountryField}
+                />
+              </div>
+              
+              {showCountryField && (
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
+                    placeholder="Enter your country"
+                    maxLength={50}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

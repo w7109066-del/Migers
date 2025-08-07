@@ -53,6 +53,34 @@ export function registerRoutes(app: Express): Server {
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
+  // User profile update endpoint
+  app.put("/api/user/profile", requireAuth, upload.single('profilePhoto'), async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { status, country } = req.body;
+      
+      let profilePhotoUrl = null;
+      if (req.file) {
+        profilePhotoUrl = `/uploads/${req.file.filename}`;
+      }
+
+      // Update user profile in database
+      await storage.updateUserProfile(userId, {
+        status: status || null,
+        country: country || null,
+        profilePhotoUrl
+      });
+
+      res.json({
+        success: true,
+        message: "Profile updated successfully"
+      });
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // Rooms API endpoints
   app.get("/api/rooms", requireAuth, async (req, res) => {
     try {

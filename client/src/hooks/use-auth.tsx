@@ -16,6 +16,7 @@ type User = {
   country?: string;
   isOnline?: boolean;
   coins?: number;
+  profilePhotoUrl?: string;
 };
 
 type AuthContextType = {

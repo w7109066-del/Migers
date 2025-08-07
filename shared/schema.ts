@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   lastSeen: timestamp("last_seen").defaultNow(),
   status: text("status").default("online"),
   createdAt: timestamp("created_at").defaultNow(),
+  profilePhotoUrl: text("profile_photo_url"),
 });
 
 export const friendships = pgTable("friendships", {

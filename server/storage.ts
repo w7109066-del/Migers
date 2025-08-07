@@ -153,6 +153,33 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
+  async updateUserProfile(userId: string, profileData: { 
+    status?: string | null; 
+    country?: string | null; 
+    profilePhotoUrl?: string | null;
+  }): Promise<void> {
+    const updateData: any = {
+      lastSeen: new Date()
+    };
+
+    if (profileData.status !== undefined) {
+      updateData.status = profileData.status;
+    }
+
+    if (profileData.country !== undefined) {
+      updateData.country = profileData.country;
+    }
+
+    if (profileData.profilePhotoUrl) {
+      updateData.profilePhotoUrl = profileData.profilePhotoUrl;
+    }
+
+    await this.db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId));
+  }
+
   async searchUsers(query: string, currentUserId: string): Promise<User[]> {
     const searchResults = await this.db
       .select()
