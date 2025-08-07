@@ -453,10 +453,11 @@ function HomePageContent() {
                   <Search className="w-5 h-5" />
                 </Button>
 
-                {/* Pencil Icon Button */}
+                {/* Status Update Button */}
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => setShowStatusUpdate(true)}
                   className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
                 >
                   <PenTool className="w-5 h-5" />
