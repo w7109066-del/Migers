@@ -63,7 +63,16 @@ interface MiniProfileData {
 }
 
 export default function HomePage() {
-  const { user, logoutMutation, isDarkMode, toggleDarkMode } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
+  const {
+    sendChatMessage,
+    joinRoom,
+    leaveRoom,
+    isConnected,
+    connectionStatus,
+    retryConnection
+  } = useWebSocket();
+  const { notifications, markAsRead } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
@@ -259,7 +268,13 @@ export default function HomePage() {
     }
   }, [user, activeTab]);
 
-  if (!user) return null;
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const showMiniProfile = (profileData: MiniProfileData) => {
     setSelectedProfile(profileData);

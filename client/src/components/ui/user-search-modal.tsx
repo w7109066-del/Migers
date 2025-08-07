@@ -28,7 +28,7 @@ interface UserSearchModalProps {
 export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick }: UserSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { user: currentUser } = useAuth();
-  // Using imported toast function directly
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: searchResults, isLoading, refetch } = useQuery({
