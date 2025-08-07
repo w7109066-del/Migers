@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   followingCount: integer("following_count").default(0),
   isMentor: boolean("is_mentor").default(false),
   mentorSpecialty: text("mentor_specialty"),
+  isAdmin: boolean("is_admin").default(false),
 });
 
 export const friendships = pgTable("friendships", {

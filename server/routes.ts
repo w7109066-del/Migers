@@ -19,6 +19,17 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+// Admin middleware
+function requireAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+}
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
   setupAuth(app);
@@ -600,6 +611,74 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error registering as mentor:', error);
       res.status(500).json({ message: 'Failed to register as mentor' });
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/users', requireAdmin, async (req, res) => {
+    try {
+      const users = await db.select().from(users);
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  app.post('/api/admin/promote', requireAdmin, async (req, res) => {
+    try {
+      const { userId, role } = req.body;
+      
+      if (role === 'admin') {
+        const updatedUser = await storage.updateUserAdminStatus(userId, true);
+        res.json(updatedUser);
+      } else if (role === 'mentor') {
+        const updatedUser = await storage.updateUserMentorStatus(userId, true);
+        res.json(updatedUser);
+      } else {
+        res.status(400).json({ message: 'Invalid role' });
+      }
+    } catch (error) {
+      console.error('Error promoting user:', error);
+      res.status(500).json({ message: 'Failed to promote user' });
+    }
+  });
+
+  app.post('/api/admin/demote', requireAdmin, async (req, res) => {
+    try {
+      const { userId, role } = req.body;
+      
+      if (role === 'admin') {
+        const updatedUser = await storage.updateUserAdminStatus(userId, false);
+        res.json(updatedUser);
+      } else if (role === 'mentor') {
+        const updatedUser = await storage.updateUserMentorStatus(userId, false);
+        res.json(updatedUser);
+      } else {
+        res.status(400).json({ message: 'Invalid role' });
+      }
+    } catch (error) {
+      console.error('Error demoting user:', error);
+      res.status(500).json({ message: 'Failed to demote user' });
+    }
+  });
+
+  app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+    try {
+      const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const onlineUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isOnline, true));
+      const totalMentors = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isMentor, true));
+      const totalAdmins = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isAdmin, true));
+      
+      res.json({
+        totalUsers: totalUsers[0]?.count || 0,
+        onlineUsers: onlineUsers[0]?.count || 0,
+        totalMentors: totalMentors[0]?.count || 0,
+        totalAdmins: totalAdmins[0]?.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      res.status(500).json({ message: 'Failed to fetch stats' });
     }
   });
 

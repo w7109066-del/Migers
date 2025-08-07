@@ -21,6 +21,7 @@ type User = {
   profilePhotoUrl?: string;
   isMentor?: boolean;
   mentorSpecialty?: string;
+  isAdmin?: boolean;
   fansCount?: number;
   followingCount?: number;
 };

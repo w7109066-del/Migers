@@ -45,6 +45,8 @@ export interface IStorage {
   updateUserCoins(userId: string, newCoinAmount: number): Promise<User | undefined>;
   updateUserMentorStatus(userId: string, isMentor: boolean, specialty?: string): Promise<User | undefined>;
   getMentors(): Promise<User[]>;
+  updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<User | undefined>;
+  getAdmins(): Promise<User[]>;
 
 
   // Friends management
@@ -921,6 +923,35 @@ export class DatabaseStorage implements IStorage {
       where: eq(users.username, username),
     });
     return user || null;
+  }
+
+  async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<User | undefined> {
+    try {
+      const [updatedUser] = await this.db
+        .update(users)
+        .set({ isAdmin })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating admin status:', error);
+      return undefined;
+    }
+  }
+
+  async getAdmins(): Promise<User[]> {
+    try {
+      const admins = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.isAdmin, true));
+      
+      return admins;
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+      return [];
+    }
   }
 
   async transferCoins(senderId: string, recipientId: string, amount: number): Promise<void> {
