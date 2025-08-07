@@ -545,39 +545,86 @@ export class DatabaseStorage implements IStorage {
     return messageWithSender[0];
   }
 
-  async createDirectMessage(messageData: { content: string; senderId: string; recipientId: string; messageType: string }) {
-    const [message] = await this.db
-      .insert(messages)
-      .values({
-        content: messageData.content,
-        senderId: messageData.senderId,
-        recipientId: messageData.recipientId,
-        messageType: messageData.messageType,
-        roomId: null
-      })
-      .returning();
+  async createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }) {
+    try {
+      const [directMessage] = await this.db
+        .insert(messages) // Changed from directMessages to messages
+        .values({
+          content: data.content,
+          senderId: data.senderId, // Keep as string, let DB handle conversion if needed or adjust schema
+          recipientId: data.recipientId, // Keep as string
+          messageType: data.messageType || 'text',
+          roomId: null // Explicitly set roomId to null for direct messages
+        })
+        .returning();
 
-    // Get the message with sender info
-    const messageWithSender = await this.db
-      .select({
-        id: messages.id,
-        content: messages.content,
-        senderId: messages.senderId,
-        recipientId: messages.recipientId,
-        messageType: messages.messageType,
-        createdAt: messages.createdAt,
-        sender: {
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
+      // Get sender info for the response
+      const sender = await this.getUser(data.senderId);
+
+      return {
+        ...directMessage,
+        sender: sender ? {
+          id: sender.id,
+          username: sender.username,
+          level: sender.level || 1,
+          isOnline: sender.isOnline || false,
+        } : null,
+      };
+    } catch (error) {
+      console.error('Failed to create direct message:', error);
+      throw error;
+    }
+  }
+
+  async createRoom(roomData: { name: string; description: string; capacity: number }, createdBy: string) {
+    try {
+      const [room] = await this.db
+        .insert(chatRooms)
+        .values({
+          name: roomData.name,
+          description: roomData.description,
+          createdBy,
+          capacity: roomData.capacity, // Use the provided capacity
+          isPublic: true, // Assuming new rooms are public by default
+        })
+        .returning();
+
+      // Automatically add creator as room member with role 'admin'
+      await this.db
+        .insert(roomMembers)
+        .values({
+          roomId: room.id,
+          userId: createdBy,
+          role: 'admin', // Creator is an admin
+        });
+
+      return room;
+    } catch (error) {
+      console.error('Failed to create room:', error);
+      throw error;
+    }
+  }
+
+  async getAllRooms() {
+    try {
+      // Fetch rooms with creator details
+      const rooms = await this.db.query.chatRooms.findMany({
+        with: {
+          creator: { // Assuming 'creator' is the relation defined in schema for chatRooms
+            columns: {
+              id: true,
+              username: true,
+            },
+          },
         },
-      })
-      .from(messages)
-      .innerJoin(users, eq(messages.senderId, users.id))
-      .where(eq(messages.id, message.id));
+        orderBy: (chatRooms, { desc }) => [desc(chatRooms.createdAt)],
+      });
 
-    return messageWithSender[0];
+      return rooms;
+    } catch (error) {
+      console.error('Failed to get rooms:', error);
+      return []; // Return empty array on error
+    }
   }
 
   // Feed posts methods

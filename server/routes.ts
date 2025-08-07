@@ -56,7 +56,10 @@ export function registerRoutes(app: Express): Server {
   // Rooms API endpoints
   app.get("/api/rooms", requireAuth, async (req, res) => {
     try {
-      // Return mock rooms data that matches the frontend expectations
+      // Get user-created rooms from database
+      const userRooms = await storage.getAllRooms();
+      
+      // Return mock rooms data plus user-created rooms
       const mockRooms = [
         {
           id: "1",
@@ -100,10 +103,57 @@ export function registerRoutes(app: Express): Server {
         }
       ];
 
-      res.json(mockRooms);
+      // Convert user rooms to the expected format
+      const formattedUserRooms = userRooms.map(room => ({
+        id: room.id,
+        name: room.name,
+        description: room.description || "",
+        memberCount: 0,
+        capacity: room.maxMembers || 25,
+        isOfficial: false,
+        category: "recent",
+        isPrivate: !room.isPublic
+      }));
+
+      const allRooms = [...mockRooms, ...formattedUserRooms];
+      res.json(allRooms);
     } catch (error) {
       console.error("Failed to fetch rooms:", error);
       res.status(500).json({ message: "Failed to fetch rooms" });
+    }
+  });
+
+  app.post("/api/rooms", requireAuth, async (req, res) => {
+    try {
+      const { name, description, isPublic = true, maxMembers = 25 } = req.body;
+      const userId = req.user!.id;
+
+      if (!name || !description) {
+        return res.status(400).json({ message: "Name and description are required" });
+      }
+
+      // Validate room name length
+      if (name.length > 50) {
+        return res.status(400).json({ message: "Room name must be 50 characters or less" });
+      }
+
+      // Validate description length
+      if (description.length > 200) {
+        return res.status(400).json({ message: "Description must be 200 characters or less" });
+      }
+
+      const roomData = insertChatRoomSchema.parse({
+        name: name.trim(),
+        description: description.trim(),
+        isPublic,
+        maxMembers
+      });
+
+      const newRoom = await storage.createRoom(roomData, userId);
+      res.status(201).json(newRoom);
+    } catch (error) {
+      console.error("Failed to create room:", error);
+      res.status(500).json({ message: "Failed to create room" });
     }
   });
 

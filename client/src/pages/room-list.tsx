@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Users, Crown, Star, Gamepad2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Search, Plus, Users, Crown, Star, Gamepad2, X } from "lucide-react";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Room {
   id: string;
@@ -72,7 +77,12 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [roomMemberCounts, setRoomMemberCounts] = useState<Record<string, number>>({});
+  const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
+  const [newRoomName, setNewRoomName] = useState("");
+  const [newRoomDescription, setNewRoomDescription] = useState("");
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   // Real-time updates disabled for debugging
   // useEffect(() => {
@@ -135,6 +145,47 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     },
   });
 
+  const createRoomMutation = useMutation({
+    mutationFn: async (roomData: { name: string; description: string }) => {
+      const response = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: roomData.name,
+          description: roomData.description,
+          isPublic: true,
+          maxMembers: 25
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create room');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+      setIsCreateRoomOpen(false);
+      setNewRoomName("");
+      setNewRoomDescription("");
+      toast({
+        title: "Room Created",
+        description: "Your room has been created successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Log any errors for debugging
   if (error) {
     console.error('Room fetch error:', error);
@@ -185,6 +236,31 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     // Refresh room data manually (no auto-refresh)
     console.log('Manually refreshing room data...');
     queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+  };
+
+  const handleCreateRoom = () => {
+    if (!newRoomName.trim()) {
+      toast({
+        title: "Error",
+        description: "Room name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newRoomDescription.trim()) {
+      toast({
+        title: "Error", 
+        description: "Room description is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createRoomMutation.mutate({
+      name: newRoomName.trim(),
+      description: newRoomDescription.trim()
+    });
   };
 
   const categorizedRooms = {
@@ -378,10 +454,86 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">Chat Rooms</h1>
-          <Button size="sm" className="bg-primary hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-1" />
-            New Room
-          </Button>
+          <Dialog open={isCreateRoomOpen} onOpenChange={setIsCreateRoomOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="bg-primary hover:bg-primary/90">
+                <Plus className="w-4 h-4 mr-1" />
+                New Room
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  Create New Room
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCreateRoomOpen(false)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="room-name">Room Name</Label>
+                  <Input
+                    id="room-name"
+                    placeholder="Enter room name..."
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    maxLength={50}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="room-description">Description</Label>
+                  <Textarea
+                    id="room-description"
+                    placeholder="Enter room description..."
+                    value={newRoomDescription}
+                    onChange={(e) => setNewRoomDescription(e.target.value)}
+                    maxLength={200}
+                    rows={3}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="created-by">Created By</Label>
+                  <Input
+                    id="created-by"
+                    value={user?.username || 'Unknown User'}
+                    disabled
+                    className="bg-gray-100 dark:bg-gray-700"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="capacity">Capacity</Label>
+                  <Input
+                    id="capacity"
+                    value="25 users"
+                    disabled
+                    className="bg-gray-100 dark:bg-gray-700"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateRoomOpen(false)}
+                  disabled={createRoomMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateRoom}
+                  disabled={createRoomMutation.isPending}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {createRoomMutation.isPending ? "Creating..." : "Create Room"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
         
         <div className="relative">
