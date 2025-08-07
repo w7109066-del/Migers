@@ -6,7 +6,7 @@ import { Badge } from './badge';
 import { useNotifications } from '@/hooks/use-notifications';
 import { UserAvatar } from '@/components/user/user-avatar';
 import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
-import { useToast } from './toast/use-toast'; // Assuming you have a toast hook
+import { useToast } from '@/hooks/use-toast';
 
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
