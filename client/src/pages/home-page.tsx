@@ -82,6 +82,7 @@ export default function HomePage() {
   const [postComments, setPostComments] = useState<{[postId: string]: any[]}>({});
   const [commentText, setCommentText] = useState<{[postId: string]: string}>({});
   const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState<string | null>(null);
 
   // Update local status when user data changes
   React.useEffect(() => {
@@ -180,6 +181,32 @@ export default function HomePage() {
     } catch (error) {
       console.error('Failed to add comment:', error);
     }
+  };
+
+  const handleShareToWhatsApp = (post: any) => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    const text = `Check out this post by ${post.author?.username || 'Unknown'}: ${post.content || 'Check out this post!'}\n\n${postUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank');
+    setShowShareModal(null);
+  };
+
+  const handleShareToTikTok = (post: any) => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    const text = `Check out this post by ${post.author?.username || 'Unknown'}: ${post.content || 'Check out this post!'}`;
+    // TikTok doesn't have a direct web share API, so we'll copy to clipboard with instructions
+    navigator.clipboard.writeText(`${text}\n\n${postUrl}`).then(() => {
+      alert('Post content copied to clipboard! You can now paste it on TikTok.');
+    });
+    setShowShareModal(null);
+  };
+
+  const handleCopyLink = (post: any) => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    navigator.clipboard.writeText(postUrl).then(() => {
+      alert('Link copied to clipboard!');
+    });
+    setShowShareModal(null);
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -603,10 +630,13 @@ export default function HomePage() {
                             <MessageCircle className="w-4 h-4 text-gray-500" />
                             <span className="text-xs text-gray-500">{post.commentsCount || 0} Comments</span>
                           </button>
-                          <div className="flex items-center space-x-1">
-                            <Share2 className="w-4 h-4 text-gray-500 cursor-pointer hover:text-green-500" />
+                          <button 
+                            className="flex items-center space-x-1 hover:text-green-600"
+                            onClick={() => setShowShareModal(post.id)}
+                          >
+                            <Share2 className="w-4 h-4 text-gray-500" />
                             <span className="text-xs text-gray-500">Share</span>
-                          </div>
+                          </button>
                         </div>
 
                         {/* Comments Section */}
@@ -936,6 +966,66 @@ export default function HomePage() {
             isOpen={showStatusUpdate}
             onClose={() => setShowStatusUpdate(false)}
           />
+
+          {/* Share Modal */}
+          {showShareModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className={cn("rounded-2xl p-6 w-72 max-w-sm", isDarkMode ? "bg-gray-800" : "bg-white")}>
+                <div className="text-center mb-6">
+                  <h3 className={cn("text-lg font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
+                    berbagi
+                  </h3>
+                </div>
+                
+                <div className="flex justify-center space-x-8">
+                  {/* WhatsApp Share */}
+                  <button
+                    onClick={() => {
+                      const post = feedPosts.find(p => p.id === showShareModal);
+                      if (post) handleShareToWhatsApp(post);
+                    }}
+                    className="flex flex-col items-center space-y-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <div className="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                      </svg>
+                    </div>
+                    <span className={cn("text-sm font-medium", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                      WhatsApp
+                    </span>
+                  </button>
+
+                  {/* Copy Link */}
+                  <button
+                    onClick={() => {
+                      const post = feedPosts.find(p => p.id === showShareModal);
+                      if (post) handleCopyLink(post);
+                    }}
+                    className="flex flex-col items-center space-y-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                      </svg>
+                    </div>
+                    <span className={cn("text-sm font-medium", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                      Salin tautan
+                    </span>
+                  </button>
+                </div>
+
+                {/* Close button */}
+                <button
+                  onClick={() => setShowShareModal(null)}
+                  className={cn("absolute top-4 right-4 p-1 rounded-full", isDarkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500")}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </WebSocketProvider>
     </NotificationProvider>
