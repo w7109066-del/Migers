@@ -126,7 +126,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto relative">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto relative z-[9999]">
         {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
