@@ -38,13 +38,13 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
     setIsRefreshing(true);
     try {
       console.log('Manual refresh triggered');
-      
+
       // Clear cache completely
       queryClient.removeQueries({ queryKey: ["/api/friends"] });
-      
+
       // Force refetch
       await refetch();
-      
+
       console.log('Manual refresh completed');
     } catch (error) {
       console.error('Failed to refresh friends:', error);
@@ -57,10 +57,10 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
   useEffect(() => {
     const handleFriendListUpdate = async () => {
       console.log('Friend list update event received, forcing refresh...');
-      
+
       // Clear cache first
       queryClient.removeQueries({ queryKey: ["/api/friends"] });
-      
+
       // Force immediate refetch
       try {
         await refetch();

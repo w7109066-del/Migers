@@ -999,6 +999,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get friends endpoint
+  app.get('/api/friends', requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const friends = await storage.getFriends(userId);
+      res.json(friends);
+    } catch (error) {
+      console.error('Failed to fetch friends:', error);
+      res.status(500).json({ message: 'Failed to fetch friends' });
+    }
+  });
+
   // Accept friend request
   app.post('/api/friends/accept', requireAuth, async (req, res) => {
     try {
@@ -1009,7 +1021,10 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      // Add the friend relationship
+      // First accept the friend request in friendships table
+      await storage.acceptFriendRequest(currentUserId, userId);
+
+      // Add the friend relationship in friends table
       await db.insert(friends).values([
         { userId: currentUserId, friendUserId: userId },
         { userId, friendUserId: currentUserId },
@@ -1041,7 +1056,6 @@ export function registerRoutes(app: Express): Server {
         console.error('Error sending WebSocket update for friend list:', websocketError);
         // Continue processing even if WebSocket fails
       }
-
 
       // Get user info for notification
       const currentUser = await storage.getUser(currentUserId);
@@ -1080,10 +1094,6 @@ export function registerRoutes(app: Express): Server {
           console.error('Failed to create acceptance notification:', notificationError);
         }
       }
-
-      // Delete the pending friend request
-      await storage.rejectFriendRequest(currentUserId, userId);
-
 
       console.log(`Friend request accepted: ${userId} accepted by ${currentUserId}`);
 

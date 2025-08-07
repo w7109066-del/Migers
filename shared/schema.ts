@@ -133,7 +133,7 @@ export const creditTransactions = pgTable("credit_transactions", {
 
 // New table for notifications
 export const notifications = pgTable("notifications", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   type: varchar("type", { length: 50 }).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
@@ -142,6 +142,14 @@ export const notifications = pgTable("notifications", {
   data: jsonb("data"),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// New table for friends
+export const friends = pgTable('friends', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  friendUserId: uuid('friend_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // Relations
@@ -156,6 +164,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   followers: many(followers, { relationName: "followers" }), // Added relation for followers
   following: many(followers, { relationName: "following" }), // Added relation for following
   notifications: many(notifications),
+  friends: many(friends, { relationName: "userFriends" }), // Added relation for friends
+  friendOf: many(friends, { relationName: "friendOf" }), // Added relation for friends
 }));
 
 export const friendshipsRelations = relations(friendships, ({ one }) => ({
@@ -284,6 +294,20 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
+// Relation for the friends table
+export const friendsRelations = relations(friends, ({ one }) => ({
+  user: one(users, {
+    fields: [friends.userId],
+    references: [users.id],
+    relationName: "userFriends",
+  }),
+  friend: one(users, {
+    fields: [friends.friendUserId],
+    references: [users.id],
+    relationName: "friendOf",
+  }),
+}));
+
 
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -372,6 +396,11 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   data: true,
 });
 
+// Schema for friends
+export const insertFriendSchema = createInsertSchema(friends).pick({
+  friendUserId: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -396,4 +425,5 @@ export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-
+export type Friend = typeof friends.$inferSelect;
+export type InsertFriend = z.infer<typeof insertFriendSchema>;

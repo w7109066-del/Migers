@@ -10,6 +10,7 @@ import {
   followers,
   friendships,
   creditTransactions,
+  friends,
   type User,
   type InsertUser,
   type Friendship,
@@ -215,7 +216,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]> {
-    const friends = await this.db
+    const userFriends = await this.db
       .select({
         id: users.id,
         username: users.username,
@@ -224,20 +225,23 @@ export class DatabaseStorage implements IStorage {
         isOnline: users.isOnline,
         country: users.country,
         status: users.status,
+        profilePhotoUrl: users.profilePhotoUrl,
+        bio: users.bio,
+        coins: users.coins,
+        isMentor: users.isMentor,
+        isAdmin: users.isAdmin,
+        isBanned: users.isBanned,
+        isSuspended: users.isSuspended,
+        lastSeen: users.lastSeen,
+        password: users.password,
         createdAt: users.createdAt,
-        friendshipStatus: friendships.status,
-        friendshipCreatedAt: friendships.createdAt,
+        friendshipStatus: sql<string>`'accepted'`,
       })
-      .from(friendships)
-      .innerJoin(users,
-        or(
-          and(eq(friendships.userId, userId), eq(users.id, friendships.friendId)),
-          and(eq(friendships.userId, userId), eq(users.id, friendships.friendId))
-        )
-      )
-      .where(eq(friendships.status, 'accepted'));
+      .from(friends)
+      .innerJoin(users, eq(friends.friendUserId, users.id))
+      .where(eq(friends.userId, userId));
 
-    return friends;
+    return userFriends;
   }
 
   async addFriend(userId: string, friendId: string): Promise<Friendship> {
