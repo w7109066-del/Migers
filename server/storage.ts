@@ -51,6 +51,7 @@ export interface IStorage {
   unbanUser(userId: string): Promise<User | undefined>;
   suspendUser(userId: string): Promise<User | undefined>;
   unsuspendUser(userId: string): Promise<User | undefined>;
+  updateUserPassword(userId: string, newPassword: string): Promise<User | undefined>;
 
 
   // Friends management
@@ -1126,6 +1127,35 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting credit transaction history:', error);
       return [];
+    }
+  }
+
+  async updateUser(userId: string, updates: Partial<User>) {
+    try {
+      const result = await this.db.update(users)
+        .set(updates)
+        .where(eq(users.id, userId))
+        .returning();
+
+      return result[0] || null;
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      return null;
+    }
+  }
+
+  async updateUserPassword(userId: string, newPassword: string) {
+    try {
+      // In production, hash the password before storing
+      const result = await this.db.update(users)
+        .set({ password: newPassword })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return result[0] || null;
+    } catch (error) {
+      console.error('Failed to update user password:', error);
+      return null;
     }
   }
 }

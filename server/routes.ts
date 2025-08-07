@@ -807,6 +807,136 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Send OTP via WhatsApp (placeholder - you'll need to integrate with WhatsApp API)
+  app.post('/api/user/send-otp', requireAuth, async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+
+      if (!phoneNumber) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+
+      // Generate 6-digit OTP
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Store OTP in memory (in production, use Redis or database with expiration)
+      const otpStore = global.otpStore || (global.otpStore = new Map());
+      otpStore.set(phoneNumber, {
+        code: otpCode,
+        expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+        attempts: 0
+      });
+
+      // TODO: Integrate with WhatsApp API to send OTP
+      // For now, we'll just log it (in production, remove this)
+      console.log(`OTP for ${phoneNumber}: ${otpCode}`);
+
+      res.json({ message: 'OTP sent successfully' });
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      res.status(500).json({ message: 'Failed to send OTP' });
+    }
+  });
+
+  // Verify OTP
+  app.post('/api/user/verify-otp', requireAuth, async (req, res) => {
+    try {
+      const { phoneNumber, otpCode } = req.body;
+
+      if (!phoneNumber || !otpCode) {
+        return res.status(400).json({ message: 'Phone number and OTP code are required' });
+      }
+
+      const otpStore = global.otpStore || new Map();
+      const otpData = otpStore.get(phoneNumber);
+
+      if (!otpData) {
+        return res.status(400).json({ message: 'No OTP found for this phone number' });
+      }
+
+      if (Date.now() > otpData.expires) {
+        otpStore.delete(phoneNumber);
+        return res.status(400).json({ message: 'OTP has expired' });
+      }
+
+      if (otpData.attempts >= 3) {
+        otpStore.delete(phoneNumber);
+        return res.status(400).json({ message: 'Too many attempts. Please request a new OTP' });
+      }
+
+      if (otpData.code !== otpCode) {
+        otpData.attempts++;
+        return res.status(400).json({ message: 'Invalid OTP code' });
+      }
+
+      // Mark as verified
+      otpData.verified = true;
+
+      res.json({ message: 'OTP verified successfully' });
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      res.status(500).json({ message: 'Failed to verify OTP' });
+    }
+  });
+
+  // Change password
+  app.post('/api/user/change-password', requireAuth, async (req, res) => {
+    try {
+      const userId = req.headers['x-replit-user-id'] as string;
+      const { oldPassword, newPassword, phoneNumber, otpCode } = req.body;
+
+      if (!oldPassword || !newPassword || !phoneNumber || !otpCode) {
+        return res.status(400).json({ message: 'All fields are required' });
+      }
+
+      // Verify OTP is still valid and verified
+      const otpStore = global.otpStore || new Map();
+      const otpData = otpStore.get(phoneNumber);
+
+      if (!otpData || !otpData.verified || Date.now() > otpData.expires) {
+        return res.status(400).json({ message: 'Invalid or expired OTP verification' });
+      }
+
+      // Get current user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Verify old password (placeholder - implement actual password verification)
+      // In production, you should hash and compare passwords properly
+      if (user.password && user.password !== oldPassword) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      // Update password (placeholder - implement actual password hashing)
+      // In production, hash the password before storing
+      await storage.updateUserPassword(userId, newPassword);
+
+      // Clean up OTP
+      otpStore.delete(phoneNumber);
+
+      res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({ message: 'Failed to change password' });
+    }
+  });
+
+  // Get user notifications
+  app.get('/api/notifications', requireAuth, async (req, res) => {
+    const userId = req.headers['x-replit-user-id'] as string;
+
+    // Fetch notifications for the user
+    try {
+      const notifications = await storage.getUserNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      res.status(500).json({ message: 'Failed to fetch notifications' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time features
