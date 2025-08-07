@@ -276,10 +276,11 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
           </Button>
           <DialogTitle className="flex-1 text-center">Change Password</DialogTitle>
           <div className="w-8"></div> {/* Spacer to center the title */}
-          <DialogDescription className="sr-only">
-            Change your account password by providing your current password and entering a new one. Phone verification is required for security.
-          </DialogDescription>
         </DialogHeader>
+        
+        <DialogDescription className="sr-only">
+          Change your account password by providing your current password and entering a new one. Phone verification is required for security.
+        </DialogDescription>
         
         <div className="space-y-6 pt-4">
           {/* Password Fields */}
