@@ -31,7 +31,7 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className={cn("sm:max-w-md", isDarkMode ? "bg-gray-900" : "bg-white")}>
+        <DialogContent className={cn("sm:max-w-md", isDarkMode ? "bg-gray-900" : "bg-white")} style={{ zIndex: 9998 }}>
           <DialogHeader className="flex flex-row items-center space-y-0 space-x-2 pb-4 border-b">
             <Button
               variant="ghost"
