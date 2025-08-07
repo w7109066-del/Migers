@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { X, Camera, Save, Upload } from "lucide-react";
@@ -139,6 +139,9 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
         
         <DialogHeader>
           <DialogTitle className="text-center">Edit Profile</DialogTitle>
+          <DialogDescription className="text-center text-sm text-gray-500">
+            Update your profile information and photo
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
