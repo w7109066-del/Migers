@@ -396,3 +396,19 @@ export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export {
+  users,
+  chatRooms,
+  roomMembers,
+  messages,
+  directMessages,
+  userSessions,
+  posts,
+  postLikes,
+  postComments,
+  followers,
+  friendships,
+  creditTransactions,
+  notifications
+};

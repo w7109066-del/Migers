@@ -9,7 +9,7 @@ import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
 import { eq, desc, and, or, exists, count, inArray, sql, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
-import { directMessages, users, messages } from "@shared/schema";
+import { directMessages, users, messages, friendships } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
 // Authentication middleware
@@ -899,6 +899,201 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error fetching admin stats:', error);
       res.status(500).json({ message: 'Failed to fetch stats' });
+    }
+  });
+
+  // Friend request endpoints
+  app.post('/api/friends/request', requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const requesterId = req.user!.id;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      if (requesterId === userId) {
+        return res.status(400).json({ message: 'Cannot send friend request to yourself' });
+      }
+
+      // Check if friend request already exists
+      const existingFriendship = await storage.getFriendshipStatus(requesterId, userId);
+      if (existingFriendship) {
+        return res.status(400).json({ message: 'Friend request already exists or you are already friends' });
+      }
+
+      // Get requester and recipient info
+      const requester = await storage.getUser(requesterId);
+      const recipient = await storage.getUser(userId);
+
+      if (!requester || !recipient) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Create friend request
+      await storage.createFriendRequest(requesterId, userId);
+
+      // Create notification for recipient
+      try {
+        const notification = await storage.createNotification({
+          userId: userId,
+          type: 'friend_request_received',
+          title: 'New Friend Request',
+          message: `${requester.username} sent you a friend request`,
+          fromUserId: requesterId,
+          data: { requesterId, requesterUsername: requester.username }
+        });
+
+        console.log('Friend request notification created:', notification);
+
+        // Send real-time notification via WebSocket
+        if (notification) {
+          broadcastToUser(userId, {
+            type: 'new_notification',
+            notification: {
+              id: notification.id,
+              type: 'friend_request_received',
+              title: 'New Friend Request',
+              message: `${requester.username} sent you a friend request`,
+              fromUser: {
+                id: requesterId,
+                username: requester.username
+              },
+              data: { requesterId, requesterUsername: requester.username },
+              isRead: false,
+              actionRequired: true,
+              createdAt: notification.createdAt || new Date().toISOString()
+            }
+          });
+
+          console.log('WebSocket friend request notification sent to user:', userId);
+        }
+      } catch (notificationError) {
+        console.error('Failed to create friend request notification:', notificationError);
+        // Don't fail the friend request if notification creation fails
+      }
+
+      res.json({ success: true, message: 'Friend request sent successfully' });
+    } catch (error) {
+      console.error('Failed to send friend request:', error);
+      res.status(500).json({ message: 'Failed to send friend request' });
+    }
+  });
+
+  // Check friend status
+  app.get('/api/friends/status', requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.query;
+      const currentUserId = req.user!.id;
+
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      const friendship = await storage.getFriendshipStatus(currentUserId, userId);
+      const isFriend = friendship?.status === 'accepted';
+
+      res.json({ isFriend });
+    } catch (error) {
+      console.error('Failed to check friend status:', error);
+      res.status(500).json({ message: 'Failed to check friend status' });
+    }
+  });
+
+  // Accept friend request
+  app.post('/api/friends/accept', requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const currentUserId = req.user!.id;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      await storage.acceptFriendRequest(currentUserId, userId);
+
+      // Get user info for notification
+      const currentUser = await storage.getUser(currentUserId);
+      if (currentUser) {
+        // Create notification for the requester
+        try {
+          const notification = await storage.createNotification({
+            userId: userId,
+            type: 'friend_request_accepted',
+            title: 'Friend Request Accepted',
+            message: `${currentUser.username} accepted your friend request`,
+            fromUserId: currentUserId,
+            data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username }
+          });
+
+          // Send real-time notification
+          if (notification) {
+            broadcastToUser(userId, {
+              type: 'new_notification',
+              notification: {
+                id: notification.id,
+                type: 'friend_request_accepted',
+                title: 'Friend Request Accepted',
+                message: `${currentUser.username} accepted your friend request`,
+                fromUser: {
+                  id: currentUserId,
+                  username: currentUser.username
+                },
+                data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username },
+                isRead: false,
+                createdAt: notification.createdAt || new Date().toISOString()
+              }
+            });
+          }
+        } catch (notificationError) {
+          console.error('Failed to create acceptance notification:', notificationError);
+        }
+      }
+
+      res.json({ success: true, message: 'Friend request accepted' });
+    } catch (error) {
+      console.error('Failed to accept friend request:', error);
+      res.status(500).json({ message: 'Failed to accept friend request' });
+    }
+  });
+
+  // Reject friend request
+  app.post('/api/friends/reject', requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const currentUserId = req.user!.id;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      await storage.rejectFriendRequest(currentUserId, userId);
+
+      res.json({ success: true, message: 'Friend request rejected' });
+    } catch (error) {
+      console.error('Failed to reject friend request:', error);
+      res.status(500).json({ message: 'Failed to reject friend request' });
+    }
+  });
+
+  // Unfriend/remove friend
+  app.post('/api/friends/unfriend', requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const currentUserId = req.user!.id;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      // Remove the friendship
+      await storage.rejectFriendRequest(currentUserId, userId);
+      await storage.rejectFriendRequest(userId, currentUserId);
+
+      res.json({ success: true, message: 'Friend removed successfully' });
+    } catch (error) {
+      console.error('Failed to unfriend user:', error);
+      res.status(500).json({ message: 'Failed to unfriend user' });
     }
   });
 

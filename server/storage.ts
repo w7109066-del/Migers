@@ -8,6 +8,7 @@ import {
   postLikes,
   postComments,
   followers,
+  friendships,
   creditTransactions,
   type User,
   type InsertUser,
@@ -248,16 +249,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriendshipStatus(userId: string, friendId: string): Promise<Friendship | undefined> {
-    const [friendship] = await this.db
-      .select()
-      .from(friendships)
-      .where(
-        or(
-          and(eq(friendships.userId, userId), eq(friendships.friendId, friendId)),
-          and(eq(friendships.userId, friendId), eq(friendships.friendId, userId))
-        )
-      );
-    return friendship || undefined;
+    try {
+      const [friendship] = await this.db
+        .select()
+        .from(friendships)
+        .where(
+          or(
+            and(eq(friendships.userId, userId), eq(friendships.friendId, friendId)),
+            and(eq(friendships.userId, friendId), eq(friendships.friendId, userId))
+          )
+        );
+      return friendship || undefined;
+    } catch (error) {
+      console.error('Error getting friendship status:', error);
+      return undefined;
+    }
   }
 
   async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
