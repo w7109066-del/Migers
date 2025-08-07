@@ -1,8 +1,8 @@
 import { useState } from "react";
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { WebSocketProvider } from "@/hooks/use-websocket";
-import { NotificationProvider } from "@/hooks/use-notifications";
+import { WebSocketProvider, useWebSocket } from "@/hooks/use-websocket";
+import { NotificationProvider, useNotifications } from "@/hooks/use-notifications";
 import { SwipeTabs } from "@/components/ui/swipe-tabs";
 import { FriendsList } from "@/components/friends/friends-list";
 import { ChatRoom } from "@/components/chat/chat-room";
@@ -926,12 +926,11 @@ export default function HomePage() {
 
                   <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "text-red-400 hover:bg-red-700" : "text-red-600 hover:bg-red-50")}
-                    onClick={() => logoutMutation?.mutate()}
-                    disabled={logoutMutation?.isPending}
+                    onClick={logout}
                   >
                     <LogOut className="h-5 w-5" />
                     <span className={cn("font-medium", isDarkMode ? "text-red-400" : "text-red-600")}>
-                      {logoutMutation?.isPending ? "Signing out..." : "Sign Out"}
+                      Sign Out
                     </span>
                   </button>
                 </div>
