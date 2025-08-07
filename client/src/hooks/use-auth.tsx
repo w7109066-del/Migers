@@ -71,11 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await response.json();
         setUser(userData);
       }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) {
+        console.error('Auth error:', err);
+        setIsLoading(false);
+      }
   };
 
   const loginMutation = useMutation({

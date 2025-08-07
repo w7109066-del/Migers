@@ -27,7 +27,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    // Use window.location.host which includes the correct port
+    const host = window.location.host || '0.0.0.0:5000';
+    const wsUrl = `${protocol}//${host}/ws`;
 
     ws.current = new WebSocket(wsUrl);
 
