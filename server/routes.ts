@@ -556,40 +556,79 @@ export function registerRoutes(app: Express): Server {
       const { recipientUsername, amount, pin } = req.body;
       const senderId = req.user!.id;
 
+      console.log('Credit transfer attempt:', { 
+        senderId, 
+        recipientUsername, 
+        amount, 
+        hasPin: !!pin 
+      });
+
       if (!recipientUsername || !amount || !pin) {
-        return res.status(400).json({ message: "Missing required fields" });
+        console.log('Missing required fields:', { recipientUsername: !!recipientUsername, amount: !!amount, pin: !!pin });
+        return res.status(400).json({ 
+          success: false,
+          message: "Missing required fields" 
+        });
       }
 
       if (amount <= 0) {
-        return res.status(400).json({ message: "Amount must be greater than 0" });
+        console.log('Invalid amount:', amount);
+        return res.status(400).json({ 
+          success: false,
+          message: "Amount must be greater than 0" 
+        });
       }
 
       if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
-        return res.status(400).json({ message: "PIN must be exactly 6 digits" });
+        console.log('Invalid PIN format');
+        return res.status(400).json({ 
+          success: false,
+          message: "PIN must be exactly 6 digits" 
+        });
       }
 
       // Get sender
       const sender = await storage.getUser(senderId);
       if (!sender) {
-        return res.status(404).json({ message: "Sender not found" });
+        console.log('Sender not found:', senderId);
+        return res.status(404).json({ 
+          success: false,
+          message: "Sender not found" 
+        });
       }
+
+      console.log('Sender balance:', sender.coins);
 
       // Level restriction removed - all users can transfer credits
 
       // Check sender balance
       if ((sender.coins || 0) < amount) {
-        return res.status(400).json({ message: "Insufficient balance" });
+        console.log('Insufficient balance:', { senderCoins: sender.coins, requestedAmount: amount });
+        return res.status(400).json({ 
+          success: false,
+          message: "Insufficient balance" 
+        });
       }
 
       // Find recipient by username
       const recipient = await storage.getUserByUsername(recipientUsername);
       if (!recipient) {
-        return res.status(404).json({ message: "Recipient not found" });
+        console.log('Recipient not found:', recipientUsername);
+        return res.status(404).json({ 
+          success: false,
+          message: "Recipient not found" 
+        });
       }
 
       if (sender.id === recipient.id) {
-        return res.status(400).json({ message: "Cannot transfer to yourself" });
+        console.log('User trying to transfer to themselves');
+        return res.status(400).json({ 
+          success: false,
+          message: "Cannot transfer to yourself" 
+        });
       }
+
+      console.log('Transfer validation passed, performing transfer...');
 
       // TODO: Validate PIN against user's stored PIN
       // For now, we'll accept any 6-digit PIN
@@ -625,13 +664,16 @@ export function registerRoutes(app: Express): Server {
         }
       });
 
-      res.json({
+      res.status(200).json({
         success: true,
         message: `Successfully transferred ${amount} coins to ${recipientUsername}`,
       });
     } catch (error) {
       console.error("Failed to transfer credits:", error);
-      res.status(500).json({ message: "Failed to transfer credits" });
+      res.status(500).json({ 
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to transfer credits" 
+      });
     }
   });
 

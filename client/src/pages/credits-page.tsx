@@ -105,6 +105,8 @@ export function CreditsPage({ onBack }: CreditsPageProps) {
 
     setIsLoading(true);
     try {
+      console.log('Starting credit transfer:', { recipientUsername: recipientUsername.trim(), amount, pin: '******' });
+      
       const response = await fetch("/api/credits/transfer", {
         method: "POST",
         headers: {
@@ -118,31 +120,51 @@ export function CreditsPage({ onBack }: CreditsPageProps) {
         }),
       });
 
-      const responseData = await response.json();
+      console.log('Transfer response status:', response.status);
       
-      if (response.ok && responseData.success) {
-        toast({
-          title: "Success",
-          description: responseData.message || `Successfully transferred ${amount} coins to ${recipientUsername}`,
-        });
-        setRecipientUsername("");
-        setCoinAmount("");
-        setPin("");
-        // Refresh history if it's currently shown
-        if (showHistory) {
-          fetchTransactionHistory();
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log('Transfer response data:', responseData);
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        throw new Error('Invalid server response');
+      }
+      
+      if (response.ok) {
+        // Check if response has success property or if it's a successful response
+        if (responseData.success !== false) {
+          toast({
+            title: "Success",
+            description: responseData.message || `Successfully transferred ${amount} coins to ${recipientUsername}`,
+          });
+          setRecipientUsername("");
+          setCoinAmount("");
+          setPin("");
+          // Refresh history if it's currently shown
+          if (showHistory) {
+            fetchTransactionHistory();
+          }
+        } else {
+          toast({
+            title: "Error",
+            description: responseData.message || "Transfer failed",
+            variant: "destructive",
+          });
         }
       } else {
+        console.error('Transfer failed with status:', response.status, 'Data:', responseData);
         toast({
           title: "Error",
-          description: responseData.message || "Transfer failed",
+          description: responseData.message || `Transfer failed (${response.status})`,
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error('Credit transfer error:', error);
       toast({
         title: "Error",
-        description: "Network error. Please try again.",
+        description: error instanceof Error ? error.message : "Network error. Please try again.",
         variant: "destructive",
       });
     } finally {
