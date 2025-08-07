@@ -250,22 +250,13 @@ export function CreditsPage({ onBack }: CreditsPageProps) {
                 />
               </div>
 
-              {/* Level Restriction Warning */}
-              {(user?.level || 1) < 5 && (
-                <div className={cn(
-                  "p-3 rounded-lg border",
-                  isDarkMode ? "bg-yellow-900/20 border-yellow-700 text-yellow-300" : "bg-yellow-50 border-yellow-200 text-yellow-700"
-                )}>
-                  <p className="text-sm font-medium">⚠️ Transfer Restricted</p>
-                  <p className="text-sm">You need to reach level 5 to transfer coins. Current level: {user?.level || 1}</p>
-                </div>
-              )}
+              {/* Level restriction removed */}
 
               {/* Submit Button */}
               <div className="flex justify-center pt-4">
                 <Button
                   onClick={handleTransfer}
-                  disabled={isLoading || !recipientUsername.trim() || !coinAmount.trim() || pin.length !== 6 || (user?.level || 1) < 5}
+                  disabled={isLoading || !recipientUsername.trim() || !coinAmount.trim() || pin.length !== 6}
                   className="w-full max-w-xs bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
@@ -276,7 +267,7 @@ export function CreditsPage({ onBack }: CreditsPageProps) {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <Send className="w-4 h-4" />
-                      <span>{(user?.level || 1) < 5 ? 'Level 5 Required' : 'Transfer Coins'}</span>
+                      <span>Transfer Coins</span>
                     </div>
                   )}
                 </Button>
