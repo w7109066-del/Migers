@@ -419,6 +419,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Follow/Unfollow endpoints
+  app.post("/api/user/follow", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const followerId = req.user!.id;
+
+      if (followerId === userId) {
+        return res.status(400).json({ message: "Cannot follow yourself" });
+      }
+
+      // Check if already following
+      const existingFollow = await storage.checkFollowStatus(followerId, userId);
+      if (existingFollow) {
+        return res.status(400).json({ message: "Already following this user" });
+      }
+
+      await storage.followUser(followerId, userId);
+      res.json({ success: true, message: "Successfully followed user" });
+    } catch (error) {
+      console.error('Failed to follow user:', error);
+      res.status(500).json({ message: "Failed to follow user" });
+    }
+  });
+
+  app.post("/api/user/unfollow", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const followerId = req.user!.id;
+
+      await storage.unfollowUser(followerId, userId);
+      res.json({ success: true, message: "Successfully unfollowed user" });
+    } catch (error) {
+      console.error('Failed to unfollow user:', error);
+      res.status(500).json({ message: "Failed to unfollow user" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time features

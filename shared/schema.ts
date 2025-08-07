@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   status: text("status").default("online"),
   createdAt: timestamp("created_at").defaultNow(),
   profilePhotoUrl: text("profile_photo_url"),
+  fansCount: integer("fans_count").default(0),
+  followingCount: integer("following_count").default(0),
 });
 
 export const friendships = pgTable("friendships", {
@@ -107,6 +109,14 @@ export const postComments = pgTable("post_comments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Followers table
+export const followers = pgTable('followers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  followerId: uuid('follower_id').notNull().references(() => users.id),
+  followingId: uuid('following_id').notNull().references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   friendships: many(friendships, { relationName: "userFriendships" }),
@@ -116,6 +126,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   sentMessages: many(messages, { relationName: "sentMessages" }),
   receivedMessages: many(messages, { relationName: "receivedMessages" }),
   sessions: many(userSessions),
+  followers: many(followers, { relationName: "followers" }), // Added relation for followers
+  following: many(followers, { relationName: "following" }), // Added relation for following
 }));
 
 export const friendshipsRelations = relations(friendships, ({ one }) => ({
@@ -180,7 +192,6 @@ export const directMessagesRelations = relations(directMessages, ({ one }) => ({
   }),
 }));
 
-
 export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   user: one(users, {
     fields: [userSessions.userId],
@@ -218,6 +229,21 @@ export const postCommentsRelations = relations(postComments, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// Relation for the followers table
+export const followersRelations = relations(followers, ({ one }) => ({
+  follower: one(users, {
+    fields: [followers.followerId],
+    references: [users.id],
+    relationName: "followers",
+  }),
+  following: one(users, {
+    fields: [followers.followingId],
+    references: [users.id],
+    relationName: "following",
+  }),
+}));
+
 
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -283,6 +309,12 @@ export const insertCommentSchema = createInsertSchema(postComments).pick({
   parentCommentId: true,
 });
 
+// Schema for followers
+export const insertFollowerSchema = createInsertSchema(followers).pick({
+  followerId: true,
+  followingId: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -301,3 +333,5 @@ export type InsertPost = z.infer<typeof insertPostSchema>;
 export type PostLike = typeof postLikes.$inferSelect;
 export type PostComment = typeof postComments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
+export type Follower = typeof followers.$inferSelect;
+export type InsertFollower = z.infer<typeof insertFollowerSchema>;

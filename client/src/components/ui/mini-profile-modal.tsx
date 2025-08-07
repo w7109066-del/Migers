@@ -3,11 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { UserStatus } from "@/components/user/user-status";
 import { GiftSendModal } from "@/components/ui/gift-send-modal";
-import { X, MessageCircle, UserPlus, Gift } from "lucide-react";
+import { X, MessageCircle, UserPlus, Gift, Check, MapPin, Users, UserMinus } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils"; // Assuming cn is imported from utils
 
@@ -21,6 +21,10 @@ interface MiniProfileModalProps {
     isOnline: boolean;
     country?: string;
     profilePhotoUrl?: string; // Added profilePhotoUrl field
+    // New fields for fan/following counts and friend status
+    fans?: number;
+    following?: number;
+    isFriend?: boolean;
   };
   onClose: () => void;
   onMessageClick?: (user: any) => void;
@@ -32,6 +36,35 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
   const queryClient = useQueryClient();
   const [showGiftModal, setShowGiftModal] = useState(false);
   const isDarkMode = false; // Placeholder for dark mode, assuming it might be needed for styling consistency
+  const [isFriend, setIsFriend] = useState<boolean>(profile.isFriend || false); // State to track friend status
+
+  // Fetch friend status when the component mounts or profile changes
+  useEffect(() => {
+    const fetchFriendStatus = async () => {
+      if (!user || user.id === profile.id) {
+        setIsFriend(false); // Not a friend if it's the current user
+        return;
+      }
+      try {
+        const response = await fetch(`/api/friends/status?userId=${profile.id}`, {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setIsFriend(data.isFriend);
+        } else {
+          // Handle potential errors in fetching friend status
+          setIsFriend(false);
+        }
+      } catch (error) {
+        console.error("Failed to fetch friend status:", error);
+        setIsFriend(false); // Assume not a friend on error
+      }
+    };
+
+    fetchFriendStatus();
+  }, [profile.id, user, user?.id]); // Re-fetch if profile or user changes
+
 
   const handleSendMessage = () => {
     onMessageClick(profile);
@@ -78,6 +111,8 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           description: `Your friend request has been sent to ${profile.username}.`,
         });
 
+        // Update the friend status in the UI immediately
+        setIsFriend(true);
         // Invalidate and refetch the friends query to refresh the list
         queryClient.invalidateQueries({ queryKey: ['friends'] });
 
@@ -99,6 +134,61 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
       });
     }
   };
+
+  const handleUnfriend = async () => {
+    if (!user || user.id === profile.id) return; // Cannot unfriend self
+
+    try {
+      const response = await fetch('/api/friends/unfriend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: profile.id,
+        }),
+      });
+
+      if (response.ok) {
+        addNotification({
+          type: 'friend_remove',
+          title: 'Friend Removed',
+          message: `${profile.username} has been removed from your friends.`,
+          fromUser: {
+            id: profile.id,
+            username: profile.username,
+          },
+        });
+
+        toast({
+          title: "Friend removed!",
+          description: `You have unfriended ${profile.username}.`,
+        });
+
+        // Update the friend status in the UI immediately
+        setIsFriend(false);
+        // Invalidate and refetch the friends query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ['friends'] });
+        onClose();
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Failed to remove friend",
+          description: errorData.message || "Something went wrong.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to remove friend:', error);
+      toast({
+        title: "Network error",
+        description: "Failed to remove friend. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -146,11 +236,23 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
               Level {profile.level}
             </Badge>
             {profile.country && (
-              <Badge variant="outline" className="border-gray-300 text-gray-700">
-                {profile.country}
+              <Badge variant="outline" className="border-gray-300 text-gray-700 flex items-center">
+                <MapPin className="w-3 h-3 mr-1" /> {profile.country}
               </Badge>
             )}
             <UserStatus isOnline={profile.isOnline} />
+          </div>
+
+          {/* Fans/Following counts */}
+          <div className="flex items-center justify-center space-x-4 mb-6">
+            <div className="flex items-center">
+              <Users className="w-5 h-5 mr-1 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">{profile.fans ?? 0} Fans</span>
+            </div>
+            <div className="flex items-center">
+              <Users className="w-5 h-5 mr-1 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">{profile.following ?? 0} Following</span>
+            </div>
           </div>
 
           {/* Action buttons */}
@@ -171,14 +273,27 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
                 Send Gift
               </Button>
             </div>
-            <Button
-              onClick={handleAddFriend}
-              variant="outline"
-              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add Friend
-            </Button>
+            {user && user.id !== profile.id && ( // Don't show add/unfriend button for self
+              isFriend ? (
+                <Button
+                  onClick={handleUnfriend}
+                  variant="outline"
+                  className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  <UserMinus className="w-4 h-4 mr-2" />
+                  Unfriend
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleAddFriend}
+                  variant="outline"
+                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Friend
+                </Button>
+              )
+            )}
           </div>
         </div>
       </div>

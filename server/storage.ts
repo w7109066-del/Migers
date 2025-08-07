@@ -1,13 +1,13 @@
 import {
   users,
-  friendships,
+  messages,
   chatRooms,
   roomMembers,
-  messages,
   userSessions,
   posts,
   postLikes,
   postComments,
+  followers,
   type User,
   type InsertUser,
   type Friendship,
@@ -17,7 +17,8 @@ import {
   type Message,
   type InsertMessage,
   type RoomMember,
-  type UserSession
+  type UserSession,
+  type Follower
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, isNull, isNotNull, inArray, sql } from "drizzle-orm";
@@ -37,6 +38,7 @@ export interface IStorage {
   updateUserOnlineStatus(userId: string, isOnline: boolean): Promise<void>;
   updateUserStatus(userId: string, status: string): Promise<void>;
   searchUsers(query: string, currentUserId: string): Promise<User[]>;
+  updateUserProfile(userId: string, profileData: { bio?: string | null; country?: string | null; profilePhotoUrl?: string | null }): Promise<void>;
 
   // Friends management
   getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]>;
@@ -45,6 +47,15 @@ export interface IStorage {
   getFriendshipStatus(userId: string, friendId: string): Promise<Friendship | undefined>;
   createFriendRequest(userId: string, friendId: string): Promise<Friendship>;
   acceptFriendRequest(userId: string, friendId: string): Promise<void>;
+  rejectFriendRequest(userId: string, friendId: string): Promise<void>;
+
+  // Followers management
+  followUser(followerId: string, followingId: string): Promise<Follower>;
+  unfollowUser(followerId: string, followingId: string): Promise<void>;
+  getFollowerCount(userId: string): Promise<number>;
+  getFollowingCount(userId: string): Promise<number>;
+  isFollowing(followerId: string, followingId: string): Promise<boolean>;
+
 
   // Chat rooms
   getChatRooms(): Promise<ChatRoom[]>;
@@ -55,39 +66,17 @@ export interface IStorage {
   joinRoom(roomId: string, userId: string): Promise<void>;
   leaveRoom(roomId: string, userId: string): Promise<void>;
   getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]>;
-  kickMember(roomId: string, userId: string): Promise<void>; // Added kickMember
-  closeRoom(roomId: string): Promise<void>; // Added closeRoom
+  kickMember(roomId: string, userId: string): Promise<void>;
+  closeRoom(roomId: string): Promise<void>;
 
   // Messages
   getRoomMessages(roomId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   getDirectMessages(userId: string, otherUserId: string, limit?: number): Promise<(Message & { sender: User })[]>;
-  createMessage(message: InsertMessage);
+  createMessage(message: InsertMessage): Promise<Message & { sender: User }>;
+  createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }): Promise<Message & { sender: User }>;
 
   // Direct message conversations
   getDirectMessageConversations(userId: string): Promise<any[]>;
-
-  // User sessions for WebSocket
-  createUserSession(userId: string, socketId: string): Promise<UserSession>;
-  updateUserSession(sessionId: string, socketId: string): Promise<void>;
-  removeUserSession(socketId: string): Promise<void>;
-  getUserBySocketId(socketId: string): Promise<User | undefined>;
-
-  // Feed posts methods
-  getFeedPosts(): Promise<
-    (Omit<typeof posts.$inferSelect, "updatedAt"> & {
-      author: Pick<User, "id" | "username" | "level" | "isOnline">;
-    })[]
-  >;
-  createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }): Promise<typeof posts.$inferSelect>;
-  likePost(postId: string, userId: string): Promise<void>;
-  unlikePost(postId: string, userId: string): Promise<void>;
-  addComment(postId: string, commentData: { content: string; authorId: string, parentCommentId?: string | null }): Promise<typeof postComments.$inferSelect & { author: Pick<User, "id" | "username" | "level" | "isOnline"> }>;
-  getComments(postId: string): Promise<
-    (Omit<typeof postComments.$inferSelect, "updatedAt"> & {
-      author: Pick<User, "id" | "username" | "level" | "isOnline">;
-    })[]
-  >;
-  getUserLikes(userId: string, postIds: string[]): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -137,7 +126,7 @@ export class DatabaseStorage implements IStorage {
   async updateUserStatus(userId: string, status: string): Promise<void> {
     await this.db
       .update(users)
-      .set({ 
+      .set({
         status,
         lastSeen: new Date()
       })
@@ -147,16 +136,16 @@ export class DatabaseStorage implements IStorage {
   async updateUserStatusMessage(userId: string, statusMessage: string): Promise<void> {
     await this.db
       .update(users)
-      .set({ 
+      .set({
         status: statusMessage,
         lastSeen: new Date()
       })
       .where(eq(users.id, userId));
   }
 
-  async updateUserProfile(userId: string, profileData: { 
-    bio?: string | null; 
-    country?: string | null; 
+  async updateUserProfile(userId: string, profileData: {
+    bio?: string | null;
+    country?: string | null;
     profilePhotoUrl?: string | null;
   }): Promise<void> {
     const updateData: any = {
@@ -219,10 +208,10 @@ export class DatabaseStorage implements IStorage {
         friendshipCreatedAt: friendships.createdAt,
       })
       .from(friendships)
-      .innerJoin(users, 
+      .innerJoin(users,
         or(
           and(eq(friendships.userId, userId), eq(users.id, friendships.friendId)),
-          and(eq(friendships.friendId, userId), eq(users.id, friendships.userId))
+          and(eq(friendships.userId, userId), eq(users.id, friendships.friendId))
         )
       )
       .where(eq(friendships.status, 'accepted'));
@@ -288,17 +277,68 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
+  // async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
+  //   await this.db
+  //     .update(friendships)
+  //     .set({ status: "accepted" })
+  //     .where(
+  //       and(
+  //         eq(friendships.userId, friendId),
+  //         eq(friendships.friendId, userId)
+  //       )
+  //     );
+  // }
+
+
+  // Followers management
+  async followUser(followerId: string, followingId: string): Promise<Follower> {
+    const [newFollower] = await this.db
+      .insert(followers)
+      .values({ followerId, followingId })
+      .returning();
+    return newFollower;
+  }
+
+  async unfollowUser(followerId: string, followingId: string): Promise<void> {
     await this.db
-      .update(friendships)
-      .set({ status: "accepted" })
+      .delete(followers)
       .where(
         and(
-          eq(friendships.userId, friendId),
-          eq(friendships.friendId, userId)
+          eq(followers.followerId, followerId),
+          eq(followers.followingId, followingId)
         )
       );
   }
+
+  async getFollowerCount(userId: string): Promise<number> {
+    const [result] = await this.db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(followers)
+      .where(eq(followers.followingId, userId));
+    return result.count;
+  }
+
+  async getFollowingCount(userId: string): Promise<number> {
+    const [result] = await this.db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(followers)
+      .where(eq(followers.followerId, userId));
+    return result.count;
+  }
+
+  async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+    const result = await this.db
+      .select()
+      .from(followers)
+      .where(
+        and(
+          eq(followers.followerId, followerId),
+          eq(followers.followingId, followingId)
+        )
+      );
+    return result.length > 0;
+  }
+
 
   async getChatRooms(): Promise<ChatRoom[]> {
     return await this.db.select().from(chatRooms).where(eq(chatRooms.isPublic, true));
@@ -475,6 +515,8 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           level: users.level,
           isOnline: users.isOnline,
+          country: users.country, // Added country
+          profilePhotoUrl: users.profilePhotoUrl, // Added profilePhotoUrl
         })
         .from(users)
         .where(inArray(users.id, conversationIds));
@@ -487,13 +529,18 @@ export class DatabaseStorage implements IStorage {
           username: user.username,
           level: user.level,
           isOnline: user.isOnline,
+          country: user.country, // Include country
+          profilePhotoUrl: user.profilePhotoUrl, // Include profilePhotoUrl
           lastMessage: convData.lastMessage,
           lastMessageType: convData.lastMessageType,
           lastMessageTime: convData.lastMessageTime,
+          // Add follower counts
+          fans: convData.fans !== undefined ? convData.fans : 0,
+          following: convData.following !== undefined ? convData.following : 0,
         };
       });
 
-      return conversations.sort((a, b) => 
+      return conversations.sort((a, b) =>
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
     } catch (error) {
@@ -549,7 +596,7 @@ export class DatabaseStorage implements IStorage {
     return result[0]?.user;
   }
 
-  async createMessage(messageData: InsertMessage) {
+  async createMessage(messageData: InsertMessage): Promise<Message & { sender: User }> {
     const [message] = await this.db
       .insert(messages)
       .values(messageData)
@@ -578,18 +625,23 @@ export class DatabaseStorage implements IStorage {
   async createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }) {
     try {
       const [directMessage] = await this.db
-        .insert(messages) // Changed from directMessages to messages
+        .insert(messages)
         .values({
           content: data.content,
-          senderId: data.senderId, // Keep as string, let DB handle conversion if needed or adjust schema
-          recipientId: data.recipientId, // Keep as string
+          senderId: data.senderId,
+          recipientId: data.recipientId,
           messageType: data.messageType || 'text',
-          roomId: null // Explicitly set roomId to null for direct messages
+          roomId: null
         })
         .returning();
 
-      // Get sender info for the response
       const sender = await this.getUser(data.senderId);
+
+      // Fetch follower counts for the sender and recipient
+      const followerCount = await this.getFollowerCount(data.senderId);
+      const followingCount = await this.getFollowingCount(data.senderId);
+      const recipientFollowerCount = await this.getFollowerCount(data.recipientId);
+      const recipientFollowingCount = await this.getFollowingCount(data.recipientId);
 
       return {
         ...directMessage,
@@ -598,7 +650,16 @@ export class DatabaseStorage implements IStorage {
           username: sender.username,
           level: sender.level || 1,
           isOnline: sender.isOnline || false,
+          country: sender.country,
+          profilePhotoUrl: sender.profilePhotoUrl,
+          fans: followerCount,
+          following: followingCount,
         } : null,
+        recipient: {
+          id: data.recipientId,
+          fans: recipientFollowerCount,
+          following: recipientFollowingCount,
+        }
       };
     } catch (error) {
       console.error('Failed to create direct message:', error);
@@ -616,7 +677,6 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
-      // Automatically add creator as room member with role 'admin'
       await this.db
         .insert(roomMembers)
         .values({
@@ -634,10 +694,9 @@ export class DatabaseStorage implements IStorage {
 
   async getAllRooms() {
     try {
-      // Fetch rooms with creator details
       const rooms = await this.db.query.chatRooms.findMany({
         with: {
-          creator: { // Assuming 'creator' is the relation defined in schema for chatRooms
+          creator: {
             columns: {
               id: true,
               username: true,
@@ -650,7 +709,7 @@ export class DatabaseStorage implements IStorage {
       return rooms;
     } catch (error) {
       console.error('Failed to get rooms:', error);
-      return []; // Return empty array on error
+      return [];
     }
   }
 
@@ -682,7 +741,7 @@ export class DatabaseStorage implements IStorage {
         .from(posts)
         .innerJoin(users, eq(posts.authorId, users.id))
         .orderBy(desc(posts.createdAt))
-        .limit(20); // Reduced limit for faster loading
+        .limit(20);
 
       return result;
     } catch (error) {
@@ -711,7 +770,6 @@ export class DatabaseStorage implements IStorage {
       .values({ postId, userId })
       .onConflictDoNothing();
 
-    // Update likes count
     await this.db
       .update(posts)
       .set({
@@ -730,7 +788,6 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    // Update likes count
     await this.db
       .update(posts)
       .set({
@@ -751,7 +808,6 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
-      // Get the comment with author info
       const [commentWithAuthor] = await db
         .select({
           id: postComments.id,
@@ -783,7 +839,6 @@ export class DatabaseStorage implements IStorage {
     })[]
   > {
     try {
-      // First get all comments for the post
       const allComments = await db
         .select({
           id: postComments.id,
@@ -796,32 +851,27 @@ export class DatabaseStorage implements IStorage {
             level: users.level,
             profilePhotoUrl: users.profilePhotoUrl,
           },
-          likesCount: sql<number>`0`, // Placeholder for future like functionality
+          likesCount: sql<number>`0`,
         })
         .from(postComments)
         .leftJoin(users, eq(postComments.authorId, users.id))
         .where(eq(postComments.postId, postId))
         .orderBy(desc(postComments.createdAt));
 
-      // Organize comments into parent-child structure
       const commentMap = new Map();
       const topLevelComments = [];
 
-      // First pass: create a map of all comments
       allComments.forEach(comment => {
         commentMap.set(comment.id, { ...comment, replies: [] });
       });
 
-      // Second pass: organize into parent-child structure
       allComments.forEach(comment => {
         if (comment.parentCommentId) {
-          // This is a reply
           const parent = commentMap.get(comment.parentCommentId);
           if (parent) {
             parent.replies.push(commentMap.get(comment.id));
           }
         } else {
-          // This is a top-level comment
           topLevelComments.push(commentMap.get(comment.id));
         }
       });
