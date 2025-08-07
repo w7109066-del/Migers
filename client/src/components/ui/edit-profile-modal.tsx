@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogOverlay } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { X, Camera, Save, Upload } from "lucide-react";
@@ -125,8 +125,9 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   if (!user) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto relative z-[9999]">
+    <Dialog open={isOpen} onOpenChange={onClose} modal={true}>
+      <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto relative z-[9999] fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] bg-white shadow-lg border rounded-lg">
         {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
