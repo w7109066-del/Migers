@@ -521,22 +521,40 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
     }
   ];
 
-  const handleKickUser = (user: any) => {
+  const handleKickUser = async (user: any) => {
     console.log("Kick user:", user.username);
-    // Implement kick logic here
+    // Send kick request to server
+    try {
+      const roomId = window.location.pathname.split('/').pop();
+      const response = await fetch(`/api/rooms/${roomId}/kick`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (response.ok) {
+        console.log(`${user.username} has been kicked`);
+      }
+    } catch (error) {
+      console.error('Failed to kick user:', error);
+    }
   };
 
   const handleReportUser = (user: any) => {
     console.log("Report user:", user.username);
-    // Implement report logic here
+    // TODO: Implement report functionality
+    alert(`Report feature for ${user.username} will be implemented soon`);
   };
 
   const handleUserInfo = (username: string) => {
     console.log("Show info for user:", username);
     // Send whois command to get user info
+    const roomId = window.location.pathname.split('/').pop();
     const whoisMessage = {
       content: `/whois ${username}`,
-      roomId: window.location.pathname.split('/').pop(), // Get current room ID from URL
+      roomId: roomId,
       recipientId: null
     };
     
@@ -546,8 +564,15 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
   const handleViewProfile = (user: any) => {
     console.log("View profile for user:", user.username);
-    // Implement view profile logic here
-    onUserClick && onUserClick(user);
+    // Open user profile or chat
+    if (onUserClick) {
+      onUserClick({
+        id: user.id,
+        username: user.username,
+        level: user.level,
+        isOnline: user.isOnline,
+      });
+    }
   };
 
   return (
@@ -666,23 +691,21 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           >
             <div className="flex-1">
               <div className="flex items-center space-x-2 text-sm">
+                <UserAvatar
+                  username={message.sender.username}
+                  size="sm"
+                  isOnline={message.sender.isOnline}
+                />
                 <ContextMenu>
                   <ContextMenuTrigger asChild>
-                    <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 rounded-lg p-1 -m-1">
-                      <UserAvatar
-                        username={message.sender.username}
-                        size="sm"
-                        isOnline={message.sender.isOnline}
-                      />
-                      <span 
-                        className="font-semibold" 
-                        style={{ 
-                          color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
-                        }}
-                      >
-                        {message.sender.username}
-                      </span>
-                    </div>
+                    <button 
+                      className="font-semibold hover:bg-gray-100 rounded px-1 py-0.5 cursor-pointer transition-colors"
+                      style={{ 
+                        color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
+                      }}
+                    >
+                      {message.sender.username}
+                    </button>
                   </ContextMenuTrigger>
                   <ContextMenuContent className="w-56">
                     <ContextMenuGroup>
