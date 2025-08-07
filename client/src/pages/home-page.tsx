@@ -63,7 +63,7 @@ interface MiniProfileData {
 }
 
 export default function HomePage() {
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, logout, isLoading: authLoading, isDarkMode, toggleDarkMode } = useAuth();
   const {
     sendChatMessage,
     joinRoom,

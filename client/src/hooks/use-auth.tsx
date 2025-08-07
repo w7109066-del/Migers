@@ -24,9 +24,6 @@ type AuthContextType = {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
-  loginMutation: any;
-  registerMutation: any;
-  logoutMutation: any;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
 };
