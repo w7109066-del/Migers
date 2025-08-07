@@ -918,6 +918,63 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateUserMentorStatus(userId: string, isMentor: boolean, specialty?: string): Promise<User | undefined> {
+    try {
+      const updateData: any = { 
+        isMentor,
+        mentorSpecialty: specialty || null 
+      };
+
+      const [updatedUser] = await this.db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating mentor status:', error);
+      return undefined;
+    }
+  }
+
+  async getMentors(): Promise<User[]> {
+    try {
+      const mentors = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.isMentor, true));
+
+      return mentors;
+    } catch (error) {
+      console.error('Error fetching mentors:', error);
+      return [];
+    }
+  }
+
+  async getFollowerCount(userId: string): Promise<number> {
+    return this.getFansCount(userId);
+  }
+
+  async checkFollowStatus(followerId: string, followingId: string): Promise<boolean> {
+    return this.isFollowing(followerId, followingId);
+  }
+
+  async updateUserCoins(userId: string, newCoinAmount: number): Promise<User | undefined> {
+    try {
+      const [updatedUser] = await this.db
+        .update(users)
+        .set({ coins: newCoinAmount })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user coins:', error);
+      return undefined;
+    }
+  }
+
   async getUserByUsername(username: string): Promise<User | null> {
     const user = await this.db.query.users.findFirst({
       where: eq(users.username, username),
@@ -932,7 +989,7 @@ export class DatabaseStorage implements IStorage {
         .set({ isAdmin })
         .where(eq(users.id, userId))
         .returning();
-      
+
       return updatedUser;
     } catch (error) {
       console.error('Error updating admin status:', error);
@@ -946,7 +1003,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(users)
         .where(eq(users.isAdmin, true));
-      
+
       return admins;
     } catch (error) {
       console.error('Error fetching admins:', error);

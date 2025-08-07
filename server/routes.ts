@@ -7,7 +7,7 @@ import path from "path";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc, and, or, exists, count, inArray, sql, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
 import { directMessages, users, messages } from "@shared/schema";
 
@@ -628,7 +628,7 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/promote', requireAdmin, async (req, res) => {
     try {
       const { userId, role } = req.body;
-      
+
       if (role === 'admin') {
         const updatedUser = await storage.updateUserAdminStatus(userId, true);
         res.json(updatedUser);
@@ -647,7 +647,7 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/demote', requireAdmin, async (req, res) => {
     try {
       const { userId, role } = req.body;
-      
+
       if (role === 'admin') {
         const updatedUser = await storage.updateUserAdminStatus(userId, false);
         res.json(updatedUser);
@@ -669,7 +669,7 @@ export function registerRoutes(app: Express): Server {
       const onlineUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isOnline, true));
       const totalMentors = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isMentor, true));
       const totalAdmins = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isAdmin, true));
-      
+
       res.json({
         totalUsers: totalUsers[0]?.count || 0,
         onlineUsers: onlineUsers[0]?.count || 0,

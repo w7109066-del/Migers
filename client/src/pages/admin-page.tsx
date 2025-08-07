@@ -40,9 +40,11 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUsers();
-    loadStats();
-  }, []);
+    if (user?.isAdmin) {
+      loadUsers();
+      loadStats();
+    }
+  }, [user?.isAdmin]);
 
   const loadUsers = async () => {
     try {
@@ -65,13 +67,17 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
   const loadStats = async () => {
     try {
+      console.log('Loading admin stats...');
       const response = await fetch('/api/admin/stats', {
         credentials: 'include',
       });
 
       if (response.ok) {
         const statsData = await response.json();
+        console.log('Admin stats loaded:', statsData);
         setStats(statsData);
+      } else {
+        console.error('Failed to load stats, status:', response.status);
       }
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -166,8 +172,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stats ? (
             <Card>
               <CardContent className="p-4 text-center">
                 <Users className="w-8 h-8 mx-auto mb-2 text-blue-500" />
@@ -215,8 +221,22 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        )}
+          ) : (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 text-center">
+                    <div className="animate-pulse">
+                      <div className="w-8 h-8 mx-auto mb-2 bg-gray-300 rounded"></div>
+                      <div className="h-6 bg-gray-300 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          )}
+        </div>
 
         {/* User Management */}
         <Card>
