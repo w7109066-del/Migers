@@ -674,6 +674,7 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           level: users.level,
           isOnline: users.isOnline,
+          profilePhotoUrl: users.profilePhotoUrl,
         }
       })
       .from(posts)
@@ -752,6 +753,7 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           level: users.level,
           isOnline: users.isOnline,
+          profilePhotoUrl: users.profilePhotoUrl,
         })
         .from(users)
         .where(eq(users.id, commentData.authorId))
@@ -790,6 +792,7 @@ export class DatabaseStorage implements IStorage {
           authorUsername: users.username,
           authorLevel: users.level,
           authorIsOnline: users.isOnline,
+          authorProfilePhotoUrl: users.profilePhotoUrl,
         })
         .from(postComments)
         .leftJoin(users, eq(postComments.authorId, users.id))
@@ -807,6 +810,7 @@ export class DatabaseStorage implements IStorage {
           username: comment.authorUsername || 'Unknown User',
           level: comment.authorLevel || 1,
           isOnline: comment.authorIsOnline || false,
+          profilePhotoUrl: comment.authorProfilePhotoUrl,
         }
       }));
     } catch (error) {
