@@ -699,7 +699,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                 <ContextMenu>
                   <ContextMenuTrigger asChild>
                     <button 
-                      className="font-semibold hover:bg-blue-100 hover:text-blue-800 rounded px-2 py-1 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 relative"
+                      className="font-semibold hover:bg-blue-100 hover:text-blue-800 rounded-lg px-3 py-2 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 relative text-base min-w-[80px]"
                       style={{ 
                         color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
                       }}
@@ -715,26 +715,35 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                       }}
                     >
                       {message.sender.username}
-                      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-400 ml-1">📋</span>
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400 ml-2">⚙️</span>
                     </button>
                   </ContextMenuTrigger>
-                  <ContextMenuContent className="w-56">
+                  <ContextMenuContent className="w-64 text-base">
                     <ContextMenuGroup>
-                      <ContextMenuItem onClick={() => onUserClick && onUserClick({
-                        id: message.senderId,
-                        username: message.sender.username,
-                        level: message.sender.level,
-                        isOnline: message.sender.isOnline,
-                      })}>
-                        <MessageCircle className="w-4 h-4 mr-2" />
+                      <ContextMenuItem 
+                        onClick={() => onUserClick && onUserClick({
+                          id: message.senderId,
+                          username: message.sender.username,
+                          level: message.sender.level,
+                          isOnline: message.sender.isOnline,
+                        })}
+                        className="py-3 px-4 text-base"
+                      >
+                        <MessageCircle className="w-5 h-5 mr-3" />
                         Chat
                       </ContextMenuItem>
-                      <ContextMenuItem onClick={() => handleViewProfile(message.sender)}>
-                        <Eye className="w-4 h-4 mr-2" />
+                      <ContextMenuItem 
+                        onClick={() => handleViewProfile(message.sender)}
+                        className="py-3 px-4 text-base"
+                      >
+                        <Eye className="w-5 h-5 mr-3" />
                         View Profile
                       </ContextMenuItem>
-                      <ContextMenuItem onClick={() => handleUserInfo(message.sender.username)}>
-                        <Info className="w-4 h-4 mr-2" />
+                      <ContextMenuItem 
+                        onClick={() => handleUserInfo(message.sender.username)}
+                        className="py-3 px-4 text-base"
+                      >
+                        <Info className="w-5 h-5 mr-3" />
                         Info
                       </ContextMenuItem>
                     </ContextMenuGroup>
@@ -744,9 +753,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         <ContextMenuSeparator />
                         <ContextMenuItem 
                           onClick={() => handleKickUser(message.sender)}
-                          className="text-red-600 focus:text-red-600"
+                          className="text-red-600 focus:text-red-600 py-3 px-4 text-base"
                         >
-                          <UserMinus className="w-4 h-4 mr-2" />
+                          <UserMinus className="w-5 h-5 mr-3" />
                           Kick
                         </ContextMenuItem>
                       </>
@@ -757,9 +766,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         <ContextMenuSeparator />
                         <ContextMenuItem 
                           onClick={() => handleReportUser(message.sender)}
-                          className="text-orange-600 focus:text-orange-600"
+                          className="text-orange-600 focus:text-orange-600 py-3 px-4 text-base"
                         >
-                          <Flag className="w-4 h-4 mr-2" />
+                          <Flag className="w-5 h-5 mr-3" />
                           Report
                         </ContextMenuItem>
                       </>
