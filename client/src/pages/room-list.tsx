@@ -344,10 +344,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
         <div className="flex-1 flex items-center justify-center bg-red-50 dark:bg-red-900/20">
           <div className="text-center p-4">
             <div className="text-red-500 dark:text-red-400 mb-2">⚠️ Error Loading Rooms</div>
-            <p className="text-red-600 dark:text-red-400 text-sm mb-4">{error.message}</p></div>
-        </div>
-      </div>
-    );
+            <p className="text-red-600 dark:text-red-400 text-sm mb-4">{error.message}</p>
             <Button 
               onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/rooms"] })}
               variant="outline"
