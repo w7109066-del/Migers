@@ -16,6 +16,12 @@ function requireAuth(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Authentication required" });
   }
+  
+  // Check if user is banned
+  if (req.user?.isBanned) {
+    return res.status(403).json({ message: "Account has been banned" });
+  }
+  
   next();
 }
 
@@ -690,18 +696,57 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/admin/ban', requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      // Prevent admin from banning themselves
+      if (userId === req.user?.id) {
+        return res.status(400).json({ message: 'Cannot ban yourself' });
+      }
+
+      const updatedUser = await storage.banUser(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error banning user:', error);
+      res.status(500).json({ message: 'Failed to ban user' });
+    }
+  });
+
+  app.post('/api/admin/unban', requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      const updatedUser = await storage.unbanUser(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+      res.status(500).json({ message: 'Failed to unban user' });
+    }
+  });
+
   app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     try {
       const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
       const onlineUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isOnline, true));
       const totalMentors = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isMentor, true));
       const totalAdmins = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isAdmin, true));
+      const bannedUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isBanned, true));
 
       res.json({
         totalUsers: totalUsers[0]?.count || 0,
         onlineUsers: onlineUsers[0]?.count || 0,
         totalMentors: totalMentors[0]?.count || 0,
         totalAdmins: totalAdmins[0]?.count || 0,
+        bannedUsers: bannedUsers[0]?.count || 0,
       });
     } catch (error) {
       console.error('Error fetching admin stats:', error);

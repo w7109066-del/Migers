@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user/user-avatar';
-import { ArrowLeft, Users, Shield, BookOpen, Activity } from 'lucide-react';
+import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -17,6 +17,7 @@ interface User {
   isOnline: boolean;
   isMentor: boolean;
   isAdmin: boolean;
+  isBanned?: boolean;
   profilePhotoUrl?: string;
   createdAt: string;
 }
@@ -26,6 +27,7 @@ interface AdminStats {
   onlineUsers: number;
   totalMentors: number;
   totalAdmins: number;
+  bannedUsers: number;
 }
 
 interface AdminPageProps {
@@ -153,6 +155,50 @@ export function AdminPage({ onBack }: AdminPageProps) {
     }
   };
 
+  const banUser = async (userId: string) => {
+    try {
+      const response = await fetch('/api/admin/ban', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        loadUsers();
+        loadStats();
+      } else {
+        console.error('Failed to ban user');
+      }
+    } catch (error) {
+      console.error('Error banning user:', error);
+    }
+  };
+
+  const unbanUser = async (userId: string) => {
+    try {
+      const response = await fetch('/api/admin/unban', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        loadUsers();
+        loadStats();
+      } else {
+        console.error('Failed to unban user');
+      }
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+    }
+  };
+
   const displayUsers = searchTerm.trim().length >= 2 ? searchResults : users;
 
   if (!user?.isAdmin) {
@@ -194,7 +240,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {stats ? (
             <>
               <Card>
@@ -244,10 +290,22 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Shield className="w-8 h-8 mx-auto mb-2 text-gray-500" />
+                  <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                    {stats.bannedUsers}
+                  </div>
+                  <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    Banned
+                  </div>
+                </CardContent>
+              </Card>
             </>
           ) : (
             <>
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <Card key={i}>
                   <CardContent className="p-4 text-center">
                     <div className="animate-pulse">
@@ -326,6 +384,11 @@ export function AdminPage({ onBack }: AdminPageProps) {
                             Mentor
                           </Badge>
                         )}
+                        {u.isBanned && (
+                          <Badge variant="destructive" className="text-xs bg-gray-600">
+                            Banned
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="text-xs">
                           Level {u.level}
                         </Badge>
@@ -371,6 +434,27 @@ export function AdminPage({ onBack }: AdminPageProps) {
                             onClick={() => demoteUser(u.id, 'mentor')}
                           >
                             Remove Mentor
+                          </Button>
+                        )}
+
+                        {!u.isBanned ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs text-red-600 border-red-300 hover:bg-red-50"
+                            onClick={() => banUser(u.id)}
+                          >
+                            <Ban className="w-3 h-3 mr-1" />
+                            Ban
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs text-green-600 border-green-300 hover:bg-green-50"
+                            onClick={() => unbanUser(u.id)}
+                          >
+                            Unban
                           </Button>
                         )}
                       </div>

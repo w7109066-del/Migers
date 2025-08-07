@@ -47,6 +47,8 @@ export interface IStorage {
   getMentors(): Promise<User[]>;
   updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<User | undefined>;
   getAdmins(): Promise<User[]>;
+  banUser(userId: string): Promise<User | undefined>;
+  unbanUser(userId: string): Promise<User | undefined>;
 
 
   // Friends management
@@ -85,10 +87,6 @@ export interface IStorage {
   getDirectMessages(userId: string, otherUserId: string, limit?: number): Promise<(Message & { sender: User })[]>;
   createMessage(message: InsertMessage): Promise<Message & { sender: User }>;
   createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }): Promise<Message & { sender: User }>;
-
-  // Coin transfer
-  transferCoins(senderId: string, recipientId: string, amount: number): Promise<void>;
-  getCreditTransactionHistory(userId: string): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -920,9 +918,9 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserMentorStatus(userId: string, isMentor: boolean, specialty?: string): Promise<User | undefined> {
     try {
-      const updateData: any = { 
+      const updateData: any = {
         isMentor,
-        mentorSpecialty: specialty || null 
+        mentorSpecialty: specialty || null
       };
 
       const [updatedUser] = await this.db
@@ -983,18 +981,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<User | undefined> {
-    try {
-      const [updatedUser] = await this.db
-        .update(users)
-        .set({ isAdmin })
-        .where(eq(users.id, userId))
-        .returning();
+    const updatedUser = await db.update(users)
+      .set({ isAdmin })
+      .where(eq(users.id, userId))
+      .returning();
 
-      return updatedUser;
-    } catch (error) {
-      console.error('Error updating admin status:', error);
-      return undefined;
-    }
+    return updatedUser[0];
+  }
+
+  async banUser(userId: string): Promise<User | undefined> {
+    const updatedUser = await db.update(users)
+      .set({ isBanned: true })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser[0];
+  }
+
+  async unbanUser(userId: string): Promise<User | undefined> {
+    const updatedUser = await db.update(users)
+      .set({ isBanned: false })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser[0];
   }
 
   async getAdmins(): Promise<User[]> {
@@ -1090,7 +1100,7 @@ export class DatabaseStorage implements IStorage {
       }));
 
       // Sort by creation date (newest first)
-      return transactionsWithUsernames.sort((a, b) => 
+      return transactionsWithUsernames.sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     } catch (error) {
