@@ -50,7 +50,7 @@ interface DirectMessageChatProps {
 }
 
 export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps) {
-  const { user } = useAuth();
+  const { user, isDarkMode } = useAuth();
   const { sendDirectMessage, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
@@ -650,9 +650,9 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
       {/* Chat Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3 flex-shrink-0 sticky top-0 z-10">
+      <div className={cn("border-b px-4 py-3 flex items-center space-x-3 flex-shrink-0 sticky top-0 z-10", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
         <Button
           variant="ghost"
           size="sm"
@@ -670,12 +670,12 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
 
         <div className="flex-1">
           <div className="flex items-center space-x-2">
-            <span className="font-semibold text-gray-800">{recipient.username}</span>
+            <span className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{recipient.username}</span>
             <Badge variant="secondary" className="bg-warning text-white text-xs">
               {recipient.level}
             </Badge>
           </div>
-          <div className={`text-xs ${recipient.isOnline ? 'text-green-600' : 'text-gray-500'}`}>
+          <div className={`text-xs ${recipient.isOnline ? 'text-green-600' : isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             {recipient.isOnline ? 'Online' : 'Offline'}
           </div>
         </div>
@@ -704,7 +704,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                   "flex items-center space-x-2 mb-1",
                   isOwnMessage && "justify-end"
                 )}>
-                  <span className="text-xs text-gray-500">
+                  <span className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
                     {formatTime(message.createdAt)}
                   </span>
                 </div>
@@ -712,22 +712,25 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                   "p-3 rounded-xl shadow-sm max-w-[80%] inline-block",
                   isOwnMessage 
                     ? "bg-primary text-white" 
-                    : "bg-white text-gray-800"
+                    : isDarkMode ? "bg-gray-700 text-gray-200" : "bg-white text-gray-800"
                 )}>
                   {message.messageType === 'gift' && message.giftData ? (
-                    <div className="flex flex-col items-center space-y-2 p-3 bg-gradient-to-br from-orange-100 to-pink-100 rounded-lg border border-orange-200">
+                    <div className={cn("flex flex-col items-center space-y-2 p-3 rounded-lg border", 
+                      isDarkMode 
+                        ? "bg-gradient-to-br from-orange-900/20 to-pink-900/20 border-orange-700" 
+                        : "bg-gradient-to-br from-orange-100 to-pink-100 border-orange-200")}>
                       <div className="w-12 h-12 flex items-center justify-center text-2xl bg-white rounded-full shadow-sm">
                         {typeof message.giftData === 'string' ? 
                           JSON.parse(message.giftData)?.emoji || '🎁' : 
                           message.giftData?.emoji || '🎁'}
                       </div>
                       <div className="text-center">
-                        <p className="text-sm font-semibold text-gray-800">
+                        <p className={cn("text-sm font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
                           {typeof message.giftData === 'string' ? 
                             JSON.parse(message.giftData)?.name || 'Gift' : 
                             message.giftData?.name || 'Gift'}
                         </p>
-                        <p className="text-xs text-orange-600 font-medium">
+                        <p className={cn("text-xs font-medium", isDarkMode ? "text-orange-400" : "text-orange-600")}>
                           {typeof message.giftData === 'string' ? 
                             `${JSON.parse(message.giftData)?.totalCost || JSON.parse(message.giftData)?.price || 0} coins` : 
                             `${message.giftData?.totalCost || message.giftData?.price || 0} coins`}
@@ -861,7 +864,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
       )}
 
       {/* Message Input - Fixed positioning */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 z-10">
+      <div className={cn("sticky bottom-0 border-t p-4 z-10", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
         <div className="flex items-center space-x-2">
           {/* Gift Button */}
           <Button
@@ -907,7 +910,11 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                   }
                 }
               }}
-              className="flex-1 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+              className={cn("flex-1 border-0 rounded-full focus:ring-2 focus:ring-primary", 
+                isDarkMode 
+                  ? "bg-gray-700 text-gray-200 focus:bg-gray-600" 
+                  : "bg-gray-100 focus:bg-white"
+              )}
               autoComplete="off"
             />
             <Button
