@@ -306,20 +306,27 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.post("/api/feed", upload.single('media'), async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!req.isAuthenticated()) {
+      console.log('User not authenticated for post creation');
+      return res.status(401).json({ message: "Authentication required" });
+    }
 
     try {
       const { content } = req.body;
       let mediaType = 'text';
       let mediaUrl = null;
 
+      console.log('Creating post with content:', content, 'User:', req.user!.id);
+
       if (req.file) {
         mediaUrl = `/uploads/${req.file.filename}`;
         mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+        console.log('Media uploaded:', mediaUrl, 'Type:', mediaType);
       }
 
-      // Ensure at least content or media is provided
+      // Allow text-only posts, media-only posts, or both
       if (!content?.trim() && !req.file) {
+        console.log('No content or media provided');
         return res.status(400).json({ message: "Post must have content or media" });
       }
 
@@ -329,10 +336,15 @@ export function registerRoutes(app: Express): Server {
         mediaType,
         mediaUrl,
       });
+      
+      console.log('Post created successfully:', post.id);
       res.status(201).json(post);
     } catch (error) {
       console.error('Post creation error:', error);
-      res.status(400).json({ message: "Failed to create post" });
+      res.status(500).json({ 
+        message: "Failed to create post",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

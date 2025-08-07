@@ -47,7 +47,8 @@ import {
   X,
   ChevronDown,
   Send,
-  Smile
+  Smile,
+  RefreshCw
 } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -457,17 +458,30 @@ function HomePageContent() {
   };
 
   const handleCreatePost = async () => {
-    if (!postContent.trim() && !selectedMedia) return;
+    // Check if user is authenticated
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    // Check if there's content or media
+    if (!postContent.trim() && !selectedMedia) {
+      console.error('No content or media to post');
+      return;
+    }
 
     try {
       const formData = new FormData();
-      if (postContent.trim()) {
-        formData.append('content', postContent);
-      }
+      
+      // Always append content, even if empty string for media-only posts
+      formData.append('content', postContent.trim() || '');
+      
       if (selectedMedia) {
         formData.append('media', selectedMedia);
       }
 
+      console.log('Sending post with content:', postContent.trim());
+      
       const response = await fetch('/api/feed', {
         method: 'POST',
         credentials: 'include',
@@ -475,17 +489,24 @@ function HomePageContent() {
       });
 
       if (response.ok) {
+        const newPost = await response.json();
+        console.log('Post created successfully:', newPost);
+        
+        // Clear form
         setPostContent('');
         setSelectedMedia(null);
         setMediaPreview(null);
+        
+        // Refresh feed
         await loadFeedPosts();
-        console.log('Post created successfully');
       } else {
         const errorData = await response.json();
-        console.error('Failed to create post:', errorData);
+        console.error('Failed to create post:', response.status, errorData);
+        alert(`Failed to create post: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Failed to create post:', error);
+      console.error('Network error creating post:', error);
+      alert('Network error. Please check your connection and try again.');
     }
   };
 
@@ -652,7 +673,7 @@ function HomePageContent() {
                         size="sm"
                         className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
                         onClick={handleCreatePost}
-                        disabled={!postContent.trim() && !selectedMedia}
+                        disabled={(!postContent.trim() && !selectedMedia) || !user}
                       >
                         Send
                       </Button>
