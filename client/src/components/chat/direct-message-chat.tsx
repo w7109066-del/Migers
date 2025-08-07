@@ -115,19 +115,28 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   };
 
   const handleSendMessage = async () => {
-    if ((!newMessage || !newMessage.trim()) && !selectedMedia) return;
-    if (!user?.id || !recipient?.id) return;
+    if ((!newMessage || !newMessage.trim()) && !selectedMedia) {
+      console.log('No message content or media to send');
+      return;
+    }
+    if (!user?.id || !recipient?.id) {
+      console.error('User or recipient not available');
+      return;
+    }
+
+    console.log('Sending message:', { hasText: !!newMessage?.trim(), hasMedia: !!selectedMedia });
 
     try {
       if (selectedMedia) {
         // Handle media message
         const formData = new FormData();
         if (newMessage && newMessage.trim()) {
-          formData.append('content', newMessage);
+          formData.append('content', newMessage.trim());
         }
         formData.append('media', selectedMedia);
         formData.append('recipientId', recipient.id);
 
+        console.log('Sending media message to:', recipient.id);
         const response = await fetch('/api/messages/direct', {
           method: 'POST',
           credentials: 'include',
@@ -136,6 +145,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
 
         if (response.ok) {
           const sentMessage = await response.json();
+          console.log('Media message sent successfully:', sentMessage);
           setMessages(prev => {
             const messageExists = prev.some(msg => msg.id === sentMessage.id);
             if (messageExists) {
@@ -147,10 +157,12 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
           setSelectedMedia(null);
           setMediaPreview(null);
         } else {
-          console.error('Failed to send media message');
+          const errorText = await response.text();
+          console.error('Failed to send media message:', response.status, errorText);
         }
       } else if (newMessage && newMessage.trim()) {
         // Handle text message via API
+        console.log('Sending text message to:', recipient.id, 'content:', newMessage.trim());
         const response = await fetch('/api/messages/direct', {
           method: 'POST',
           headers: {
@@ -165,6 +177,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
 
         if (response.ok) {
           const sentMessage = await response.json();
+          console.log('Text message sent successfully:', sentMessage);
           setMessages(prev => {
             const messageExists = prev.some(msg => msg.id === sentMessage.id);
             if (messageExists) {
@@ -174,7 +187,8 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
           });
           setNewMessage('');
         } else {
-          console.error('Failed to send message');
+          const errorText = await response.text();
+          console.error('Failed to send text message:', response.status, errorText);
         }
       }
     } catch (error) {
@@ -883,6 +897,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
+                  e.stopPropagation();
                   if ((newMessage && newMessage.trim()) || selectedMedia) {
                     handleSendMessage();
                   }
@@ -893,7 +908,12 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
             />
             <Button
               type="button"
-              onClick={handleSendMessage}
+              onClick={(e) => {
+                e.preventDefault();
+                if ((newMessage && newMessage.trim()) || selectedMedia) {
+                  handleSendMessage();
+                }
+              }}
               disabled={(!newMessage || !newMessage.trim()) && !selectedMedia}
               className="bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
