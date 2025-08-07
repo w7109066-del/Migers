@@ -75,7 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
       }
     } catch (err) {
-      console.error('Auth check failed:', err);
+      setIsLoading(false);
+      console.error('Authentication check failed:', err);
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading, isDarkMode, toggleDarkMode }}>
       {children}
     </AuthContext.Provider>
   );

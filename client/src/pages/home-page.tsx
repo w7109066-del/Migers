@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useQuery } from '@tanstack/react-query';
 
 interface MiniProfileData {
   id: string;
@@ -165,14 +166,14 @@ export default function HomePage() {
         }));
         setCommentText(prev => ({ ...prev, [postId]: '' }));
         setShowCommentEmojis(null);
-        
+
         // Update the post's comment count
         setFeedPosts(prev => prev.map(post => 
           post.id === postId 
             ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
             : post
         ));
-        
+
         console.log('Comment added successfully');
       } else {
         const errorData = await response.json();
@@ -692,7 +693,7 @@ export default function HomePage() {
                                           {comment.content}
                                         </div>
                                       </div>
-                                      
+
                                       {/* Comment Actions */}
                                       <div className="flex items-center justify-between mt-2 px-4">
                                         <div className="flex items-center space-x-4">
@@ -706,7 +707,7 @@ export default function HomePage() {
                                             Reply
                                           </button>
                                         </div>
-                                        
+
                                         <div className="flex items-center space-x-2">
                                           <div className="flex items-center space-x-1">
                                             <button className="text-gray-500 hover:text-red-500 transition-colors">
@@ -978,7 +979,7 @@ export default function HomePage() {
                     berbagi
                   </h3>
                 </div>
-                
+
                 <div className="flex justify-center space-x-8">
                   {/* WhatsApp Share */}
                   <button

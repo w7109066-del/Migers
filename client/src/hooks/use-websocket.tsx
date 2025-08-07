@@ -30,7 +30,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     // For Replit environment, construct proper WebSocket URL
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/ws`;
-
+    
+    console.log('Attempting to connect to WebSocket:', wsUrl);
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
