@@ -119,7 +119,6 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
                 isOnline={profile.isOnline}
                 className="w-full h-full"
                 profilePhotoUrl={profile.profilePhotoUrl}
-                fancyFrame={true}
               />
             </div>
           </div>
