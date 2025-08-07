@@ -206,7 +206,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
             <div className="relative inline-block">
               <UserAvatar
                 username={profile.username}
-                size="lg"
+                size="md"
                 isOnline={profile.isOnline}
                 className="w-full h-full"
                 profilePhotoUrl={profile.profilePhotoUrl}
