@@ -725,7 +725,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
               ) : (
                 // Normal message rendering
                 <>
-                  <div className="flex items-baseline space-x-2">
+                  <div className="flex items-start space-x-2">
                     <UserAvatar 
                       username={message.sender.username}
                       size="sm"
@@ -733,33 +733,36 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                       onClick={() => onUserClick?.(message.sender)}
                       profilePhotoUrl={message.sender.profilePhotoUrl}
                     />
-                    <span 
-                      className={cn(
-                        "font-semibold text-sm",
-                        message.senderId === user?.id ? "text-[#2f7853]" : "text-[#3f94d9]"
-                      )}
-                      onClick={() => {
-                        if (message.senderId !== 'system' && onUserClick) {
-                          onUserClick({
-                            id: message.sender.id,
-                            username: message.sender.username,
-                            level: message.sender.level,
-                            status: "Available for chat", // Assuming a default status if not provided
-                            isOnline: message.sender.isOnline,
-                            profilePhotoUrl: message.sender.profilePhotoUrl
-                          });
-                        }
-                      }}
-                    >
-                      {message.sender.username}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatTime(message.createdAt)}
-                    </span>
-                  </div>
-
-                  <div className="mt-1 text-gray-700 dark:text-gray-300 break-words">
-                    {renderMessageContent(message)}
+                    <div className="flex-1">
+                      <div className="flex items-baseline space-x-1">
+                        <span 
+                          className={cn(
+                            "font-semibold text-sm",
+                            message.senderId === user?.id ? "text-[#2f7853]" : "text-[#3f94d9]"
+                          )}
+                          onClick={() => {
+                            if (message.senderId !== 'system' && onUserClick) {
+                              onUserClick({
+                                id: message.sender.id,
+                                username: message.sender.username,
+                                level: message.sender.level,
+                                status: "Available for chat", // Assuming a default status if not provided
+                                isOnline: message.sender.isOnline,
+                                profilePhotoUrl: message.sender.profilePhotoUrl
+                              });
+                            }
+                          }}
+                        >
+                          {message.sender.username}:
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-300 break-words">
+                          {renderMessageContent(message)}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                          {formatTime(message.createdAt)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
