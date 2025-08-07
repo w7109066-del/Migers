@@ -1214,6 +1214,7 @@ function HomePageContent() {
                     size="lg"
                     isOnline={user.isOnline || false}
                     profilePhotoUrl={user.profilePhotoUrl}
+                    isAdmin={user.isAdmin}
                   />
                   <div>
                     <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>

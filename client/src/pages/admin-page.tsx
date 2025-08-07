@@ -422,6 +422,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                         size="sm"
                         isOnline={u.isOnline}
                         profilePhotoUrl={u.profilePhotoUrl}
+                        isAdmin={u.isAdmin}
                       />
                       <div>
                         <div className={cn("font-medium", isDarkMode ? "text-white" : "text-gray-900")}>

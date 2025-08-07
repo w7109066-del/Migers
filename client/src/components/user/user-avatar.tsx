@@ -7,6 +7,7 @@ interface UserAvatarProps {
   onClick?: () => void;
   className?: string;
   profilePhotoUrl?: string;
+  isAdmin?: boolean;
 }
 
 const sizeClasses = {
@@ -33,7 +34,8 @@ export function UserAvatar({
   isOnline, 
   onClick, 
   className,
-  profilePhotoUrl
+  profilePhotoUrl,
+  isAdmin = false
 }: UserAvatarProps) {
   const initials = username
     .split(/[\s_]+/)
@@ -88,6 +90,22 @@ export function UserAvatar({
             isOnline ? "bg-accent" : "bg-gray-400"
           )}
         />
+      )}
+
+      {isAdmin && (
+        <div 
+          className={cn(
+            "absolute -top-1 -right-1 bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-xs border-2 border-white",
+            {
+              'w-4 h-4 text-[8px]': size === 'sm',
+              'w-5 h-5 text-[10px]': size === 'md',
+              'w-6 h-6 text-xs': size === 'lg',
+              'w-7 h-7 text-sm': size === 'xl',
+            }
+          )}
+        >
+          A
+        </div>
       )}
     </div>
   );

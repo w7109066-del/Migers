@@ -3,6 +3,7 @@ import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -373,12 +374,18 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                           size="sm"
                           isOnline={member.user.isOnline}
                           profilePhotoUrl={member.user.profilePhotoUrl}
+                          isAdmin={member.user.isAdmin}
                         />
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-800">{member.user.username}</span>
                             {(member.role === 'admin' || member.user.level >= 5) && (
                               <Crown className="w-4 h-4 text-yellow-500" />
+                            )}
+                            {member.user.isAdmin && (
+                              <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                                Admin
+                              </Badge>
                             )}
                           </div>
                           <div className="text-sm text-gray-500">
@@ -520,6 +527,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                       size="sm"
                                       isOnline={member.user.isOnline}
                                       profilePhotoUrl={member.user.profilePhotoUrl}
+                                      isAdmin={member.user.isAdmin}
                                     />
                                     <div>
                                       <span className="font-medium text-sm">{member.user.username}</span>

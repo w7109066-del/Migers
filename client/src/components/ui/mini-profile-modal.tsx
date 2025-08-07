@@ -24,6 +24,7 @@ interface MiniProfileModalProps {
     fansCount?: number;
     followingCount?: number;
     isFriend?: boolean;
+    isAdmin?: boolean; // Added isAdmin property
   };
   onClose: () => void;
   onMessageClick?: (user: any) => void;
@@ -190,7 +191,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
 
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -220,6 +221,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
                 isOnline={profile.isOnline}
                 className="w-[75px] h-[75px]"
                 profilePhotoUrl={profile.profilePhotoUrl}
+                isAdmin={profile.isAdmin} // Pass isAdmin prop
               />
             </div>
           </div>
@@ -244,6 +246,11 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
               ID
             </Badge>
             <UserStatus isOnline={profile.isOnline} />
+            {profile.isAdmin && ( // Conditionally render admin badge
+              <Badge variant="default" className="bg-green-500 text-white text-xs">
+                Admin
+              </Badge>
+            )}
           </div>
 
           {/* Fans and Following Stats */}
