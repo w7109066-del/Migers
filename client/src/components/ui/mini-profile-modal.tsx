@@ -8,6 +8,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MiniProfileModalProps {
   profile: {
@@ -25,6 +26,7 @@ interface MiniProfileModalProps {
 export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfileModalProps) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [showGiftModal, setShowGiftModal] = useState(false);
 
   const handleSendMessage = () => {
@@ -72,6 +74,9 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           description: `Your friend request has been sent to ${profile.username}.`,
         });
 
+        // Invalidate and refetch the friends query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ['friends'] });
+
         onClose();
       } else {
         const errorData = await response.json();
@@ -107,8 +112,8 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
             <div className="relative inline-block">
               <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-1">
                 <div className="w-full h-full rounded-full bg-white p-1">
-                  <UserAvatar 
-                    username={profile.username} 
+                  <UserAvatar
+                    username={profile.username}
                     size="xl"
                     isOnline={profile.isOnline}
                     className="w-full h-full"
@@ -148,14 +153,14 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           {/* Action buttons */}
           <div className="space-y-3">
             <div className="flex space-x-2">
-              <Button 
+              <Button
                 onClick={handleSendMessage}
                 className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Message
               </Button>
-              <Button 
+              <Button
                 onClick={() => setShowGiftModal(true)}
                 className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white border-0"
               >
@@ -163,7 +168,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
                 Send Gift
               </Button>
             </div>
-            <Button 
+            <Button
               onClick={handleAddFriend}
               variant="outline"
               className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -174,7 +179,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           </div>
         </div>
       </div>
-      
+
       {/* Gift Send Modal */}
       <GiftSendModal
         isOpen={showGiftModal}

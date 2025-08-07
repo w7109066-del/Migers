@@ -441,7 +441,7 @@ export default function HomePage() {
 
           {/* Friends List Content */}
           <div className="flex-1 overflow-hidden">
-            <FriendsList onUserClick={handleUserClick} />
+            <FriendsList onUserClick={handleUserClick} showRefreshButton={true} />
           </div>
         </div>
       ),

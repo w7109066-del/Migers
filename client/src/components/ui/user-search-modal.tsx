@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -6,7 +5,7 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, UserPlus, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 
@@ -29,20 +28,22 @@ interface UserSearchModalProps {
 export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick }: UserSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: searchResults, isLoading, refetch } = useQuery({
     queryKey: ["/api/users/search", searchQuery],
     queryFn: async () => {
       if (searchQuery.trim().length < 2) return [];
-      
+
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to search users');
       }
-      
+
       return response.json();
     },
     enabled: searchQuery.trim().length >= 2,
@@ -64,6 +65,7 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
           title: "Friend request sent!",
           description: `Your friend request has been sent to ${username}.`,
         });
+        queryClient.invalidateQueries(["/api/friends"]); // Invalidate and refetch friends list
       } else {
         const errorData = await response.json();
         toast({
@@ -104,7 +106,7 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
         <DialogHeader>
           <DialogTitle>Search Users</DialogTitle>
         </DialogHeader>
-        
+
         <Command className="rounded-lg border shadow-md">
           <CommandInput 
             placeholder="Search by username..." 
@@ -118,17 +120,17 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
                 <span className="ml-2 text-sm text-gray-500">Searching...</span>
               </div>
             )}
-            
+
             {!isLoading && searchQuery.trim().length >= 2 && (!searchResults || searchResults.length === 0) && (
               <CommandEmpty>No users found.</CommandEmpty>
             )}
-            
+
             {searchQuery.trim().length < 2 && (
               <div className="py-6 text-center text-sm text-gray-500">
                 Type at least 2 characters to search
               </div>
             )}
-            
+
             {searchResults && searchResults.length > 0 && (
               <CommandGroup heading="Users">
                 {searchResults.map((user: User) => (
@@ -155,7 +157,7 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex space-x-2">
                         <Button
                           size="sm"

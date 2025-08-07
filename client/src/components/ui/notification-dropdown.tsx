@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Bell, X, Check, Gift, CreditCard, UserPlus, Users } from 'lucide-react';
 import { Button } from './button';
@@ -6,10 +5,12 @@ import { Card, CardContent } from './card';
 import { Badge } from './badge';
 import { useNotifications } from '@/hooks/use-notifications';
 import { UserAvatar } from '@/components/user/user-avatar';
+import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
 
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+  const queryClient = useQueryClient(); // Get the query client instance
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -53,8 +54,8 @@ export function NotificationDropdown() {
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <Badge 
-            variant="destructive" 
+          <Badge
+            variant="destructive"
             className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -64,8 +65,8 @@ export function NotificationDropdown() {
 
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-10" 
+          <div
+            className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
           <Card className="absolute right-0 top-full mt-2 w-80 sm:w-80 w-screen max-w-sm z-20 max-h-96 overflow-hidden shadow-lg border transform sm:transform-none -translate-x-4 sm:translate-x-0">
@@ -84,7 +85,7 @@ export function NotificationDropdown() {
                 )}
               </div>
             </div>
-            
+
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
@@ -125,7 +126,7 @@ export function NotificationDropdown() {
                                 </span>
                               </div>
                             )}
-                            
+
                             {notification.type === 'friend_request' && notification.fromUser && (
                               <div className="flex items-center space-x-2 mt-3">
                                 <Button
@@ -142,6 +143,8 @@ export function NotificationDropdown() {
                                       });
                                       if (response.ok) {
                                         removeNotification(notification.id);
+                                        // Invalidate the friend list query to refetch
+                                        queryClient.invalidateQueries(['friends']);
                                       }
                                     } catch (error) {
                                       console.error('Failed to accept friend request:', error);
