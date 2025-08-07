@@ -1035,8 +1035,8 @@ export function registerRoutes(app: Express): Server {
             if (userId && message.content) {
               // Check if user is banned from rooms (only for room messages)
               if (message.roomId) {
-                const currentUser = await storage.getUser(userId);
-                if (currentUser?.isBanned) {
+                const user = await storage.getUser(userId);
+                if (user?.isBanned) {
                   ws.send(JSON.stringify({
                     type: 'error',
                     message: 'You are banned from sending messages in chat rooms',
