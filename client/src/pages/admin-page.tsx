@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user/user-avatar';
-import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban } from 'lucide-react';
+import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -18,6 +18,7 @@ interface User {
   isMentor: boolean;
   isAdmin: boolean;
   isBanned?: boolean;
+  isSuspended?: boolean;
   profilePhotoUrl?: string;
   createdAt: string;
 }
@@ -28,6 +29,7 @@ interface AdminStats {
   totalMentors: number;
   totalAdmins: number;
   bannedUsers: number;
+  suspendedUsers: number;
 }
 
 interface AdminPageProps {
@@ -199,6 +201,50 @@ export function AdminPage({ onBack }: AdminPageProps) {
     }
   };
 
+  const suspendUser = async (userId: string) => {
+    try {
+      const response = await fetch('/api/admin/suspend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        loadUsers();
+        loadStats();
+      } else {
+        console.error('Failed to suspend user');
+      }
+    } catch (error) {
+      console.error('Error suspending user:', error);
+    }
+  };
+
+  const unsuspendUser = async (userId: string) => {
+    try {
+      const response = await fetch('/api/admin/unsuspend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        loadUsers();
+        loadStats();
+      } else {
+        console.error('Failed to unsuspend user');
+      }
+    } catch (error) {
+      console.error('Error unsuspending user:', error);
+    }
+  };
+
   const displayUsers = searchTerm.trim().length >= 2 ? searchResults : users;
 
   if (!user?.isAdmin) {
@@ -240,7 +286,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {stats ? (
             <>
               <Card>
@@ -302,10 +348,22 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <UserX className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+                  <div className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                    {stats.suspendedUsers}
+                  </div>
+                  <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    Suspended
+                  </div>
+                </CardContent>
+              </Card>
             </>
           ) : (
             <>
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5, 6].map((i) => (
                 <Card key={i}>
                   <CardContent className="p-4 text-center">
                     <div className="animate-pulse">
@@ -389,6 +447,11 @@ export function AdminPage({ onBack }: AdminPageProps) {
                             Room Banned
                           </Badge>
                         )}
+                        {u.isSuspended && (
+                          <Badge variant="destructive" className="text-xs bg-orange-600">
+                            Suspended
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="text-xs">
                           Level {u.level}
                         </Badge>
@@ -455,6 +518,27 @@ export function AdminPage({ onBack }: AdminPageProps) {
                             onClick={() => unbanUser(u.id)}
                           >
                             Unban from Rooms
+                          </Button>
+                        )}
+
+                        {!u.isSuspended ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+                            onClick={() => suspendUser(u.id)}
+                          >
+                            <UserX className="w-3 h-3 mr-1" />
+                            Suspend Account
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs text-blue-600 border-blue-300 hover:bg-blue-50"
+                            onClick={() => unsuspendUser(u.id)}
+                          >
+                            Unsuspend Account
                           </Button>
                         )}
                       </div>

@@ -49,6 +49,8 @@ export interface IStorage {
   getAdmins(): Promise<User[]>;
   banUser(userId: string): Promise<User | undefined>;
   unbanUser(userId: string): Promise<User | undefined>;
+  suspendUser(userId: string): Promise<User | undefined>;
+  unsuspendUser(userId: string): Promise<User | undefined>;
 
 
   // Friends management
@@ -1001,6 +1003,24 @@ export class DatabaseStorage implements IStorage {
   async unbanUser(userId: string): Promise<User | undefined> {
     const updatedUser = await db.update(users)
       .set({ isBanned: false })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser[0];
+  }
+
+  async suspendUser(userId: string): Promise<User | undefined> {
+    const updatedUser = await db.update(users)
+      .set({ isSuspended: true })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser[0];
+  }
+
+  async unsuspendUser(userId: string): Promise<User | undefined> {
+    const updatedUser = await db.update(users)
+      .set({ isSuspended: false })
       .where(eq(users.id, userId))
       .returning();
 

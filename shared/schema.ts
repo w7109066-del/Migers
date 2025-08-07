@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   mentorSpecialty: text("mentor_specialty"),
   isAdmin: boolean("is_admin").default(false),
   isBanned: boolean("is_banned").default(false),
+  isSuspended: boolean("is_suspended").default(false),
 });
 
 export const friendships = pgTable("friendships", {

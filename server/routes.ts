@@ -17,6 +17,11 @@ function requireAuth(req: any, res: any, next: any) {
     return res.status(401).json({ message: "Authentication required" });
   }
   
+  // Check if user is suspended
+  if (req.user?.isSuspended) {
+    return res.status(403).json({ message: "Your account has been suspended. Please contact administrator." });
+  }
+  
   next();
 }
 
@@ -742,6 +747,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/admin/suspend', requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      // Prevent admin from suspending themselves
+      if (userId === req.user?.id) {
+        return res.status(400).json({ message: 'Cannot suspend yourself' });
+      }
+
+      const updatedUser = await storage.suspendUser(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      res.status(500).json({ message: 'Failed to suspend user' });
+    }
+  });
+
+  app.post('/api/admin/unsuspend', requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      const updatedUser = await storage.unsuspendUser(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error unsuspending user:', error);
+      res.status(500).json({ message: 'Failed to unsuspend user' });
+    }
+  });
+
   app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     try {
       const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
@@ -749,6 +791,7 @@ export function registerRoutes(app: Express): Server {
       const totalMentors = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isMentor, true));
       const totalAdmins = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isAdmin, true));
       const bannedUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isBanned, true));
+      const suspendedUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isSuspended, true));
 
       res.json({
         totalUsers: totalUsers[0]?.count || 0,
@@ -756,6 +799,7 @@ export function registerRoutes(app: Express): Server {
         totalMentors: totalMentors[0]?.count || 0,
         totalAdmins: totalAdmins[0]?.count || 0,
         bannedUsers: bannedUsers[0]?.count || 0,
+        suspendedUsers: suspendedUsers[0]?.count || 0,
       });
     } catch (error) {
       console.error('Error fetching admin stats:', error);
