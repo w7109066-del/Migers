@@ -132,30 +132,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     }
   }, [isConnected, roomId, joinRoom]);
 
-  // Update room members message
-  useEffect(() => {
-    if (roomMembers && roomMembers.length > 0 && roomId) {
-      const memberNames = roomMembers
-        .map(m => m.user.username)
-        .sort((a, b) => a.localeCompare(b))
-        .join(', ');
-
-      setMessages(prev => {
-        const filtered = prev.filter(msg => msg.id !== `room-info-${roomId}`);
-        return [
-          ...filtered,
-          {
-            id: `room-info-${roomId}`,
-            content: `Currently in the room: ${memberNames} (${roomMembers.length} users)`,
-            senderId: 'system',
-            createdAt: new Date().toISOString(),
-            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-            messageType: 'system'
-          }
-        ];
-      });
-    }
-  }, [roomMembers, roomId]);
+  // Note: Removed the "Currently in the room" message to avoid chat spam when users join
 
   // WebSocket event listeners
   useEffect(() => {
