@@ -933,9 +933,6 @@ export default function HomePage() {
         <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
           {/* Use SwipeTabs component for proper swipe functionality */}
           <SwipeTabs tabs={tabs} className="flex-1" />
-              ))}
-            </div>
-          </div>
 
           {/* Mini Profile Modal */}
           {selectedProfile && (
