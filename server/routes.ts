@@ -672,7 +672,6 @@ export function registerRoutes(app: Express): Server {
         }
       } catch (notificationError) {
         console.error('Failed to create notification:', notificationError);
-        console.error('Notification error details:', JSON.stringify(notificationError, null, 2));
         // Don't fail the transfer if notification creation fails
       }
 
@@ -1010,7 +1009,39 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      await storage.acceptFriendRequest(currentUserId, userId);
+      // Add the friend relationship
+      await db.insert(friends).values([
+        { userId: currentUserId, friendUserId: userId },
+        { userId, friendUserId: currentUserId },
+      ]);
+
+      console.log(`Friend relationship created between ${currentUserId} and ${userId}`);
+
+      // Send friend_list_updated via WebSocket to both users
+      try {
+        const senderSocket = userConnections.get(currentUserId);
+        const receiverSocket = userConnections.get(userId);
+
+        console.log(`Sending friend_list_updated to sockets - sender: ${!!senderSocket}, receiver: ${!!receiverSocket}`);
+
+        if (senderSocket) {
+          senderSocket.send(JSON.stringify({
+            type: 'friend_list_updated'
+          }));
+          console.log(`Sent friend_list_updated to user ${currentUserId}`);
+        }
+
+        if (receiverSocket) {
+          receiverSocket.send(JSON.stringify({
+            type: 'friend_list_updated'
+          }));
+          console.log(`Sent friend_list_updated to user ${userId}`);
+        }
+      } catch (websocketError) {
+        console.error('Error sending WebSocket update for friend list:', websocketError);
+        // Continue processing even if WebSocket fails
+      }
+
 
       // Get user info for notification
       const currentUser = await storage.getUser(currentUserId);
@@ -1044,25 +1075,17 @@ export function registerRoutes(app: Express): Server {
                 createdAt: notification.createdAt || new Date().toISOString()
               }
             });
-
-            // Also send friend list update to the requester
-            broadcastToUser(userId, {
-              type: 'friend_list_updated'
-            });
           }
-
-          // Send friend list update to the current user (accepter) as well
-          broadcastToUser(currentUserId, {
-            type: 'friend_list_updated'
-          });
-
-          console.log(`Friend request accepted: ${userId} accepted by ${currentUserId}`);
-          console.log('Sent friend_list_updated to both users');
-
         } catch (notificationError) {
           console.error('Failed to create acceptance notification:', notificationError);
         }
       }
+
+      // Delete the pending friend request
+      await storage.rejectFriendRequest(currentUserId, userId);
+
+
+      console.log(`Friend request accepted: ${userId} accepted by ${currentUserId}`);
 
       res.json({ success: true, message: 'Friend request accepted' });
     } catch (error) {
@@ -1103,6 +1126,26 @@ export function registerRoutes(app: Express): Server {
       // Remove the friendship
       await storage.rejectFriendRequest(currentUserId, userId);
       await storage.rejectFriendRequest(userId, currentUserId);
+
+      // Send friend_list_updated via WebSocket to both users
+      try {
+        const senderSocket = userConnections.get(currentUserId);
+        const receiverSocket = userConnections.get(userId);
+
+        if (senderSocket) {
+          senderSocket.send(JSON.stringify({
+            type: 'friend_list_updated'
+          }));
+        }
+
+        if (receiverSocket) {
+          receiverSocket.send(JSON.stringify({
+            type: 'friend_list_updated'
+          }));
+        }
+      } catch (websocketError) {
+        console.error('Error sending WebSocket update for unfriend:', websocketError);
+      }
 
       res.json({ success: true, message: 'Friend removed successfully' });
     } catch (error) {

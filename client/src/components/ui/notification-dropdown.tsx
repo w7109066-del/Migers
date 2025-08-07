@@ -148,6 +148,7 @@ export function NotificationDropdown() {
                                         removeNotification(notification.id);
                                         
                                         // Force refresh friend list with multiple methods
+                                        queryClient.removeQueries({ queryKey: ["/api/friends"] });
                                         queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
                                         queryClient.refetchQueries({ queryKey: ["/api/friends"] });
                                         
@@ -155,6 +156,11 @@ export function NotificationDropdown() {
                                         window.dispatchEvent(new CustomEvent('friendListUpdate'));
                                         
                                         console.log('Friend request accepted, friend list should refresh');
+                                        
+                                        // Also trigger a delayed refresh to ensure it works
+                                        setTimeout(() => {
+                                          window.dispatchEvent(new CustomEvent('friendListUpdate'));
+                                        }, 1000);
                                       } else {
                                         toast({
                                           title: "Error",

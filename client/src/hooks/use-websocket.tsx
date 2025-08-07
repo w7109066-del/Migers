@@ -124,7 +124,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               fromUser: message.fromUser,
               actionRequired: true,
             });
-            
+
             // Dispatch custom event for real-time UI updates
             window.dispatchEvent(new CustomEvent('websocket-notification', {
               detail: {
@@ -156,7 +156,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             console.log('New notification received:', message.notification);
             if (message.notification) {
               addNotification(message.notification);
-              
+
               // If it's a friend request accepted, also refresh friend list
               if (message.notification.type === 'friend_request_accepted') {
                 console.log('Triggering friend list update for accepted request');
@@ -187,9 +187,21 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             }));
             break;
           case 'friend_list_updated':
-            console.log('Friend list updated via WebSocket');
-            // Trigger friend list refresh
+            console.log('Friend list updated via WebSocket - forcing refresh');
+
+            // Force refresh friends list with multiple attempts
             window.dispatchEvent(new CustomEvent('friendListUpdate'));
+
+            // Also trigger refresh after delay to ensure it works
+            setTimeout(() => {
+              console.log('Delayed friend list refresh triggered');
+              window.dispatchEvent(new CustomEvent('friendListUpdate'));
+            }, 500);
+
+            setTimeout(() => {
+              console.log('Second delayed friend list refresh triggered');
+              window.dispatchEvent(new CustomEvent('friendListUpdate'));
+            }, 2000);
             break;
         }
       } catch (error) {

@@ -27,16 +27,25 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: friends, isLoading } = useQuery<Friend[]>({
+  const { data: friends, isLoading, refetch } = useQuery<Friend[]>({
     queryKey: ["/api/friends"],
     enabled: Boolean(user),
+    staleTime: 0, // Always consider data stale to force fresh requests
+    cacheTime: 0, // Don't cache the data
   });
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/friends"] });
+      console.log('Manual refresh triggered');
+      
+      // Clear cache completely
+      queryClient.removeQueries({ queryKey: ["/api/friends"] });
+      
+      // Force refetch
+      await refetch();
+      
+      console.log('Manual refresh completed');
     } catch (error) {
       console.error('Failed to refresh friends:', error);
     } finally {
@@ -46,10 +55,19 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
 
   // Listen for friend list updates
   useEffect(() => {
-    const handleFriendListUpdate = () => {
-      console.log('Friend list update event received');
-      queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
-      queryClient.refetchQueries({ queryKey: ["/api/friends"] });
+    const handleFriendListUpdate = async () => {
+      console.log('Friend list update event received, forcing refresh...');
+      
+      // Clear cache first
+      queryClient.removeQueries({ queryKey: ["/api/friends"] });
+      
+      // Force immediate refetch
+      try {
+        await refetch();
+        console.log('Friend list successfully refreshed');
+      } catch (error) {
+        console.error('Failed to refresh friend list:', error);
+      }
     };
 
     window.addEventListener('friendListUpdate', handleFriendListUpdate);
