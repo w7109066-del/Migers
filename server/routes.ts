@@ -647,6 +647,8 @@ export function registerRoutes(app: Express): Server {
           data: { amount, senderUsername: sender.username }
         });
 
+        console.log('Notification created successfully:', notification);
+
         // Send real-time notification via WebSocket
         if (notification) {
           broadcastToUser(recipient.id, {
@@ -665,9 +667,12 @@ export function registerRoutes(app: Express): Server {
               createdAt: notification.createdAt || new Date().toISOString()
             }
           });
+          
+          console.log('WebSocket notification sent to user:', recipient.id);
         }
       } catch (notificationError) {
         console.error('Failed to create notification:', notificationError);
+        console.error('Notification error details:', JSON.stringify(notificationError, null, 2));
         // Don't fail the transfer if notification creation fails
       }
 

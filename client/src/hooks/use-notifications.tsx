@@ -65,10 +65,58 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Load initial notifications when user logs in
   useEffect(() => {
     if (user) {
-      // Load notifications from API if needed
-      // For now, we'll start with empty notifications
+      fetchNotifications();
     }
   }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  // Listen for WebSocket notifications
+  useEffect(() => {
+    const handleWebSocketMessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'new_notification' && data.notification) {
+          console.log('Received new notification via WebSocket:', data.notification);
+          setNotifications(prev => [data.notification, ...prev]);
+        }
+      } catch (error) {
+        // Not a JSON message, ignore
+      }
+    };
+
+    // Add WebSocket message listener
+    if (typeof window !== 'undefined') {
+      window.addEventListener('message', handleWebSocketMessage);
+      
+      // Also listen for custom WebSocket events
+      const handleNotification = (event: CustomEvent) => {
+        if (event.detail && event.detail.type === 'new_notification') {
+          console.log('Received notification event:', event.detail);
+          setNotifications(prev => [event.detail.notification, ...prev]);
+        }
+      };
+      
+      window.addEventListener('websocket-notification', handleNotification as EventListener);
+      
+      return () => {
+        window.removeEventListener('message', handleWebSocketMessage);
+        window.removeEventListener('websocket-notification', handleNotification as EventListener);
+      };
+    }
+  }, []);
 
   return (
     <NotificationContext.Provider value={{

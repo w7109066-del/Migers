@@ -1249,16 +1249,13 @@ export class DatabaseStorage implements IStorage {
     data?: any;
   }) {
     try {
-      // Ensure data is properly serialized as JSON if it exists
-      const serializedData = notificationData.data ? JSON.stringify(notificationData.data) : null;
-
-      const [notification] = await db.insert(notifications).values({
+      const [notification] = await this.db.insert(notifications).values({
         userId: notificationData.userId,
         type: notificationData.type,
         title: notificationData.title,
         message: notificationData.message,
         fromUserId: notificationData.fromUserId || null,
-        data: serializedData
+        data: notificationData.data
       }).returning();
 
       return notification;
@@ -1270,6 +1267,44 @@ export class DatabaseStorage implements IStorage {
 
   async getNotifications(userId: string): Promise<any[]> {
     return await this.db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  }
+
+  async getUserNotifications(userId: string): Promise<any[]> {
+    try {
+      const result = await this.db
+        .select({
+          id: notifications.id,
+          type: notifications.type,
+          title: notifications.title,
+          message: notifications.message,
+          fromUserId: notifications.fromUserId,
+          data: notifications.data,
+          isRead: notifications.isRead,
+          createdAt: notifications.createdAt,
+          fromUser: {
+            id: users.id,
+            username: users.username,
+          }
+        })
+        .from(notifications)
+        .leftJoin(users, eq(notifications.fromUserId, users.id))
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt));
+
+      return result.map(notification => ({
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        fromUser: notification.fromUser.id ? notification.fromUser : null,
+        data: notification.data,
+        isRead: notification.isRead,
+        createdAt: notification.createdAt,
+      }));
+    } catch (error) {
+      console.error('Error fetching user notifications:', error);
+      return [];
+    }
   }
 
   async markNotificationAsRead(notificationId: string): Promise<void> {
