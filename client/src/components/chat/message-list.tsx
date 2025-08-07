@@ -704,9 +704,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         Info
                       </ContextMenuItem>
                     </ContextMenuGroup>
-                    <ContextMenuSeparator />
+                    {/* Show kick option only for admins and not for current user */}
                     {isAdmin && message.senderId !== currentUserId && (
                       <>
+                        <ContextMenuSeparator />
                         <ContextMenuItem 
                           onClick={() => handleKickUser(message.sender)}
                           className="text-red-600 focus:text-red-600"
@@ -714,16 +715,21 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                           <UserMinus className="w-4 h-4 mr-2" />
                           Kick
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
                       </>
                     )}
-                    <ContextMenuItem 
-                      onClick={() => handleReportUser(message.sender)}
-                      className="text-orange-600 focus:text-orange-600"
-                    >
-                      <Flag className="w-4 h-4 mr-2" />
-                      Report
-                    </ContextMenuItem>
+                    {/* Show report option for all users except current user */}
+                    {message.senderId !== currentUserId && (
+                      <>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem 
+                          onClick={() => handleReportUser(message.sender)}
+                          className="text-orange-600 focus:text-orange-600"
+                        >
+                          <Flag className="w-4 h-4 mr-2" />
+                          Report
+                        </ContextMenuItem>
+                      </>
+                    )}
                   </ContextMenuContent>
                 </ContextMenu>
                 <span className="text-gray-500">
