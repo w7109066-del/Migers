@@ -1240,8 +1240,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Notification methods
-  async createNotification(userId: string, type: string, message: string, link?: string): Promise<void> {
-    await this.db.insert(notifications).values({ userId, type, message, link, read: false });
+  async createNotification(notificationData: {
+    userId: string;
+    type: string;
+    title: string;
+    message: string;
+    fromUserId?: string;
+    data?: any;
+  }) {
+    try {
+      // Ensure data is properly serialized as JSON if it exists
+      const serializedData = notificationData.data ? JSON.stringify(notificationData.data) : null;
+
+      const [notification] = await db.insert(notifications).values({
+        userId: notificationData.userId,
+        type: notificationData.type,
+        title: notificationData.title,
+        message: notificationData.message,
+        fromUserId: notificationData.fromUserId || null,
+        data: serializedData
+      }).returning();
+
+      return notification;
+    } catch (error) {
+      console.error('Create notification error:', error);
+      throw error;
+    }
   }
 
   async getNotifications(userId: string): Promise<any[]> {

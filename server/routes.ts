@@ -636,33 +636,40 @@ export function registerRoutes(app: Express): Server {
       // Perform transfer
       await storage.transferCoins(senderId, recipient.id, amount);
 
-      // Create notification for recipient
-      await storage.createNotification({
-        userId: recipient.id,
-        type: 'credit_transfer',
-        title: 'Credits Received',
-        message: `You received ${amount} coins from ${sender.username}`,
-        fromUserId: senderId,
-        data: { amount, senderUsername: sender.username }
-      });
-
-      // Send real-time notification via WebSocket
-      broadcastToUser(recipient.id, {
-        type: 'new_notification',
-        notification: {
-          id: Date.now().toString(),
+      try {
+        // Create notification for recipient
+        const notification = await storage.createNotification({
+          userId: recipient.id,
           type: 'credit_transfer',
           title: 'Credits Received',
           message: `You received ${amount} coins from ${sender.username}`,
-          fromUser: {
-            id: senderId,
-            username: sender.username
-          },
-          data: { amount, senderUsername: sender.username },
-          isRead: false,
-          createdAt: new Date().toISOString()
+          fromUserId: senderId,
+          data: { amount, senderUsername: sender.username }
+        });
+
+        // Send real-time notification via WebSocket
+        if (notification) {
+          broadcastToUser(recipient.id, {
+            type: 'new_notification',
+            notification: {
+              id: notification.id,
+              type: 'credit_transfer',
+              title: 'Credits Received',
+              message: `You received ${amount} coins from ${sender.username}`,
+              fromUser: {
+                id: senderId,
+                username: sender.username
+              },
+              data: { amount, senderUsername: sender.username },
+              isRead: false,
+              createdAt: notification.createdAt || new Date().toISOString()
+            }
+          });
         }
-      });
+      } catch (notificationError) {
+        console.error('Failed to create notification:', notificationError);
+        // Don't fail the transfer if notification creation fails
+      }
 
       res.status(200).json({
         success: true,
