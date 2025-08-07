@@ -502,7 +502,7 @@ export class DatabaseStorage implements IStorage {
 
       for (const msg of allMessages) {
         const otherUserId = msg.senderId === userId ? msg.recipientId : msg.senderId;
-        
+
         if (otherUserId && !conversationMap.has(otherUserId)) {
           conversationMap.set(otherUserId, {
             otherUserId,
@@ -515,7 +515,7 @@ export class DatabaseStorage implements IStorage {
 
       // Now get user details for each conversation
       const conversationIds = Array.from(conversationMap.keys()).filter(id => id !== null && id !== undefined);
-      
+
       if (conversationIds.length === 0) {
         return [];
       }
@@ -537,7 +537,7 @@ export class DatabaseStorage implements IStorage {
       const conversations = await Promise.all(userDetails.map(async user => {
         const convData = conversationMap.get(user.id);
         if (!convData) return null;
-        
+
         try {
           const fans = await this.getFansCount(user.id);
           const following = await this.getFollowingCount(user.id);
@@ -577,7 +577,7 @@ export class DatabaseStorage implements IStorage {
 
       // Filter out null conversations and sort
       const validConversations = conversations.filter(conv => conv !== null);
-      
+
       return validConversations.sort((a, b) =>
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );

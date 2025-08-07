@@ -10,6 +10,7 @@ import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, inse
 import { eq, desc, and, or, exists, count, inArray, sql, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
 import { directMessages, users, messages } from "@shared/schema";
+import bcrypt from "bcryptjs";
 
 // Authentication middleware
 function requireAuth(req: any, res: any, next: any) {
@@ -958,13 +959,13 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/messages/conversations', requireAuth, async (req, res) => {
     try {
       const conversations = await storage.getDirectMessageConversations(req.user!.id);
-      
+
       // Ensure we always return a valid JSON array
       if (!Array.isArray(conversations)) {
         console.warn('Conversations is not an array, returning empty array');
         return res.json([]);
       }
-      
+
       res.json(conversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
