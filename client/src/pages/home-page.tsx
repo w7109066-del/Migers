@@ -45,7 +45,9 @@ import {
   Image,
   Video,
   X,
-  ChevronDown
+  ChevronDown,
+  Send,
+  Smile
 } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -76,6 +78,10 @@ export default function HomePage() {
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [userStatus, setUserStatus] = useState(user?.status || "online");
+  const [expandedComments, setExpandedComments] = useState<string[]>([]);
+  const [postComments, setPostComments] = useState<{[postId: string]: any[]}>({});
+  const [commentText, setCommentText] = useState<{[postId: string]: string}>({});
+  const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
 
   // Update local status when user data changes
   React.useEffect(() => {
@@ -83,6 +89,95 @@ export default function HomePage() {
       setUserStatus(user.status);
     }
   }, [user?.status]);
+
+  // Emojis data for comments
+  const emojis = [
+    { emoji: "😊", name: "Smile" },
+    { emoji: "😂", name: "Laugh" },
+    { emoji: "❤️", name: "Heart" },
+    { emoji: "👍", name: "Thumbs Up" },
+    { emoji: "🌟", name: "Star" },
+    { emoji: "🎉", name: "Party" },
+    { emoji: "🤔", name: "Thinking" },
+    { emoji: "🔥", name: "Fire" },
+    { emoji: "💯", name: "Hundred" },
+    { emoji: "😍", name: "Heart Eyes" },
+    { emoji: "😭", name: "Crying" },
+    { emoji: "🥰", name: "Smiling Face with Hearts" },
+    { emoji: "😎", name: "Cool" },
+    { emoji: "🤗", name: "Hugging" },
+    { emoji: "🎊", name: "Confetti Ball" },
+    { emoji: "✨", name: "Sparkles" }
+  ];
+
+  const toggleComments = async (postId: string) => {
+    if (expandedComments.includes(postId)) {
+      setExpandedComments(prev => prev.filter(id => id !== postId));
+    } else {
+      setExpandedComments(prev => [...prev, postId]);
+      // Load comments if not already loaded
+      if (!postComments[postId]) {
+        await loadComments(postId);
+      }
+    }
+  };
+
+  const loadComments = async (postId: string) => {
+    try {
+      const response = await fetch(`/api/feed/${postId}/comments`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const comments = await response.json();
+        setPostComments(prev => ({ ...prev, [postId]: comments }));
+      } else {
+        console.error('Failed to load comments');
+      }
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+    }
+  };
+
+  const handleAddComment = async (postId: string, content: string) => {
+    if (!content?.trim()) return;
+
+    try {
+      const response = await fetch(`/api/feed/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ content: content.trim() }),
+      });
+
+      if (response.ok) {
+        const newComment = await response.json();
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), newComment]
+        }));
+        setCommentText(prev => ({ ...prev, [postId]: '' }));
+        setShowCommentEmojis(null);
+        
+        // Update the post's comment count
+        setFeedPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+            : post
+        ));
+        
+        console.log('Comment added successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to add comment:', errorData);
+      }
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -495,14 +590,122 @@ export default function HomePage() {
 
                         <div className="flex items-center space-x-4 mt-2">
                           <div className="flex items-center space-x-1">
-                            <Heart className="w-4 h-4 text-gray-500 cursor-pointer" />
+                            <Heart className="w-4 h-4 text-gray-500 cursor-pointer hover:text-red-500" />
                             <span className="text-xs text-gray-500">{post.likesCount || 0}</span>
                           </div>
+                          <button 
+                            className="flex items-center space-x-1 hover:text-blue-600"
+                            onClick={() => toggleComments(post.id)}
+                          >
+                            <MessageCircle className="w-4 h-4 text-gray-500" />
+                            <span className="text-xs text-gray-500">{post.commentsCount || 0} Comments</span>
+                          </button>
                           <div className="flex items-center space-x-1">
-                            <Share2 className="w-4 h-4 text-gray-500 cursor-pointer" />
+                            <Share2 className="w-4 h-4 text-gray-500 cursor-pointer hover:text-green-500" />
                             <span className="text-xs text-gray-500">Share</span>
                           </div>
                         </div>
+
+                        {/* Comments Section */}
+                        {expandedComments.includes(post.id) && (
+                          <div className="mt-4 border-t pt-3">
+                            {/* Comments List */}
+                            <div className="space-y-2 mb-3 max-h-60 overflow-y-auto">
+                              {postComments[post.id]?.map((comment) => (
+                                <div key={comment.id} className="flex items-start space-x-2 text-sm">
+                                  <UserAvatar
+                                    username={comment.author?.username || 'Unknown'}
+                                    size="sm"
+                                    isOnline={false}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className={cn("rounded-lg px-3 py-2", isDarkMode ? "bg-gray-700" : "bg-gray-100")}>
+                                      <span className={cn("font-medium text-xs", isDarkMode ? "text-blue-300" : "text-blue-600")}>
+                                        {comment.author?.username}
+                                      </span>
+                                      <div className={cn("text-sm", isDarkMode ? "text-gray-200" : "text-gray-800")}>
+                                        {comment.content}
+                                      </div>
+                                    </div>
+                                    <div className={cn("text-xs mt-1 px-3", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+                                      {new Date(comment.createdAt).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Comment Input */}
+                            <div className="flex items-start space-x-2">
+                              <UserAvatar
+                                username={user.username}
+                                size="sm"
+                                isOnline={user.isOnline || false}
+                              />
+                              <div className="flex-1 relative">
+                                {/* Emoji Picker for Comments */}
+                                {showCommentEmojis === post.id && (
+                                  <div className="absolute bottom-full mb-2 z-10">
+                                    <Card className="shadow-lg">
+                                      <CardContent className="p-3 w-64 max-h-32 overflow-y-auto">
+                                        <div className="grid grid-cols-8 gap-1">
+                                          {emojis.map((item, index) => (
+                                            <Button
+                                              key={index}
+                                              variant="ghost"
+                                              size="sm"
+                                              className="p-1 h-8 w-8 flex items-center justify-center"
+                                              onClick={() => {
+                                                setCommentText(prev => ({ ...prev, [post.id]: (prev[post.id] || '') + item.emoji }));
+                                                setShowCommentEmojis(null);
+                                              }}
+                                            >
+                                              <span className="text-sm">{item.emoji}</span>
+                                            </Button>
+                                          ))}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setShowCommentEmojis(showCommentEmojis === post.id ? null : post.id);
+                                    }}
+                                    className="p-2 text-yellow-500 hover:text-yellow-600"
+                                  >
+                                    <Smile className="w-4 h-4" />
+                                  </Button>
+                                  <Input
+                                    placeholder="Write a comment..."
+                                    value={commentText[post.id] || ''}
+                                    onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter' && (commentText[post.id]?.trim())) {
+                                        handleAddComment(post.id, commentText[post.id]);
+                                      }
+                                    }}
+                                    className={cn("flex-1 text-sm", isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-200")}
+                                  />
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => handleAddComment(post.id, commentText[post.id])}
+                                    disabled={!commentText[post.id]?.trim()}
+                                    className="bg-primary hover:bg-primary/90 text-white px-3 py-1"
+                                  >
+                                    <Send className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
