@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from "react";
 import { useAuth } from "./use-auth";
 import { useToast } from "./use-toast";
 import { useNotifications } from './use-notifications';
@@ -30,18 +30,23 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     // For Replit environment, construct proper WebSocket URL
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/ws`;
-    
+
     console.log('Attempting to connect to WebSocket:', wsUrl);
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
+      console.log('WebSocket connected');
       setIsConnected(true);
 
-      // Authenticate with the server
-      ws.current?.send(JSON.stringify({
-        type: 'authenticate',
-        userId: user.id,
-      }));
+      // Send authentication message after connection is established
+      setTimeout(() => {
+        if (user && ws.current && ws.current.readyState === WebSocket.OPEN) {
+          ws.current.send(JSON.stringify({
+            type: 'authenticate',
+            userId: user.id,
+          }));
+        }
+      }, 100);
     };
 
     ws.current.onmessage = (event) => {
@@ -194,11 +199,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
-  const sendMessage = (message: any) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+  const sendMessage = useCallback((message: any) => {
+    if (ws.current && isConnected && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(message));
+    } else {
+      console.log('WebSocket not ready, message queued:', message);
     }
-  };
+  }, [isConnected]);
 
   const joinRoom = (roomId: string) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
