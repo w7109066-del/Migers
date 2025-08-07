@@ -502,8 +502,8 @@ export class DatabaseStorage implements IStorage {
 
       for (const msg of allMessages) {
         const otherUserId = msg.senderId === userId ? msg.recipientId : msg.senderId;
-
-        if (!conversationMap.has(otherUserId)) {
+        
+        if (otherUserId && !conversationMap.has(otherUserId)) {
           conversationMap.set(otherUserId, {
             otherUserId,
             lastMessage: msg.content,
@@ -514,7 +514,8 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Now get user details for each conversation
-      const conversationIds = Array.from(conversationMap.keys());
+      const conversationIds = Array.from(conversationMap.keys()).filter(id => id !== null && id !== undefined);
+      
       if (conversationIds.length === 0) {
         return [];
       }
@@ -525,42 +526,65 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           level: users.level,
           isOnline: users.isOnline,
-          country: users.country, // Added country
-          profilePhotoUrl: users.profilePhotoUrl, // Added profilePhotoUrl
+          country: users.country,
+          profilePhotoUrl: users.profilePhotoUrl,
+          status: users.status,
         })
         .from(users)
         .where(inArray(users.id, conversationIds));
 
       // Combine conversation data with user details
-      const conversations = userDetails.map(async user => {
+      const conversations = await Promise.all(userDetails.map(async user => {
         const convData = conversationMap.get(user.id);
-        const fans = await this.getFansCount(user.id);
-        const following = await this.getFollowingCount(user.id);
+        if (!convData) return null;
+        
+        try {
+          const fans = await this.getFansCount(user.id);
+          const following = await this.getFollowingCount(user.id);
 
-        return {
-          id: user.id,
-          username: user.username,
-          level: user.level,
-          isOnline: user.isOnline,
-          country: user.country, // Include country
-          profilePhotoUrl: user.profilePhotoUrl, // Include profilePhotoUrl
-          lastMessage: convData.lastMessage,
-          lastMessageType: convData.lastMessageType,
-          lastMessageTime: convData.lastMessageTime,
-          // Add follower counts
-          fans: fans,
-          following: following,
-        };
-      });
+          return {
+            id: user.id,
+            username: user.username || 'Unknown User',
+            level: user.level || 1,
+            isOnline: user.isOnline || false,
+            status: user.status || 'offline',
+            country: user.country || 'Unknown',
+            profilePhotoUrl: user.profilePhotoUrl || null,
+            lastMessage: convData.lastMessage || '',
+            lastMessageType: convData.lastMessageType || 'text',
+            lastMessageTime: convData.lastMessageTime,
+            fans: fans || 0,
+            following: following || 0,
+          };
+        } catch (error) {
+          console.error('Error getting user stats for conversation:', error);
+          return {
+            id: user.id,
+            username: user.username || 'Unknown User',
+            level: user.level || 1,
+            isOnline: user.isOnline || false,
+            status: user.status || 'offline',
+            country: user.country || 'Unknown',
+            profilePhotoUrl: user.profilePhotoUrl || null,
+            lastMessage: convData.lastMessage || '',
+            lastMessageType: convData.lastMessageType || 'text',
+            lastMessageTime: convData.lastMessageTime,
+            fans: 0,
+            following: 0,
+          };
+        }
+      }));
 
-      const resolvedConversations = await Promise.all(conversations);
-
-      return resolvedConversations.sort((a, b) =>
+      // Filter out null conversations and sort
+      const validConversations = conversations.filter(conv => conv !== null);
+      
+      return validConversations.sort((a, b) =>
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
     } catch (error) {
       console.error('Error getting DM conversations:', error);
-      throw new Error('Failed to fetch conversations');
+      // Return empty array instead of throwing to prevent API errors
+      return [];
     }
   }
 

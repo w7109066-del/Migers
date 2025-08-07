@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -73,7 +72,7 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
     setIsLoading(true);
     try {
       const totalCost = gift.price * quantity;
-      
+
       const response = await fetch('/api/gifts/send', {
         method: 'POST',
         headers: {
@@ -109,7 +108,7 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
         } catch (e) {
           errorMessage = errorText || errorMessage;
         }
-        
+
         toast({
           title: "Failed to send gift",
           description: errorMessage,
@@ -136,7 +135,7 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-gray-900 rounded-2xl mx-4 p-0 max-w-md w-full relative shadow-2xl max-h-[90vh] overflow-hidden">
+      <div className="bg-gray-900 rounded-2xl mx-4 p-0 relative shadow-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-500 to-pink-500 p-4 relative">
           <button
@@ -145,7 +144,7 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
           >
             <X className="w-6 h-6" />
           </button>
-          
+
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
               <Gift className="w-6 h-6 text-white" />
@@ -191,7 +190,7 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
                       {gift.multiplier}
                     </Badge>
                   )}
-                  
+
                   <div className="flex flex-col items-center text-center space-y-2">
                     <div className="w-12 h-12 flex items-center justify-center text-2xl">
                       {gift.emoji}

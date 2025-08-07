@@ -958,10 +958,22 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/messages/conversations', requireAuth, async (req, res) => {
     try {
       const conversations = await storage.getDirectMessageConversations(req.user!.id);
+      
+      // Ensure we always return a valid JSON array
+      if (!Array.isArray(conversations)) {
+        console.warn('Conversations is not an array, returning empty array');
+        return res.json([]);
+      }
+      
       res.json(conversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      res.status(500).json({ error: 'Failed to fetch conversations' });
+      // Always return JSON, never HTML error pages
+      res.status(500).json({ 
+        error: 'Failed to fetch conversations',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        conversations: [] // Provide fallback empty array
+      });
     }
   });
 
