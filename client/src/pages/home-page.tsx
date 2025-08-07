@@ -1254,7 +1254,10 @@ function HomePageContent() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => setShowEditProfile(true)}
+                  onClick={() => {
+                    console.log('Edit Profile clicked');
+                    setShowEditProfile(true);
+                  }}
                 >
                   Edit Profile
                 </Button>
@@ -1410,10 +1413,12 @@ function HomePageContent() {
       )}
 
       {/* Edit Profile Modal */}
-      <EditProfileModal
-        isOpen={showEditProfile}
-        onClose={() => setShowEditProfile(false)}
-      />
+      {showEditProfile && (
+        <EditProfileModal
+          isOpen={showEditProfile}
+          onClose={() => setShowEditProfile(false)}
+        />
+      )}
 
       {/* User Search Modal */}
       <UserSearchModal
