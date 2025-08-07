@@ -116,6 +116,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             break;
 
           case 'friend_request_received':
+            console.log('Received friend request notification:', message);
             addNotification({
               type: 'friend_request_received',
               title: 'New Friend Request',
@@ -123,6 +124,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               fromUser: message.fromUser,
               actionRequired: true,
             });
+            
+            // Dispatch custom event for real-time UI updates
+            window.dispatchEvent(new CustomEvent('websocket-notification', {
+              detail: {
+                type: 'new_notification',
+                notification: {
+                  type: 'friend_request_received',
+                  title: 'New Friend Request',
+                  message: `${message.fromUser?.username || 'Someone'} sent you a friend request`,
+                  fromUser: message.fromUser,
+                  actionRequired: true,
+                  isRead: false,
+                  createdAt: new Date().toISOString()
+                }
+              }
+            }));
             break;
           case 'friend_request_accepted':
             addNotification({

@@ -6,11 +6,13 @@ import { Badge } from './badge';
 import { useNotifications } from '@/hooks/use-notifications';
 import { UserAvatar } from '@/components/user/user-avatar';
 import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { useToast } from './toast/use-toast'; // Assuming you have a toast hook
 
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
   const queryClient = useQueryClient(); // Get the query client instance
+  const { toast } = useToast(); // Initialize the toast hook
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -148,9 +150,20 @@ export function NotificationDropdown() {
                                         queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
                                         // Trigger friend list update event
                                         window.dispatchEvent(new CustomEvent('friendListUpdate'));
+                                      } else {
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to accept friend request",
+                                          variant: "destructive",
+                                        });
                                       }
                                     } catch (error) {
                                       console.error('Failed to accept friend request:', error);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to accept friend request",
+                                        variant: "destructive",
+                                      });
                                     }
                                   }}
                                 >
@@ -171,9 +184,20 @@ export function NotificationDropdown() {
                                       });
                                       if (response.ok) {
                                         removeNotification(notification.id);
+                                      } else {
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to reject friend request",
+                                          variant: "destructive",
+                                        });
                                       }
                                     } catch (error) {
                                       console.error('Failed to reject friend request:', error);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to reject friend request",
+                                        variant: "destructive",
+                                      });
                                     }
                                   }}
                                 >
