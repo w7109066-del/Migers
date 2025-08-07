@@ -24,6 +24,7 @@ import { eq, desc, asc, and, or, isNull, isNotNull, inArray, sql } from "drizzle
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import crypto from 'crypto';
 
 const PostgresSessionStore = connectPg(session);
 
@@ -78,7 +79,7 @@ export interface IStorage {
   createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }): Promise<typeof posts.$inferSelect>;
   likePost(postId: string, userId: string): Promise<void>;
   unlikePost(postId: string, userId: string): Promise<void>;
-  addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect>;
+  addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect & { author: Pick<User, "id" | "username" | "level" | "isOnline"> }>;
   getComments(postId: string): Promise<
     (Omit<typeof postComments.$inferSelect, "updatedAt"> & {
       author: Pick<User, "id" | "username" | "level" | "isOnline">;
@@ -658,25 +659,46 @@ export class DatabaseStorage implements IStorage {
       .where(eq(posts.id, postId));
   }
 
-  async addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect> {
-    const [comment] = await this.db
-      .insert(postComments)
-      .values({
-        postId,
-        content: commentData.content,
-        authorId: commentData.authorId
-      })
-      .returning();
+  async addComment(postId: string, commentData: { content: string; authorId: string }): Promise<typeof postComments.$inferSelect & { author: Pick<User, "id" | "username" | "level" | "isOnline"> }> {
+    try {
+      const [comment] = await db
+        .insert(postComments)
+        .values({
+          id: crypto.randomUUID(),
+          postId,
+          content: commentData.content,
+          authorId: commentData.authorId,
+          createdAt: new Date(),
+        })
+        .returning();
 
-    // Update comments count
-    await this.db
-      .update(posts)
-      .set({
-        commentsCount: sql`${posts.commentsCount} + 1`
-      })
-      .where(eq(posts.id, postId));
+      // Get the author information with a fresh query to ensure we have the latest data
+      const authorData = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          level: users.level,
+          isOnline: users.isOnline,
+        })
+        .from(users)
+        .where(eq(users.id, commentData.authorId))
+        .limit(1);
 
-    return comment;
+      const author = authorData[0] || {
+        id: commentData.authorId,
+        username: 'Unknown User',
+        level: 1,
+        isOnline: false,
+      };
+
+      return {
+        ...comment,
+        author
+      };
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      throw error;
+    }
   }
 
   async getComments(postId: string): Promise<
@@ -684,26 +706,40 @@ export class DatabaseStorage implements IStorage {
       author: Pick<User, "id" | "username" | "level" | "isOnline">;
     })[]
   > {
-    const result = await this.db
-      .select({
-        id: postComments.id,
-        content: postComments.content,
-        postId: postComments.postId,
-        authorId: postComments.authorId,
-        createdAt: postComments.createdAt,
-        author: {
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
-        }
-      })
-      .from(postComments)
-      .innerJoin(users, eq(postComments.authorId, users.id))
-      .where(eq(postComments.postId, postId))
-      .orderBy(asc(postComments.createdAt));
+    try {
+      const commentsData = await db
+        .select({
+          id: postComments.id,
+          content: postComments.content,
+          createdAt: postComments.createdAt,
+          authorId: postComments.authorId,
+          postId: postComments.postId,
+          authorUsername: users.username,
+          authorLevel: users.level,
+          authorIsOnline: users.isOnline,
+        })
+        .from(postComments)
+        .leftJoin(users, eq(postComments.authorId, users.id))
+        .where(eq(postComments.postId, postId))
+        .orderBy(asc(postComments.createdAt));
 
-    return result;
+      return commentsData.map(comment => ({
+        id: comment.id,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        authorId: comment.authorId,
+        postId: comment.postId,
+        author: {
+          id: comment.authorId,
+          username: comment.authorUsername || 'Unknown User',
+          level: comment.authorLevel || 1,
+          isOnline: comment.authorIsOnline || false,
+        }
+      }));
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      return [];
+    }
   }
 }
 
