@@ -47,8 +47,7 @@ import {
   X,
   ChevronDown,
   Send,
-  Smile,
-  PenTool
+  Smile
 } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -453,15 +452,8 @@ function HomePageContent() {
                   <Search className="w-5 h-5" />
                 </Button>
 
-                {/* Status Update Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowStatusUpdate(true)}
-                  className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
-                >
-                  <PenTool className="w-5 h-5" />
-                </Button>
+                {/* Notification Dropdown */}
+                <NotificationDropdown />
 
                 {/* Edit Profile Button */}
                 <Button
