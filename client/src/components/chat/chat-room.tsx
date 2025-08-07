@@ -357,8 +357,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
               <div className="mt-4 space-y-3">
                 {roomMembers?.map((member) => (
                   <ContextMenu key={member.user.id}>
-                    <ContextMenuTrigger>
-                      <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                    <ContextMenuTrigger asChild>
+                      <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200">
                         <UserAvatar 
                           username={member.user.username}
                           size="sm"
@@ -367,48 +367,67 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-800">{member.user.username}</span>
+                            {member.role === 'admin' && (
+                              <Crown className="w-4 h-4 text-yellow-500" />
+                            )}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {member.user.isOnline ? "Online" : "Offline"}
+                            Level {member.user.level} • {member.user.isOnline ? "Online" : "Offline"}
                           </div>
                         </div>
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400">⚙️</span>
                       </div>
                     </ContextMenuTrigger>
-                    <ContextMenuContent className="w-56">
+                    <ContextMenuContent className="w-64 text-base">
                       <ContextMenuGroup>
-                        <ContextMenuItem onClick={() => handleChatUser(member.user)}>
-                          <MessageCircle className="w-4 h-4 mr-2" />
+                        <ContextMenuItem 
+                          onClick={() => handleChatUser(member.user)}
+                          className="py-3 px-4 text-base"
+                        >
+                          <MessageCircle className="w-5 h-5 mr-3" />
                           Chat
                         </ContextMenuItem>
-                        <ContextMenuItem onClick={() => handleViewProfile(member.user)}>
-                          <Eye className="w-4 h-4 mr-2" />
+                        <ContextMenuItem 
+                          onClick={() => handleViewProfile(member.user)}
+                          className="py-3 px-4 text-base"
+                        >
+                          <Eye className="w-5 h-5 mr-3" />
                           View Profile
                         </ContextMenuItem>
-                        <ContextMenuItem onClick={() => handleUserInfo(member.user.username)}>
-                          <Info className="w-4 h-4 mr-2" />
+                        <ContextMenuItem 
+                          onClick={() => handleUserInfo(member.user.username)}
+                          className="py-3 px-4 text-base"
+                        >
+                          <Info className="w-5 h-5 mr-3" />
                           Info
                         </ContextMenuItem>
                       </ContextMenuGroup>
-                      <ContextMenuSeparator />
+                      {/* Show kick option only for admins and not for current user */}
                       {isAdmin && member.user.id !== user?.id && (
                         <>
+                          <ContextMenuSeparator />
                           <ContextMenuItem 
                             onClick={() => handleKickUser(member.user.id, member.user.username)}
-                            className="text-red-600 focus:text-red-600"
+                            className="text-red-600 focus:text-red-600 py-3 px-4 text-base"
                           >
-                            <UserMinus className="w-4 h-4 mr-2" />
+                            <UserMinus className="w-5 h-5 mr-3" />
                             Kick
                           </ContextMenuItem>
-                          <ContextMenuSeparator />
                         </>
                       )}
-                      <ContextMenuItem 
-                        onClick={() => handleReportUser(member.user)}
-                        className="text-orange-600 focus:text-orange-600"
-                      >
-                        <Flag className="w-4 h-4 mr-2" />
-                        Report
-                      </ContextMenuItem>
+                      {/* Show report option for all users except current user */}
+                      {member.user.id !== user?.id && (
+                        <>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem 
+                            onClick={() => handleReportUser(member.user)}
+                            className="text-orange-600 focus:text-orange-600 py-3 px-4 text-base"
+                          >
+                            <Flag className="w-5 h-5 mr-3" />
+                            Report
+                          </ContextMenuItem>
+                        </>
+                      )}
                     </ContextMenuContent>
                   </ContextMenu>
                 ))}

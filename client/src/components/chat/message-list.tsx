@@ -696,85 +696,14 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                   size="sm"
                   isOnline={message.sender.isOnline}
                 />
-                <ContextMenu>
-                  <ContextMenuTrigger asChild>
-                    <button 
-                      className="font-semibold hover:bg-blue-100 hover:text-blue-800 rounded-lg px-3 py-2 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 relative text-base min-w-[80px]"
-                      style={{ 
-                        color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
-                      }}
-                      title="Right-click or long press for options"
-                      onTouchStart={(e) => {
-                        // Add visual feedback for mobile
-                        e.currentTarget.classList.add('bg-blue-100');
-                      }}
-                      onTouchEnd={(e) => {
-                        setTimeout(() => {
-                          e.currentTarget.classList.remove('bg-blue-100');
-                        }, 200);
-                      }}
-                    >
-                      {message.sender.username}
-                      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400 ml-2">⚙️</span>
-                    </button>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className="w-64 text-base">
-                    <ContextMenuGroup>
-                      <ContextMenuItem 
-                        onClick={() => onUserClick && onUserClick({
-                          id: message.senderId,
-                          username: message.sender.username,
-                          level: message.sender.level,
-                          isOnline: message.sender.isOnline,
-                        })}
-                        className="py-3 px-4 text-base"
-                      >
-                        <MessageCircle className="w-5 h-5 mr-3" />
-                        Chat
-                      </ContextMenuItem>
-                      <ContextMenuItem 
-                        onClick={() => handleViewProfile(message.sender)}
-                        className="py-3 px-4 text-base"
-                      >
-                        <Eye className="w-5 h-5 mr-3" />
-                        View Profile
-                      </ContextMenuItem>
-                      <ContextMenuItem 
-                        onClick={() => handleUserInfo(message.sender.username)}
-                        className="py-3 px-4 text-base"
-                      >
-                        <Info className="w-5 h-5 mr-3" />
-                        Info
-                      </ContextMenuItem>
-                    </ContextMenuGroup>
-                    {/* Show kick option only for admins and not for current user */}
-                    {isAdmin && message.senderId !== currentUserId && (
-                      <>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem 
-                          onClick={() => handleKickUser(message.sender)}
-                          className="text-red-600 focus:text-red-600 py-3 px-4 text-base"
-                        >
-                          <UserMinus className="w-5 h-5 mr-3" />
-                          Kick
-                        </ContextMenuItem>
-                      </>
-                    )}
-                    {/* Show report option for all users except current user */}
-                    {message.senderId !== currentUserId && (
-                      <>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem 
-                          onClick={() => handleReportUser(message.sender)}
-                          className="text-orange-600 focus:text-orange-600 py-3 px-4 text-base"
-                        >
-                          <Flag className="w-5 h-5 mr-3" />
-                          Report
-                        </ContextMenuItem>
-                      </>
-                    )}
-                  </ContextMenuContent>
-                </ContextMenu>
+                <span 
+                  className="font-semibold"
+                  style={{ 
+                    color: message.senderId === user?.id ? '#2f7853' : '#3f94d9' 
+                  }}
+                >
+                  {message.sender.username}
+                </span>
                 <span className="text-gray-500">
                   [{formatTime(message.createdAt)}]:
                 </span>
