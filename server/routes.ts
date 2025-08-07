@@ -282,10 +282,26 @@ export function registerRoutes(app: Express): Server {
   // Feed endpoints
   app.get("/api/feed", requireAuth, async (req, res) => {
     try {
+      console.log('Loading feed posts for user:', req.user!.id);
       const posts = await storage.getFeedPosts();
-      res.json(posts);
+      console.log('Found posts:', posts.length);
+      
+      // Ensure we always return an array
+      const safePosts = Array.isArray(posts) ? posts : [];
+      
+      // Add cache headers for better performance
+      res.set({
+        'Cache-Control': 'private, no-cache',
+        'Content-Type': 'application/json'
+      });
+      
+      res.json(safePosts);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch feed posts" });
+      console.error('Feed loading error:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch feed posts",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

@@ -343,10 +343,17 @@ function HomePageContent() {
 
   // Refresh feed when switching to feed tab
   React.useEffect(() => {
-    if (user && activeTab === 2 && feedPosts.length === 0) {
-      loadFeedPosts();
+    if (user && activeTab === 2) {
+      // Always load when switching to feed tab, but don't block if already loading
+      if (!isLoadingFeed && feedPosts.length === 0) {
+        loadFeedPosts();
+      } else if (feedPosts.length === 0) {
+        // If no posts and not currently loading, force load
+        setIsLoadingFeed(false);
+        setTimeout(() => loadFeedPosts(), 100);
+      }
     }
-  }, [user, activeTab, feedPosts.length]);
+  }, [user, activeTab]);
 
   if (authLoading) {
     return (
@@ -397,17 +404,26 @@ function HomePageContent() {
     
     try {
       setIsLoadingFeed(true);
+      
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch('/api/feed', {
         method: 'GET',
         credentials: 'include',
+        signal: controller.signal,
         headers: {
           'Cache-Control': 'no-cache'
         }
       });
 
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const posts = await response.json();
-        setFeedPosts(posts);
+        console.log('Loaded feed posts:', posts.length);
+        setFeedPosts(Array.isArray(posts) ? posts : []);
 
         // Initialize like counts
         const counts: {[postId: string]: number} = {};
@@ -422,11 +438,17 @@ function HomePageContent() {
         }
       } else {
         console.error('Failed to load feed posts, status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         // Set empty array if failed to load
         setFeedPosts([]);
       }
     } catch (error) {
-      console.error('Failed to load feed posts:', error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('Feed loading timed out');
+      } else {
+        console.error('Failed to load feed posts:', error);
+      }
       // Set empty array on error
       setFeedPosts([]);
     } finally {
@@ -703,33 +725,47 @@ function HomePageContent() {
             </Card>
 
             {/* Dynamic Feed Posts */}
-            {isLoadingFeed ? (
+            {isLoadingFeed && feedPosts.length === 0 ? (
               <div className="space-y-4">
                 {/* Skeleton Loading */}
                 {[1, 2, 3].map((index) => (
                   <Card key={index}>
                     <CardContent className="p-4">
                       <div className="flex items-start space-x-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className={cn("w-10 h-10 rounded-full animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
                         <div className="flex-1 space-y-3">
                           <div className="flex items-center space-x-2">
-                            <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-                            <div className="h-3 bg-gray-200 rounded w-12 animate-pulse"></div>
+                            <div className={cn("h-4 rounded w-20 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
+                            <div className={cn("h-3 rounded w-12 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
                           </div>
                           <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
-                            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                            <div className={cn("h-4 rounded w-full animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
+                            <div className={cn("h-4 rounded w-3/4 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
                           </div>
                           <div className="flex items-center space-x-4">
-                            <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
-                            <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
-                            <div className="h-6 bg-gray-200 rounded w-14 animate-pulse"></div>
+                            <div className={cn("h-6 rounded w-16 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
+                            <div className={cn("h-6 rounded w-20 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
+                            <div className={cn("h-6 rounded w-14 animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
+                <div className="text-center py-4">
+                  <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-500")}>Loading posts...</p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setIsLoadingFeed(false);
+                      setTimeout(() => loadFeedPosts(), 100);
+                    }}
+                    className="mt-2"
+                  >
+                    Retry Loading
+                  </Button>
+                </div>
               </div>
             ) : feedPosts.length > 0 ? (
               feedPosts.map((post) => (
@@ -1071,8 +1107,23 @@ function HomePageContent() {
                 </Card>
               ))
             ) : (
-              <div className="flex items-center justify-center py-8">
-                <div className={isDarkMode ? "text-gray-400" : "text-gray-500"}>No posts yet. Be the first to post!</div>
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <div className={cn("text-center", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+                  <p>No posts available.</p>
+                  <p className="text-sm">Be the first to post or try refreshing!</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setIsLoadingFeed(false);
+                    loadFeedPosts();
+                  }}
+                  className="flex items-center space-x-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Refresh Feed</span>
+                </Button>
               </div>
             )}
           </div>
