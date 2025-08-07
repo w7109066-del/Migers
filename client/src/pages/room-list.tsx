@@ -127,16 +127,16 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   });
 
   const joinRoomMutation = useMutation({
-    mutationFn: async (roomId: string) => {
-      const response = await fetch(`/api/rooms/${roomId}/join`, {
+    mutationFn: async (roomData: Room) => {
+      const response = await fetch(`/api/rooms/${roomData.id}/join`, {
         method: 'POST',
         credentials: 'include',
       });
 
       if (response.ok) {
-        const room = await response.json();
-        console.log('Successfully joined room:', room);
-        setSelectedRoom({ id: roomId, name: room.name }); // Assuming room object has a name property
+        console.log('Successfully joined room:', roomData.name);
+        setSelectedRoom({ id: roomData.id, name: roomData.name });
+        return roomData;
       } else if (response.status === 403) {
         const errorData = await response.json();
         toast({
@@ -144,6 +144,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           description: errorData.message || "You are banned from accessing chat rooms.",
           variant: "destructive",
         });
+        throw new Error('Access denied');
       } else {
         console.error('Failed to join room:', response.status);
         toast({
@@ -151,6 +152,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           description: "Failed to join room. Please try again.",
           variant: "destructive",
         });
+        throw new Error('Failed to join room');
       }
     },
     onSuccess: () => {
@@ -229,7 +231,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
     try {
       console.log('Attempting to join room:', room.id);
-      await joinRoomMutation.mutateAsync(room.id);
+      await joinRoomMutation.mutateAsync(room);
       // The mutation handler itself sets selectedRoom on success or shows toast on failure
     } catch (error) {
       console.error('An unexpected error occurred during room join attempt:', error);
