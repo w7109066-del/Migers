@@ -1017,44 +1017,47 @@ export function registerRoutes(app: Express): Server {
       const { userId } = req.body;
       const currentUserId = req.user!.id;
 
+      console.log(`Accepting friend request from ${userId} by ${currentUserId}`);
+
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      // First accept the friend request in friendships table
+      // Check if friend request exists
+      const existingFriendship = await storage.getFriendshipStatus(userId, currentUserId);
+      if (!existingFriendship || existingFriendship.status !== 'pending') {
+        return res.status(400).json({ message: 'No pending friend request found' });
+      }
+
+      console.log(`Found pending friend request:`, existingFriendship);
+
+      // Accept the friend request in friendships table
       await storage.acceptFriendRequest(currentUserId, userId);
 
       // Add the friend relationship in friends table
-      await db.insert(friends).values([
-        { userId: currentUserId, friendUserId: userId },
-        { userId, friendUserId: currentUserId },
-      ]);
-
-      console.log(`Friend relationship created between ${currentUserId} and ${userId}`);
+      try {
+        await db.insert(friends).values([
+          { userId: currentUserId, friendUserId: userId },
+          { userId, friendUserId: currentUserId },
+        ]);
+        console.log(`Friend relationship created between ${currentUserId} and ${userId}`);
+      } catch (friendsInsertError) {
+        console.log('Friends relationship may already exist, continuing...');
+      }
 
       // Send friend_list_updated via WebSocket to both users
       try {
-        const senderSocket = userConnections.get(currentUserId);
-        const receiverSocket = userConnections.get(userId);
+        broadcastToUser(currentUserId, {
+          type: 'friend_list_updated'
+        });
 
-        console.log(`Sending friend_list_updated to sockets - sender: ${!!senderSocket}, receiver: ${!!receiverSocket}`);
+        broadcastToUser(userId, {
+          type: 'friend_list_updated'
+        });
 
-        if (senderSocket) {
-          senderSocket.send(JSON.stringify({
-            type: 'friend_list_updated'
-          }));
-          console.log(`Sent friend_list_updated to user ${currentUserId}`);
-        }
-
-        if (receiverSocket) {
-          receiverSocket.send(JSON.stringify({
-            type: 'friend_list_updated'
-          }));
-          console.log(`Sent friend_list_updated to user ${userId}`);
-        }
+        console.log(`Sent friend_list_updated to both users`);
       } catch (websocketError) {
         console.error('Error sending WebSocket update for friend list:', websocketError);
-        // Continue processing even if WebSocket fails
       }
 
       // Get user info for notification
@@ -1095,12 +1098,16 @@ export function registerRoutes(app: Express): Server {
         }
       }
 
-      console.log(`Friend request accepted: ${userId} accepted by ${currentUserId}`);
+      console.log(`Friend request accepted successfully: ${userId} accepted by ${currentUserId}`);
 
       res.json({ success: true, message: 'Friend request accepted' });
     } catch (error) {
       console.error('Failed to accept friend request:', error);
-      res.status(500).json({ message: 'Failed to accept friend request' });
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to accept friend request',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

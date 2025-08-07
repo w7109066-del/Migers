@@ -271,16 +271,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
-    await this.db
-      .update(friendships)
-      .set({ status: "accepted" })
-      .where(
-        and(
-          eq(friendships.userId, friendId),
-          eq(friendships.friendId, userId),
-          eq(friendships.status, "pending")
+    try {
+      // Update the friendship status to accepted
+      const result = await this.db
+        .update(friendships)
+        .set({ status: "accepted" })
+        .where(
+          and(
+            eq(friendships.userId, friendId),
+            eq(friendships.friendId, userId),
+            eq(friendships.status, "pending")
+          )
         )
-      );
+        .returning();
+
+      console.log(`Updated friendship status:`, result);
+
+      if (result.length === 0) {
+        throw new Error('No pending friend request found to accept');
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      throw error;
+    }
   }
 
   async createFriendRequest(userId: string, friendId: string): Promise<Friendship> {
