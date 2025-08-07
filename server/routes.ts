@@ -16,12 +16,12 @@ function requireAuth(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  
+
   // Check if user is suspended
   if (req.user?.isSuspended) {
     return res.status(403).json({ message: "Your account has been suspended. Please contact administrator." });
   }
-  
+
   next();
 }
 
@@ -30,12 +30,12 @@ function requireRoomAccess(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  
+
   // Check if user is banned from rooms
   if (req.user?.isBanned) {
     return res.status(403).json({ message: "You are banned from accessing chat rooms" });
   }
-  
+
   next();
 }
 
@@ -686,13 +686,13 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/admin/users/search', requireAdmin, async (req, res) => {
     try {
       const { q } = req.query;
-      
+
       if (!q || typeof q !== 'string' || q.trim().length < 2) {
         return res.json([]);
       }
 
       const searchQuery = `%${q.trim().toLowerCase()}%`;
-      
+
       const searchResults = await db.select()
         .from(users)
         .where(
@@ -854,8 +854,8 @@ export function registerRoutes(app: Express): Server {
           case 'join_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
               // Check if user is banned from rooms
-              const currentUser = await storage.getUser(userId);
-              if (currentUser?.isBanned) {
+              const user = await storage.getUser(userId);
+              if (user?.isBanned) {
                 ws.send(JSON.stringify({
                   type: 'error',
                   message: 'You are banned from accessing chat rooms',
@@ -880,8 +880,8 @@ export function registerRoutes(app: Express): Server {
               }
 
               // Get user data first
-              const currentUser = await storage.getUser(userId);
-              if (!currentUser) {
+              const user = await storage.getUser(userId);
+              if (!user) {
                 return; // Should not happen if userId is valid
               }
 
@@ -900,14 +900,14 @@ export function registerRoutes(app: Express): Server {
                 if (!userAlreadyInRoom) {
                   mockRoomMembers.get(message.roomId)!.set(userId, {
                     id: userId,
-                    username: currentUser.username || 'User',
-                    level: currentUser.level || 1,
+                    username: user.username || 'User',
+                    level: user.level || 1,
                     isOnline: true,
-                    profilePhotoUrl: currentUser.profilePhotoUrl || null // Include profilePhotoUrl
+                    profilePhotoUrl: user.profilePhotoUrl || null // Include profilePhotoUrl
                   });
                   currentRoomId = message.roomId;
 
-                  console.log(`User ${currentUser.username} joined room ${message.roomId}. Total members:`, mockRoomMembers.get(message.roomId)!.size);
+                  console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, mockRoomMembers.get(message.roomId)!.size);
                 }
               } else {
                 // For real rooms, check membership first
@@ -936,7 +936,7 @@ export function registerRoutes(app: Express): Server {
                   type: 'new_message',
                   message: {
                     id: `system-join-${userId}-${Date.now()}`,
-                    content: `${currentUser.username} has entered`,
+                    content: `${user.username} has entered`,
                     senderId: 'system',
                     roomId: message.roomId,
                     recipientId: null,
@@ -970,7 +970,7 @@ export function registerRoutes(app: Express): Server {
                   }
                 });
               } else {
-                console.log(`User ${currentUser.username} already in room ${message.roomId}, no duplicate join message sent`);
+                console.log(`User ${user.username} already in room ${message.roomId}, no duplicate join message sent`);
               }
             }
             break;
@@ -1141,12 +1141,12 @@ export function registerRoutes(app: Express): Server {
 
                 if (meMatch) {
                   const [, actionText] = meMatch;
-                  const user = await storage.getUser(userId);
+                  const messageUser = await storage.getUser(userId);
 
                   // Create /me action message
                   const meActionContent = actionText.trim() ? 
-                    `* ${user?.username || 'User'} ${actionText.trim()}` : 
-                    `* ${user?.username || 'User'}`;
+                    `* ${messageUser.username || 'User'} ${actionText.trim()}` : 
+                    `* ${messageUser.username || 'User'}`;
 
                   // For mock rooms (1-4), create a mock message
                   if (['1', '2', '3', '4'].includes(message.roomId)) {
@@ -1161,10 +1161,10 @@ export function registerRoutes(app: Express): Server {
                       createdAt: new Date().toISOString(),
                       sender: {
                         id: userId,
-                        username: user?.username || 'User',
-                        level: user?.level || 1,
-                        isOnline: user?.isOnline || true,
-                        profilePhotoUrl: user?.profilePhotoUrl || null
+                        username: messageUser.username || 'User',
+                        level: messageUser.level || 1,
+                        isOnline: messageUser.isOnline || true,
+                        profilePhotoUrl: messageUser.profilePhotoUrl || null
                       }
                     };
 
@@ -1198,7 +1198,7 @@ export function registerRoutes(app: Express): Server {
                 // For mock rooms (1-4), create a mock message instead of using database
                 if (['1', '2', '3', '4'].includes(message.roomId)) {
                   // Get user data for the mock message
-                  const user = await storage.getUser(userId);
+                  const messageUser = await storage.getUser(userId);
 
                   const mockMessage = {
                     id: `mock-${Date.now()}`,
@@ -1211,10 +1211,10 @@ export function registerRoutes(app: Express): Server {
                     createdAt: new Date().toISOString(),
                     sender: {
                       id: userId,
-                      username: user?.username || 'User',
-                      level: user?.level || 1,
-                      isOnline: user?.isOnline || true,
-                      profilePhotoUrl: user?.profilePhotoUrl || null // Include profilePhotoUrl
+                      username: messageUser.username || 'User',
+                      level: messageUser.level || 1,
+                      isOnline: messageUser.isOnline || true,
+                      profilePhotoUrl: messageUser.profilePhotoUrl || null // Include profilePhotoUrl
                     }
                   };
 
