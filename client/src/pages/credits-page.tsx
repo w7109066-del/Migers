@@ -118,10 +118,12 @@ export function CreditsPage({ onBack }: CreditsPageProps) {
         }),
       });
 
-      if (response.ok) {
+      const responseData = await response.json();
+      
+      if (response.ok && responseData.success) {
         toast({
           title: "Success",
-          description: `Successfully transferred ${amount} coins to ${recipientUsername}`,
+          description: responseData.message || `Successfully transferred ${amount} coins to ${recipientUsername}`,
         });
         setRecipientUsername("");
         setCoinAmount("");
@@ -131,10 +133,9 @@ export function CreditsPage({ onBack }: CreditsPageProps) {
           fetchTransactionHistory();
         }
       } else {
-        const errorData = await response.json();
         toast({
           title: "Error",
-          description: errorData.message || "Transfer failed",
+          description: responseData.message || "Transfer failed",
           variant: "destructive",
         });
       }
