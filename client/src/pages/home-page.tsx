@@ -363,21 +363,16 @@ export default function HomePage() {
                     <div className="flex items-center space-x-2">
                       <div className="relative">
                         <Badge variant="secondary" className={cn(
-                          "text-white border-0 text-xs font-bold px-3 py-1.5 shadow-lg transform transition-all duration-300 hover:scale-105", 
+                          "text-white border-0 text-xs font-medium px-1.5 py-0.5 shadow-sm transform transition-all duration-300 hover:scale-105 w-4 h-4 flex items-center justify-center", 
                           isDarkMode 
                             ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500" 
                             : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400"
                         )}>
-                          <span className="flex items-center space-x-1">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                            </svg>
-                            <span>Level {user.level || 1}</span>
-                          </span>
+                          <span className="text-xs leading-none">{user.level || 1}</span>
                         </Badge>
                         {/* Sparkle effect */}
-                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
-                        <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-300 rounded-full"></div>
+                        <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-yellow-400 rounded-full animate-ping"></div>
+                        <div className="absolute -top-0.25 -right-0.25 w-0.5 h-0.5 bg-yellow-300 rounded-full"></div>
                       </div>
                       {/* Status Dropdown */}
                       <DropdownMenu>
