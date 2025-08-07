@@ -247,7 +247,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
             </Badge>
             <UserStatus isOnline={profile.isOnline} />
             {profile.isAdmin && ( // Conditionally render admin badge
-              <Badge variant="default" className="bg-green-500 text-white text-xs">
+              <Badge variant="default" className="bg-red-600 text-white text-xs font-semibold">
                 Admin
               </Badge>
             )}
