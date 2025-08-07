@@ -660,30 +660,35 @@ export class DatabaseStorage implements IStorage {
       author: Pick<User, "id" | "username" | "level" | "isOnline">;
     })[]
   > {
-    const result = await this.db
-      .select({
-        id: posts.id,
-        content: posts.content,
-        authorId: posts.authorId,
-        mediaType: posts.mediaType,
-        mediaUrl: posts.mediaUrl,
-        likesCount: posts.likesCount,
-        commentsCount: posts.commentsCount,
-        createdAt: posts.createdAt,
-        author: {
-          id: users.id,
-          username: users.username,
-          level: users.level,
-          isOnline: users.isOnline,
-          profilePhotoUrl: users.profilePhotoUrl,
-        }
-      })
-      .from(posts)
-      .innerJoin(users, eq(posts.authorId, users.id))
-      .orderBy(desc(posts.createdAt))
-      .limit(50);
+    try {
+      const result = await this.db
+        .select({
+          id: posts.id,
+          content: posts.content,
+          authorId: posts.authorId,
+          mediaType: posts.mediaType,
+          mediaUrl: posts.mediaUrl,
+          likesCount: posts.likesCount,
+          commentsCount: posts.commentsCount,
+          createdAt: posts.createdAt,
+          author: {
+            id: users.id,
+            username: users.username,
+            level: users.level,
+            isOnline: users.isOnline,
+            profilePhotoUrl: users.profilePhotoUrl,
+          }
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.authorId, users.id))
+        .orderBy(desc(posts.createdAt))
+        .limit(20); // Reduced limit for faster loading
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error('Error fetching feed posts:', error);
+      return [];
+    }
   }
 
   async createFeedPost(postData: { content?: string; authorId: string; mediaType?: string; mediaUrl?: string }): Promise<typeof posts.$inferSelect> {

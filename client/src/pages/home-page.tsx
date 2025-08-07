@@ -333,12 +333,20 @@ function HomePageContent() {
     }
   };
 
-  // Load feed posts when component mounts or when switching to feed tab
+  // Load feed posts when component mounts (preload) and when switching to feed tab
   React.useEffect(() => {
-    if (user && activeTab === 2) {
+    if (user) {
+      // Preload feed immediately when user is available
       loadFeedPosts();
     }
-  }, [user, activeTab]);
+  }, [user]);
+
+  // Refresh feed when switching to feed tab
+  React.useEffect(() => {
+    if (user && activeTab === 2 && feedPosts.length === 0) {
+      loadFeedPosts();
+    }
+  }, [user, activeTab, feedPosts.length]);
 
   if (authLoading) {
     return (
@@ -384,11 +392,17 @@ function HomePageContent() {
   };
 
   const loadFeedPosts = async () => {
+    // Don't reload if already loading
+    if (isLoadingFeed) return;
+    
     try {
       setIsLoadingFeed(true);
       const response = await fetch('/api/feed', {
         method: 'GET',
         credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
       });
 
       if (response.ok) {
@@ -402,13 +416,19 @@ function HomePageContent() {
         });
         setLikeCounts(counts);
 
-        // Load user's likes for these posts
-        loadUserLikes(posts.map((post: any) => post.id));
+        // Load user's likes for these posts in parallel
+        if (posts.length > 0) {
+          loadUserLikes(posts.map((post: any) => post.id));
+        }
       } else {
-        console.error('Failed to load feed posts');
+        console.error('Failed to load feed posts, status:', response.status);
+        // Set empty array if failed to load
+        setFeedPosts([]);
       }
     } catch (error) {
       console.error('Failed to load feed posts:', error);
+      // Set empty array on error
+      setFeedPosts([]);
     } finally {
       setIsLoadingFeed(false);
     }
@@ -684,8 +704,32 @@ function HomePageContent() {
 
             {/* Dynamic Feed Posts */}
             {isLoadingFeed ? (
-              <div className="flex items-center justify-center py-8">
-                <div className={isDarkMode ? "text-gray-400" : "text-gray-500"}>Loading feed...</div>
+              <div className="space-y-4">
+                {/* Skeleton Loading */}
+                {[1, 2, 3].map((index) => (
+                  <Card key={index}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                            <div className="h-3 bg-gray-200 rounded w-12 animate-pulse"></div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                            <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+                            <div className="h-6 bg-gray-200 rounded w-14 animate-pulse"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : feedPosts.length > 0 ? (
               feedPosts.map((post) => (
