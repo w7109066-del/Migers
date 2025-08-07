@@ -73,8 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
         console.error('Auth error:', err);
-        setIsLoading(false);
-      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loginMutation = useMutation({
@@ -142,11 +143,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user: user ?? null,
+    login: async (email: string, password: string) => {
+      return loginMutation.mutateAsync({ username: email, password });
+    },
+    register: async (username: string, email: string, password: string) => {
+      return registerMutation.mutateAsync({ username, email, password });
+    },
+    logout: async () => {
+      return logoutMutation.mutateAsync();
+    },
     isLoading,
-    error: error ?? null, // Ensure error is not undefined in the context
-    loginMutation,
-    logoutMutation,
-    registerMutation,
     isDarkMode,
     toggleDarkMode,
   };
