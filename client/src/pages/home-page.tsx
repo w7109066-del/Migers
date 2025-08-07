@@ -375,14 +375,14 @@ function HomePageContent() {
       if (response.ok) {
         const posts = await response.json();
         setFeedPosts(posts);
-        
+
         // Initialize like counts
         const counts: {[postId: string]: number} = {};
         posts.forEach((post: any) => {
           counts[post.id] = post.likesCount || 0;
         });
         setLikeCounts(counts);
-        
+
         // Load user's likes for these posts
         loadUserLikes(posts.map((post: any) => post.id));
       } else {
@@ -1059,11 +1059,16 @@ function HomePageContent() {
       {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={cn("rounded-lg max-w-md w-full p-6", isDarkMode ? "bg-gray-800" : "bg-white")}>
+          <div className={cn("rounded-lg max-w-md w-full p-6 relative", isDarkMode ? "bg-gray-800" : "bg-white")}>
+            <button
+              onClick={() => setShowShareModal(null)}
+              className={cn("absolute top-4 right-4 p-1 rounded-full", isDarkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500")}
+            >
+              <X className="w-5 h-5" />
+            </button>
             <h2 className={cn("text-lg font-semibold mb-4", isDarkMode ? "text-white" : "text-gray-900")}>
-              Share {showShareModal.type === 'room' ? 'Room' : 'Post'}
+              Share {showShareModal.type === 'Room' ? 'Room' : 'Post'}
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className={cn("block text-sm font-medium mb-2", isDarkMode ? "text-gray-300" : "text-gray-700")}>
@@ -1109,14 +1114,6 @@ function HomePageContent() {
                 </Button>
               </div>
             </div>
-
-            {/* Close button */}
-            <button
-              onClick={() => setShowShareModal(null)}
-              className={cn("absolute top-4 right-4 p-1 rounded-full", isDarkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500")}
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
       )}
