@@ -231,6 +231,11 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
         setMessage("");
         setShowEmojis(false);
         setShowGifts(false);
+        
+        // Reset submission state after a short delay
+        setTimeout(() => {
+          setIsSubmitting(false);
+        }, 100);
         return;
       }
 
@@ -245,6 +250,11 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
         setMessage("");
         setShowEmojis(false);
         setShowGifts(false);
+        
+        // Reset submission state after a short delay
+        setTimeout(() => {
+          setIsSubmitting(false);
+        }, 100);
         return;
       }
 
