@@ -229,10 +229,23 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
             <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs">
               Level {profile.level}
             </Badge>
-            <Badge variant="outline" className="border-gray-300 text-gray-700 text-xs">
+            <Badge variant="outline" className="border-gray-300 text-gray-700 text-xs flex items-center">
+              <MapPin className="w-3 h-3 mr-1" />
               ID
             </Badge>
             <UserStatus isOnline={profile.isOnline} />
+          </div>
+
+          {/* Fans and Following Stats */}
+          <div className="flex items-center justify-center space-x-6 mb-4">
+            <div className="flex items-center text-gray-600">
+              <Users className="w-4 h-4 mr-1" />
+              <span className="text-sm font-medium">{profile.fans || 0} Fans</span>
+            </div>
+            <div className="flex items-center text-gray-600">
+              <Users className="w-4 h-4 mr-1" />
+              <span className="text-sm font-medium">{profile.following || 0} Following</span>
+            </div>
           </div>
 
           {/* Action buttons */}
@@ -245,12 +258,21 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
                 <MessageCircle className="w-4 h-4 mr-1" />
                 Message
               </Button>
-              {user && user.id !== profile.id && ( // Don't show add/unfriend button for self
-                isFriend ? (
+              <Button
+                onClick={() => setShowGiftModal(true)}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 text-sm py-2"
+              >
+                <Gift className="w-4 h-4 mr-1" />
+                Send Gift
+              </Button>
+            </div>
+            {user && user.id !== profile.id && ( // Don't show add/unfriend button for self
+              <div className="w-full">
+                {isFriend ? (
                   <Button
                     onClick={handleUnfriend}
                     variant="outline"
-                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
+                    className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
                   >
                     <Check className="w-4 h-4 mr-1" />
                     Friends
@@ -259,14 +281,14 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
                   <Button
                     onClick={handleAddFriend}
                     variant="outline"
-                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
+                    className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
                     Add Friend
                   </Button>
-                )
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
