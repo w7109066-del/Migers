@@ -937,6 +937,34 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Send a direct message
+  app.post('/api/messages/send', requireAuth, async (req, res) => {
+    try {
+      const { recipientId, content, messageType = 'text' } = req.body;
+
+      if (!recipientId || !content) {
+        return res.status(400).json({ error: 'Recipient ID and content are required' });
+      }
+
+      const message = await storage.sendDirectMessage(req.user!.id, recipientId, content, messageType);
+      res.json(message);
+    } catch (error) {
+      console.error('Error sending direct message:', error);
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
+  // Get user's direct message conversations
+  app.get('/api/messages/conversations', requireAuth, async (req, res) => {
+    try {
+      const conversations = await storage.getDirectMessageConversations(req.user!.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      res.status(500).json({ error: 'Failed to fetch conversations' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time features

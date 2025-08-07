@@ -67,7 +67,9 @@ export function DMConversationsList({ onSelectUser }: DMConversationsListProps) 
         const data = await response.json();
         setConversations(data);
       } else {
-        console.error('Failed to load conversations');
+        const errorText = await response.text();
+        console.error('Failed to load conversations. Status:', response.status);
+        console.error('Response:', errorText);
         setConversations([]);
       }
     } catch (error) {
