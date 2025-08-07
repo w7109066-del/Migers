@@ -9,6 +9,16 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ArrowLeft, Mail, Smartphone, Send } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
 interface ChangeEmailModalProps {
   isOpen: boolean;
   onClose: () => void;
