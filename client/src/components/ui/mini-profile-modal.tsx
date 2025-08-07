@@ -192,7 +192,7 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl mx-4 p-6 max-w-sm w-full relative shadow-2xl">
+      <div className="bg-white rounded-2xl mx-4 p-4 max-w-xs w-full relative shadow-2xl">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -201,12 +201,12 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
         </button>
 
         <div className="text-center">
-          <div className="mb-4 relative">
+          <div className="mb-3 relative">
             {/* Avatar with fancy frame */}
             <div className="relative inline-block">
               <UserAvatar
                 username={profile.username}
-                size="md"
+                size="sm"
                 isOnline={profile.isOnline}
                 className="w-full h-full"
                 profilePhotoUrl={profile.profilePhotoUrl}
@@ -215,85 +215,58 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           </div>
 
           {/* User Info */}
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">{profile.username}</h2>
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-bold text-gray-800 mb-1">{profile.username}</h2>
             {profile.status && profile.status.length > 0 && profile.status !== 'online' && profile.status !== 'offline' && profile.status !== 'away' && profile.status !== 'busy' ? (
-              <p className="text-gray-600 text-sm italic mb-2">"{profile.status}"</p>
+              <p className="text-gray-600 text-xs italic mb-2">"{profile.status}"</p>
             ) : (
-              <p className="text-gray-600 text-sm">{profile.isOnline ? 'Online' : 'Offline'}</p>
-            )}
-            {profile.bio && (
-              <div className={cn("text-sm mb-3 p-3 rounded-lg", isDarkMode ? "bg-gray-700 text-gray-200" : "bg-gray-50 text-gray-700")}>
-                <div className={cn("text-xs font-medium mb-1", isDarkMode ? "text-gray-400" : "text-gray-500")}>Bio</div>
-                <div>{profile.bio}</div>
-              </div>
+              <p className="text-gray-600 text-xs">{profile.isOnline ? 'Online' : 'Offline'}</p>
             )}
           </div>
 
           {/* Badges row */}
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
+          <div className="flex items-center justify-center space-x-1 mb-3">
+            <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs">
               Level {profile.level}
             </Badge>
-            {profile.country && (
-              <Badge variant="outline" className="border-gray-300 text-gray-700 flex items-center">
-                <MapPin className="w-3 h-3 mr-1" /> {profile.country}
-              </Badge>
-            )}
+            <Badge variant="outline" className="border-gray-300 text-gray-700 text-xs">
+              ID
+            </Badge>
             <UserStatus isOnline={profile.isOnline} />
           </div>
 
-          {/* Fans/Following counts */}
-          <div className="flex items-center justify-center space-x-4 mb-6">
-            <div className="flex items-center">
-              <Users className="w-5 h-5 mr-1 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">{profile.fans ?? 0} Fans</span>
-            </div>
-            <div className="flex items-center">
-              <Users className="w-5 h-5 mr-1 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">{profile.following ?? 0} Following</span>
-            </div>
-          </div>
-
           {/* Action buttons */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex space-x-2">
               <Button
                 onClick={handleSendMessage}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
+                className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0 text-sm py-2"
               >
-                <MessageCircle className="w-4 h-4 mr-2" />
+                <MessageCircle className="w-4 h-4 mr-1" />
                 Message
               </Button>
-              <Button
-                onClick={() => setShowGiftModal(true)}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white border-0"
-              >
-                <Gift className="w-4 h-4 mr-2" />
-                Send Gift
-              </Button>
+              {user && user.id !== profile.id && ( // Don't show add/unfriend button for self
+                isFriend ? (
+                  <Button
+                    onClick={handleUnfriend}
+                    variant="outline"
+                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Friends
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleAddFriend}
+                    variant="outline"
+                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Add Friend
+                  </Button>
+                )
+              )}
             </div>
-            {user && user.id !== profile.id && ( // Don't show add/unfriend button for self
-              isFriend ? (
-                <Button
-                  onClick={handleUnfriend}
-                  variant="outline"
-                  className="w-full border-red-300 text-red-700 hover:bg-red-50"
-                >
-                  <UserMinus className="w-4 h-4 mr-2" />
-                  Unfriend
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleAddFriend}
-                  variant="outline"
-                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add Friend
-                </Button>
-              )
-            )}
           </div>
         </div>
       </div>
