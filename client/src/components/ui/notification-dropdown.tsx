@@ -130,7 +130,7 @@ export function NotificationDropdown() {
                               </div>
                             )}
 
-                            {notification.type === 'friend_request_received' && notification.fromUser && notification.actionRequired && (
+                            {(notification.type === 'friend_request_received' || notification.type === 'friend_request') && notification.fromUser && (
                               <div className="flex items-center space-x-2 mt-3">
                                 <Button
                                   size="sm"
