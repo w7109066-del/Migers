@@ -621,20 +621,30 @@ function HomePageContent() {
                 </div>
               </div>
 
-              {/* Right side - Notifications and Search */}
-              <div className="flex items-center space-x-2">
-                {/* Search Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowUserSearch(true)}
-                  className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
-                >
-                  <Search className="w-5 h-5" />
-                </Button>
+              {/* Right side - Notifications, Search, and Coins */}
+              <div className="flex flex-col items-end space-y-1">
+                <div className="flex items-center space-x-2">
+                  {/* Search Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowUserSearch(true)}
+                    className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
+                  >
+                    <Search className="w-5 h-5" />
+                  </Button>
 
-                {/* Notification Dropdown */}
-                <NotificationDropdown />
+                  {/* Notification Dropdown */}
+                  <NotificationDropdown />
+                </div>
+                
+                {/* Coins Display */}
+                <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 shadow-sm">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.736 6.979C9.208 6.193 9.696 6 10 6s.792.193 1.264.979a1 1 0 001.715-1.029C12.279 4.784 11.232 4 10 4s-2.279.784-2.979 1.95c-.285.475-.507 1.001-.67 1.567-.013.043-.024.086-.034.13-.264 1.143-.264 2.4 0 3.543.01.044.021.087.034.13.163.566.385 1.092.67 1.567C7.721 13.216 8.768 14 10 14s2.279-.784 2.979-1.95a1 1 0 10-1.715-1.029C10.792 11.807 10.304 12 10 12s-.792-.193-1.264-.979c-.18-.299-.307-.61-.397-.933a4.484 4.484 0 010-2.176c.09-.323.217-.634.397-.933z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs font-bold text-white">{user.coins || 0}</span>
+                </div>
               </div>
             </div>
           </div>
