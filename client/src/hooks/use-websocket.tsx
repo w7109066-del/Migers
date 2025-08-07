@@ -142,6 +142,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             }));
             break;
           case 'friend_request_accepted':
+            console.log('Friend request accepted notification received:', message);
             addNotification({
               type: 'friend_accepted',
               title: 'Friend Request Accepted',
@@ -150,6 +151,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             });
             // Refresh friend list
             window.dispatchEvent(new CustomEvent('friendListUpdate'));
+            break;
+          case 'new_notification':
+            console.log('New notification received:', message.notification);
+            if (message.notification) {
+              addNotification(message.notification);
+              
+              // If it's a friend request accepted, also refresh friend list
+              if (message.notification.type === 'friend_request_accepted') {
+                window.dispatchEvent(new CustomEvent('friendListUpdate'));
+              }
+            }
             break;
           case 'gift_received':
             addNotification({
@@ -172,6 +184,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             window.dispatchEvent(new CustomEvent('room_member_count_updated', {
               detail: { roomId: message.roomId, memberCount: message.memberCount }
             }));
+            break;
+          case 'friend_list_updated':
+            console.log('Friend list updated via WebSocket');
+            // Trigger friend list refresh
+            window.dispatchEvent(new CustomEvent('friendListUpdate'));
             break;
         }
       } catch (error) {

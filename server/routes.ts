@@ -1026,7 +1026,7 @@ export function registerRoutes(app: Express): Server {
             data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username }
           });
 
-          // Send real-time notification
+          // Send real-time notification to the requester
           if (notification) {
             broadcastToUser(userId, {
               type: 'new_notification',
@@ -1044,7 +1044,18 @@ export function registerRoutes(app: Express): Server {
                 createdAt: notification.createdAt || new Date().toISOString()
               }
             });
+
+            // Also send friend list update to the requester
+            broadcastToUser(userId, {
+              type: 'friend_list_updated'
+            });
           }
+
+          // Send friend list update to the current user (accepter) as well
+          broadcastToUser(currentUserId, {
+            type: 'friend_list_updated'
+          });
+
         } catch (notificationError) {
           console.error('Failed to create acceptance notification:', notificationError);
         }
