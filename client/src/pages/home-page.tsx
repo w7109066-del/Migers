@@ -1347,13 +1347,6 @@ function HomePageContent() {
                   )}
 
                   <button
-                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
-                    onClick={() => setPin("00")} // Placeholder for PIN functionality
-                  >
-                    <span>Set PIN</span>
-                  </button>
-
-                  <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "text-red-400 hover:bg-red-700" : "text-red-600 hover:bg-red-50")}
                     onClick={logout}
                   >
