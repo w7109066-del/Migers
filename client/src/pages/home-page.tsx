@@ -91,6 +91,23 @@ function HomePageContent() {
   const [activeRoomTab, setActiveRoomTab] = useState<string | null>(null);
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [userStatus, setUserStatus] = useState(user?.status || 'online');
+  const [postContent, setPostContent] = useState('');
+  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+  const [isLoadingFeed, setIsLoadingFeed] = useState(false);
+  const [userLikes, setUserLikes] = useState<{[postId: string]: boolean}>({});
+  const [likeCounts, setLikeCounts] = useState<{[postId: string]: number}>({});
+  const [expandedComments, setExpandedComments] = useState<string[]>([]);
+  const [postComments, setPostComments] = useState<{[postId: string]: any[]}>({});
+  const [commentText, setCommentText] = useState<{[postId: string]: string}>({});
+  const [replyText, setReplyText] = useState<{[commentId: string]: string}>({});
+  const [showReplyBox, setShowReplyBox] = useState<string | null>(null);
+  const [expandedReplies, setExpandedReplies] = useState<string[]>([]);
+  const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState<{url: string, type: string} | null>(null);
 
   // Keyboard shortcuts for room tab navigation
   useEffect(() => {
@@ -534,7 +551,13 @@ function HomePageContent() {
   };
 
   const handleUserProfileClick = (user: MiniProfileData) => {
-    showMiniProfile(user);
+    setSelectedProfile(user);
+    setShowMiniProfile(true);
+  };
+
+  const showMiniProfile = (profile: MiniProfileData) => {
+    setSelectedProfile(profile);
+    setShowMiniProfile(true);
   };
 
   const handleReply = (commentId: string) => {
@@ -1346,9 +1369,6 @@ function HomePageContent() {
 
   return (
     <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
-      {/* Use SwipeTabs component for proper swipe functionality */}
-      <SwipeTabs tabs={tabs} className="flex-1" />
-
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {openRoomTabs.length > 0 ? (
@@ -1435,6 +1455,9 @@ function HomePageContent() {
           </div>
         )}
       </div>
+
+      {/* Use SwipeTabs component for proper swipe functionality */}
+      <SwipeTabs tabs={tabs} className="flex-1" />
 
       {/* Mini Profile Modal */}
       {selectedProfile && (
