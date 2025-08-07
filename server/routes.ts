@@ -574,6 +574,11 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Sender not found" });
       }
 
+      // Check if user level is at least 5
+      if ((sender.level || 1) < 5) {
+        return res.status(403).json({ message: "You must be level 5 or higher to transfer credits" });
+      }
+
       // Check sender balance
       if ((sender.coins || 0) < amount) {
         return res.status(400).json({ message: "Insufficient balance" });
