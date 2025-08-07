@@ -667,7 +667,7 @@ export function registerRoutes(app: Express): Server {
               createdAt: notification.createdAt || new Date().toISOString()
             }
           });
-          
+
           console.log('WebSocket notification sent to user:', recipient.id);
         }
       } catch (notificationError) {
@@ -768,7 +768,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/admin/users/search', requireAdmin, async (req, res) => {
+  // User search endpoint
+  app.get("/api/users/search", requireAuth, async (req, res) => {
     try {
       const { q } = req.query;
 
@@ -788,7 +789,16 @@ export function registerRoutes(app: Express): Server {
         )
         .limit(50);
 
-      res.json(searchResults);
+      // Filter out suspended users from search results
+      const filteredResults = searchResults.filter(user => !user.isSuspended);
+
+      res.json(filteredResults.map(user => ({
+        id: user.id,
+        username: user.username,
+        level: user.level || 1,
+        isOnline: user.isOnline || false,
+        country: user.country || "ID"
+      })));
     } catch (error) {
       console.error('Error searching users:', error);
       res.status(500).json({ message: 'Failed to search users' });
@@ -1048,7 +1058,7 @@ export function registerRoutes(app: Express): Server {
       console.log(`Loading direct messages between ${currentUserId} and ${recipientId}`);
 
       const messages = await storage.getDirectMessages(currentUserId, recipientId);
-      
+
       console.log(`Found ${messages.length} direct messages`);
       res.json(messages);
     } catch (error) {
@@ -1083,13 +1093,13 @@ export function registerRoutes(app: Express): Server {
       if (req.file) {
         const mediaUrl = `/uploads/${req.file.filename}`;
         finalMessageType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
-        
+
         if (content) {
           messageContent = `${content}\n${mediaUrl}`;
         } else {
           messageContent = mediaUrl;
         }
-        
+
         metadata = {
           mediaUrl,
           mediaType: finalMessageType,
