@@ -593,12 +593,20 @@ export function registerRoutes(app: Express): Server {
                   }
 
                   if (targetUser) {
+                    // Format creation date
+                    const createdAt = targetUser.createdAt ? new Date(targetUser.createdAt) : null;
+                    const formattedDate = createdAt ? 
+                      `${createdAt.getDate().toString().padStart(2, '0')}/${(createdAt.getMonth() + 1).toString().padStart(2, '0')}/${createdAt.getFullYear()}` : 
+                      'Unknown';
+
                     // Send whois info only to the requesting user
                     const whoisInfo = {
                       id: `whois-${Date.now()}`,
                       content: `📋 User Info for ${targetUser.username}:\n` +
                                `• Level: ${targetUser.level}\n` +
-                               `• Status: ${targetUser.isOnline ? 'Online' : 'Offline'}`,
+                               `• Status: ${targetUser.isOnline ? 'Online' : 'Offline'}\n` +
+                               `• Country: ${targetUser.country || 'Not specified'}\n` +
+                               `• Account created: ${formattedDate}`,
                       senderId: 'system',
                       roomId: message.roomId,
                       recipientId: null,
