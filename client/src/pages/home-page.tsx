@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { WebSocketProvider, useWebSocket } from "@/hooks/use-websocket";
@@ -48,7 +48,8 @@ import {
   ChevronDown,
   Send,
   Smile,
-  RefreshCw
+  RefreshCw,
+  Hash
 } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -82,28 +83,48 @@ function HomePageContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
-  const [selectedDMUser, setSelectedDMUser] = useState<MiniProfileData | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState(0);
-  const [postContent, setPostContent] = useState("");
-  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [feedPosts, setFeedPosts] = useState<any[]>([]);
-  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
+  const [showMiniProfile, setShowMiniProfile] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
-  const [userStatus, setUserStatus] = useState(user?.status || "online");
-  const [expandedComments, setExpandedComments] = useState<string[]>([]);
-  const [postComments, setPostComments] = useState<{[postId: string]: any[]}>({});
-  const [commentText, setCommentText] = useState<{[postId: string]: string}>({});
-  const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
-  const [showShareModal, setShowShareModal] = useState<any | null>(null); // Changed state to allow object with url and type
-  const [userLikes, setUserLikes] = useState<{[postId: string]: boolean}>({});
-  const [likeCounts, setLikeCounts] = useState<{[postId: string]: number}>({});
-  const [showReplyBox, setShowReplyBox] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState<{[commentId: string]: string}>({});
-  const [expandedReplies, setExpandedReplies] = useState<string[]>([]);
+  const [openRoomTabs, setOpenRoomTabs] = useState<{ id: string; name: string }[]>([]);
+  const [activeRoomTab, setActiveRoomTab] = useState<string | null>(null);
+  const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Keyboard shortcuts for room tab navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        // Ctrl/Cmd + W to close active tab
+        if (event.key === 'w' && activeRoomTab) {
+          event.preventDefault();
+          handleCloseRoomTab(activeRoomTab);
+        }
+
+        // Ctrl/Cmd + Tab to switch between tabs
+        if (event.key === 'Tab' && openRoomTabs.length > 1) {
+          event.preventDefault();
+          const currentIndex = openRoomTabs.findIndex(tab => tab.id === activeRoomTab);
+          const nextIndex = event.shiftKey 
+            ? (currentIndex - 1 + openRoomTabs.length) % openRoomTabs.length
+            : (currentIndex + 1) % openRoomTabs.length;
+          setActiveRoomTab(openRoomTabs[nextIndex].id);
+        }
+
+        // Ctrl/Cmd + 1-9 to switch to specific tab
+        const numKey = parseInt(event.key);
+        if (numKey >= 1 && numKey <= 9 && openRoomTabs[numKey - 1]) {
+          event.preventDefault();
+          setActiveRoomTab(openRoomTabs[numKey - 1].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeRoomTab, openRoomTabs]);
+
 
   // Update local status when user data changes
   React.useEffect(() => {
@@ -531,8 +552,8 @@ function HomePageContent() {
     }
   };
 
-  const handleUserClick = (user: MiniProfileData) => {
-    setSelectedProfile(user);
+  const handleUserProfileClick = (user: MiniProfileData) => {
+    showMiniProfile(user);
   };
 
   const handleReply = (commentId: string) => {
@@ -546,6 +567,28 @@ function HomePageContent() {
         ? prev.filter(id => id !== commentId) 
         : [...prev, commentId]
     );
+  };
+
+  const handleRoomSelect = (room: { id: string; name: string }) => {
+    console.log('Room selected:', room);
+
+    // Check if room is already open
+    if (!openRoomTabs.find(tab => tab.id === room.id)) {
+      setOpenRoomTabs(prev => [...prev, room]);
+    }
+
+    setActiveRoomTab(room.id);
+    setSelectedDirectMessage(null); // Clear DM when entering room
+  };
+
+  const handleCloseRoomTab = (roomId: string) => {
+    setOpenRoomTabs(prev => prev.filter(tab => tab.id !== roomId));
+
+    // If closing active tab, switch to another tab or none
+    if (activeRoomTab === roomId) {
+      const remainingTabs = openRoomTabs.filter(tab => tab.id !== roomId);
+      setActiveRoomTab(remainingTabs.length > 0 ? remainingTabs[0].id : null);
+    }
   };
 
   const tabs = [
@@ -640,20 +683,16 @@ function HomePageContent() {
 
           {/* Friends List Content */}
           <div className="flex-1 overflow-hidden">
-            <FriendsList onUserClick={handleUserClick} showRefreshButton={true} />
+            <FriendsList onUserClick={handleUserProfileClick} showRefreshButton={true} />
           </div>
         </div>
       ),
     },
     {
       id: "chatroom",
-      label: "Chatroom",
+      label: `Rooms${openRoomTabs.length > 0 ? ` (${openRoomTabs.length})` : ''}`,
       icon: <MessageCircle className="w-5 h-5" />,
-      content: (
-        <div className={cn("h-full", isDarkMode && "dark")}>
-          <RoomListPage onUserClick={handleUserClick} />
-        </div>
-      ),
+      content: <RoomListPage onRoomSelect={handleRoomSelect} />,
     },
     {
       id: "feed",
@@ -1176,13 +1215,13 @@ function HomePageContent() {
       id: "dm",
       label: "DM",
       icon: <Mail className="w-5 h-5" />,
-      content: selectedDMUser ? (
+      content: selectedDirectMessage ? (
         <DirectMessageChat
-          recipient={selectedDMUser}
-          onBack={() => setSelectedDMUser(null)}
+          recipient={selectedDirectMessage}
+          onBack={() => setSelectedDirectMessage(null)}
         />
       ) : (
-        <DMConversationsList onSelectUser={setSelectedDMUser} />
+        <DMConversationsList onSelectUser={setSelectedDirectMessage} />
       ),
     },
     {
@@ -1328,6 +1367,93 @@ function HomePageContent() {
     <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
       {/* Use SwipeTabs component for proper swipe functionality */}
       <SwipeTabs tabs={tabs} className="flex-1" />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {openRoomTabs.length > 0 ? (
+          <div className="flex-1 flex flex-col">
+            {/* Room Tabs Header */}
+            <div className="bg-white border-b border-gray-200 px-2 py-2 flex-shrink-0">
+              <div className="flex space-x-1 overflow-x-auto pb-1">
+                {openRoomTabs.map((room) => (
+                  <div
+                    key={room.id}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg cursor-pointer transition-all min-w-0 flex-shrink-0 ${
+                      activeRoomTab === room.id
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                    onClick={() => setActiveRoomTab(room.id)}
+                  >
+                    <Hash className="w-4 h-4 flex-shrink-0" />
+                    <span className="font-medium text-sm truncate max-w-16 sm:max-w-24">{room.name}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseRoomTab(room.id);
+                      }}
+                      className={`p-1 rounded transition-colors flex-shrink-0 ${
+                        activeRoomTab === room.id
+                          ? 'hover:bg-white/20'
+                          : 'hover:bg-black/10'
+                      }`}
+                      title={`Close ${room.name}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Close All Rooms Button */}
+                {openRoomTabs.length > 1 && (
+                  <button
+                    onClick={() => {
+                      setOpenRoomTabs([]);
+                      setActiveRoomTab(null);
+                    }}
+                    className="flex items-center space-x-1 px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors flex-shrink-0 text-sm"
+                    title="Close all rooms"
+                  >
+                    <X className="w-4 h-4" />
+                    <span className="hidden sm:inline">Close All</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Active Room Content */}
+            {activeRoomTab && (
+              <div className="flex-1">
+                {openRoomTabs
+                  .filter(room => room.id === activeRoomTab)
+                  .map(room => (
+                    <ChatRoom
+                      key={room.id}
+                      roomId={room.id}
+                      roomName={room.name}
+                      onUserClick={handleUserProfileClick}
+                      onLeaveRoom={() => handleCloseRoomTab(room.id)}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
+        ) : selectedDirectMessage ? (
+          <DirectMessageChat
+            recipient={selectedDirectMessage}
+            onBack={() => setSelectedDirectMessage(null)}
+          />
+        ) : (
+          // Default content if no room or DM is selected
+          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+            <div className="text-center">
+              <MessageCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+              <p className="text-lg font-medium text-gray-600 dark:text-gray-300">Welcome to the Chat!</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Select a room or start a direct message.</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Mini Profile Modal */}
       {selectedProfile && (
