@@ -211,13 +211,15 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [showEmojis, setShowEmojis] = useState(false);
   const [showGifts, setShowGifts] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
     }
-    if (message.trim()) {
+    if (message.trim() && !isSubmitting) {
+      setIsSubmitting(true);
       // Check if message is a whois command
       const whoisCommandRegex = /^\/whois\s+(.+)$/i;
       const whoisMatch = message.match(whoisCommandRegex);
@@ -268,6 +270,11 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       setMessage("");
       setShowEmojis(false);
       setShowGifts(false);
+      
+      // Reset submission state after a short delay
+      setTimeout(() => {
+        setIsSubmitting(false);
+      }, 100);
     }
   };
 
@@ -420,7 +427,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === 'Enter' && !e.shiftKey && !isSubmitting) {
                 e.preventDefault();
                 if (message.trim()) {
                   handleSubmit();
@@ -432,7 +439,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
           />
           <Button
             onClick={() => handleSubmit()}
-            disabled={!message.trim()}
+            disabled={!message.trim() || isSubmitting}
             className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-full flex-shrink-0"
           >
             <Send className="w-4 h-4" />
