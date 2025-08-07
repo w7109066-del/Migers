@@ -218,6 +218,20 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       e.preventDefault();
     }
     if (message.trim()) {
+      // Check if message is a whois command
+      const whoisCommandRegex = /^\/whois\s+(.+)$/i;
+      const whoisMatch = message.match(whoisCommandRegex);
+
+      if (whoisMatch) {
+        const [, username] = whoisMatch;
+        // Send whois command to server
+        onSendMessage(`/whois ${username.trim()}`);
+        setMessage("");
+        setShowEmojis(false);
+        setShowGifts(false);
+        return;
+      }
+
       // Check if message is a gift command
       const giftCommandRegex = /^\/send\s+(.+?)\s+to\s+(.+)$/i;
       const match = message.match(giftCommandRegex);
@@ -402,7 +416,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Type a message or /send {gift} to {user}..."
+            placeholder="Type a message, /whois {username}, or /send {gift} to {user}..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {

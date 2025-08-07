@@ -582,6 +582,7 @@ export function MessageList({ messages, onUserClick, roomName }: MessageListProp
           const isCurrentlyInRoom = message.content.includes('Currently in the room:');
           const isRoomManaged = message.content.includes('This room is managed by');
           const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left');
+          const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User');
 
           return (
             <div key={message.id} className="mb-2">
@@ -608,6 +609,13 @@ export function MessageList({ messages, onUserClick, roomName }: MessageListProp
                   <div>
                     <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
                     <span className="text-gray-800">{message.content}</span>
+                  </div>
+                )}
+                {isWhoisMessage && (
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
+                    <div className="text-blue-700">
+                      <pre className="whitespace-pre-wrap font-mono text-sm">{message.content}</pre>
+                    </div>
                   </div>
                 )}
               </div>

@@ -563,6 +563,88 @@ export function registerRoutes(app: Express): Server {
           case 'send_message':
             if (userId && message.content) {
               if (message.roomId) {
+                // Check if message is a whois command
+                const whoisCommandRegex = /^\/whois\s+(.+)$/i;
+                const whoisMatch = message.content.match(whoisCommandRegex);
+
+                if (whoisMatch) {
+                  const [, targetUsername] = whoisMatch;
+                  
+                  // Find user in current room
+                  let targetUser = null;
+                  
+                  if (['1', '2', '3', '4'].includes(message.roomId)) {
+                    // Search in mock room members
+                    const roomMembers = mockRoomMembers.get(message.roomId);
+                    if (roomMembers) {
+                      for (const [memberId, memberData] of roomMembers) {
+                        if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
+                          targetUser = memberData;
+                          break;
+                        }
+                      }
+                    }
+                  } else {
+                    // Search in real room members
+                    const roomMembers = await storage.getRoomMembers(message.roomId);
+                    targetUser = roomMembers?.find(member => 
+                      member.user.username.toLowerCase() === targetUsername.toLowerCase()
+                    )?.user;
+                  }
+
+                  if (targetUser) {
+                    // Send whois info only to the requesting user
+                    const whoisInfo = {
+                      id: `whois-${Date.now()}`,
+                      content: `📋 User Info for ${targetUser.username}:\n` +
+                               `• Level: ${targetUser.level}\n` +
+                               `• Status: ${targetUser.isOnline ? 'Online' : 'Offline'}\n` +
+                               `• User ID: ${targetUser.id}`,
+                      senderId: 'system',
+                      roomId: message.roomId,
+                      recipientId: null,
+                      messageType: 'system',
+                      createdAt: new Date().toISOString(),
+                      sender: {
+                        id: 'system',
+                        username: 'System',
+                        level: 0,
+                        isOnline: true,
+                      }
+                    };
+
+                    // Send only to requesting user
+                    ws.send(JSON.stringify({
+                      type: 'new_message',
+                      message: whoisInfo,
+                    }));
+                  } else {
+                    // User not found
+                    const notFoundMessage = {
+                      id: `whois-error-${Date.now()}`,
+                      content: `❌ User '${targetUsername}' not found in this room.`,
+                      senderId: 'system',
+                      roomId: message.roomId,
+                      recipientId: null,
+                      messageType: 'system',
+                      createdAt: new Date().toISOString(),
+                      sender: {
+                        id: 'system',
+                        username: 'System',
+                        level: 0,
+                        isOnline: true,
+                      }
+                    };
+
+                    // Send only to requesting user
+                    ws.send(JSON.stringify({
+                      type: 'new_message',
+                      message: notFoundMessage,
+                    }));
+                  }
+                  break;
+                }
+
                 // For mock rooms (1-4), create a mock message instead of using database
                 if (['1', '2', '3', '4'].includes(message.roomId)) {
                   // Get user data for the mock message
