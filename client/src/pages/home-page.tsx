@@ -555,7 +555,7 @@ function HomePageContent() {
     setShowMiniProfile(true);
   };
 
-  const showMiniProfile = (profile: MiniProfileData) => {
+  const handleShowMiniProfile = (profile: MiniProfileData) => {
     setSelectedProfile(profile);
     setShowMiniProfile(true);
   };
@@ -862,7 +862,7 @@ function HomePageContent() {
                         size="md"
                         isOnline={post.author?.isOnline || false}
                         profilePhotoUrl={post.author?.profilePhotoUrl}
-                        onClick={() => showMiniProfile({
+                        onClick={() => handleShowMiniProfile({
                           id: post.author?.id || 'unknown',
                           username: post.author?.username || 'Unknown',
                           level: post.author?.level || 1,
