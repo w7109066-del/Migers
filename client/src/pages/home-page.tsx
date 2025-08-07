@@ -931,38 +931,8 @@ export default function HomePage() {
     <NotificationProvider>
       <WebSocketProvider>
         <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
-          {/* Main Content Area */}
-          <div className="flex-1 overflow-hidden">
-            {tabs[activeTab]?.content}
-          </div>
-
-          {/* Fixed Tab Bar */}
-          <div className={cn("border-t px-4 py-2 flex-shrink-0 safe-area-inset-bottom", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
-            <div className="flex items-center justify-around relative">
-              {/* Tab Indicator */}
-              <div
-                className="absolute top-0 h-1 bg-primary rounded-full transition-transform duration-300"
-                style={{
-                  width: `${100 / tabs.length}%`,
-                  transform: `translateX(${activeTab * 100}%)`,
-                  left: 0, // Ensure left is set for translateX to work correctly
-                }}
-              />
-
-              {tabs.map((tab, index) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(index)}
-                  className={cn(
-                    "flex flex-col items-center py-2 px-3 transition-colors",
-                    activeTab === index
-                      ? "text-primary"
-                      : isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-400 hover:text-gray-600"
-                  )}
-                >
-                  {tab.icon}
-                  <span className="text-xs mt-1 font-medium">{tab.label}</span>
-                </button>
+          {/* Use SwipeTabs component for proper swipe functionality */}
+          <SwipeTabs tabs={tabs} className="flex-1" />
               ))}
             </div>
           </div>
