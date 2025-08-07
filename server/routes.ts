@@ -854,8 +854,8 @@ export function registerRoutes(app: Express): Server {
           case 'join_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
               // Check if user is banned from rooms
-              const user = await storage.getUser(userId);
-              if (user?.isBanned) {
+              const currentUser = await storage.getUser(userId);
+              if (currentUser?.isBanned) {
                 ws.send(JSON.stringify({
                   type: 'error',
                   message: 'You are banned from accessing chat rooms',
@@ -879,8 +879,8 @@ export function registerRoutes(app: Express): Server {
                 break;
               }
 
-              // Get user data first
-              const user = await storage.getUser(userId);
+              // Use the already retrieved user data
+              const user = currentUser;
               if (!user) {
                 return; // Should not happen if userId is valid
               }
