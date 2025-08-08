@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ArrowLeft, Mail, Smartphone, Send, Lock, Key } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
@@ -362,24 +363,35 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
 
             {/* OTP Input */}
             {otpSent && !otpVerified && (
-              <div className="space-y-2">
-                <Label htmlFor="otpCode" className="flex items-center space-x-2">
+              <div className="space-y-4">
+                <Label className="flex items-center space-x-2 justify-center">
                   <Key className="w-4 h-4" />
                   <span>Verification Code</span>
                 </Label>
-                <Input
-                  id="otpCode"
-                  type="text"
-                  value={formData.otpCode}
-                  onChange={(e) => handleInputChange('otpCode', e.target.value)}
-                  placeholder="Enter 6-digit code"
-                  maxLength={6}
-                  className={cn("w-full text-center text-lg tracking-widest", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
-                />
-                <div className="flex justify-center mt-2">
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={formData.otpCode}
+                    onChange={(value) => handleInputChange('otpCode', value)}
+                    className="justify-center"
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} className={cn("w-12 h-12 text-lg", isDarkMode ? "bg-gray-800 border-gray-600" : "")} />
+                      <InputOTPSlot index={1} className={cn("w-12 h-12 text-lg", isDarkMode ? "bg-gray-800 border-gray-600" : "")} />
+                      <InputOTPSlot index={2} className={cn("w-12 h-12 text-lg", isDarkMode ? "bg-gray-800 border-gray-600" : "")} />
+                      <InputOTPSlot index={3} className={cn("w-12 h-12 text-lg", isDarkMode ? "bg-gray-800 border-gray-600" : "")} />
+                      <InputOTPSlot index={4} className={cn("w-12 h-12 text-lg", isDarkMode ? "bg-gray-800 border-gray-600" : "")} />
+                      <InputOTPSlot index={5} className={cn("w-12 h-12 text-lg", isDarkMode ? "bg-gray-800 border-gray-600" : "")} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                <p className="text-xs text-gray-500 text-center">
+                  Enter the 6-digit code sent to your WhatsApp
+                </p>
+                <div className="flex justify-center mt-4">
                   <Button
                     onClick={handleVerifyOTP}
-                    disabled={isLoading || !formData.otpCode.trim()}
+                    disabled={isLoading || formData.otpCode.length !== 6}
                     className="px-8 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
                   >
                     <Key className="w-4 h-4 mr-2" />
