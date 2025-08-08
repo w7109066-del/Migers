@@ -329,6 +329,42 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // NOW ADD TO FRIENDS TABLE - this is crucial for the friends list to work
+      try {
+        console.log(`Adding both users to friends table...`);
+        
+        // Check if friends entries already exist
+        const existingFriends = await this.db
+          .select()
+          .from(friends)
+          .where(
+            or(
+              and(eq(friends.userId, userId), eq(friends.friendUserId, friendId)),
+              and(eq(friends.userId, friendId), eq(friends.friendUserId, userId))
+            )
+          );
+        
+        console.log(`Existing friends entries:`, existingFriends);
+        
+        if (existingFriends.length === 0) {
+          // Add bidirectional friendship entries
+          const friendsEntries = await this.db
+            .insert(friends)
+            .values([
+              { userId, friendUserId: friendId },
+              { userId: friendId, friendUserId: userId }
+            ])
+            .returning();
+          
+          console.log(`Successfully created friends entries:`, friendsEntries);
+        } else {
+          console.log(`Friends entries already exist, skipping insertion`);
+        }
+      } catch (friendsError) {
+        console.error('Error adding to friends table:', friendsError);
+        // Don't throw here, the friendship status is already updated
+      }
+
       console.log(`Successfully accepted ${pendingFriendships.length} friend request(s)`);
       
     } catch (error) {

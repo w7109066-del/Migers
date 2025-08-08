@@ -58,23 +58,30 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
     const handleFriendListUpdate = async () => {
       console.log('Friend list update event received, forcing refresh...');
 
-      // Clear cache first
+      // More aggressive cache clearing
       queryClient.removeQueries({ queryKey: ["/api/friends"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+      
+      // Also clear any related queries that might cache friend data
+      queryClient.removeQueries({ queryKey: ["friends"] });
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
 
-      // Force immediate refetch
-      try {
-        await refetch();
-        console.log('Friend list successfully refreshed');
-      } catch (error) {
-        console.error('Failed to refresh friend list:', error);
-      }
+      // Force immediate refetch with a small delay
+      setTimeout(async () => {
+        try {
+          await refetch();
+          console.log('Friend list successfully refreshed after delay');
+        } catch (error) {
+          console.error('Failed to refresh friend list:', error);
+        }
+      }, 500);
     };
 
     window.addEventListener('friendListUpdate', handleFriendListUpdate);
     return () => {
       window.removeEventListener('friendListUpdate', handleFriendListUpdate);
     };
-  }, [queryClient]);
+  }, [queryClient, refetch]);
 
   const handleUserClick = (friend: Friend) => {
     onUserClick({

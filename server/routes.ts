@@ -1131,21 +1131,8 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      // Add the friend relationship in friends table
-      try {
-        const friendsToInsert = [
-          { userId: currentUserId, friendUserId: userId },
-          { userId, friendUserId: currentUserId },
-        ];
-
-        console.log(`Inserting friends relationships:`, friendsToInsert);
-
-        await db.insert(friends).values(friendsToInsert);
-        console.log(`Successfully created friend relationships`);
-      } catch (friendsInsertError) {
-        console.log(`Friends insert error (may be duplicate):`, friendsInsertError);
-        // Continue anyway as this might be a duplicate constraint error
-      }
+      // Friends table insertion is now handled in storage.acceptFriendRequest()
+      console.log(`Friends table entries will be handled by storage layer`);
 
       // Send friend_list_updated via WebSocket to both users
       try {

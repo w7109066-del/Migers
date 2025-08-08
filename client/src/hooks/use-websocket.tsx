@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode, useC
 import { useAuth } from "./use-auth";
 import { useToast } from "./use-toast";
 import { useNotifications } from './use-notifications';
+import { queryClient } from '../main'; // Assuming queryClient is exported from main.tsx
 
 type WebSocketContextType = {
   isConnected: boolean;
@@ -189,19 +190,19 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           case 'friend_list_updated':
             console.log('Friend list updated via WebSocket - forcing refresh');
 
-            // Force refresh friends list with multiple attempts
+            // Clear ALL friend-related cache
+            queryClient.removeQueries({ queryKey: ["/api/friends"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+            queryClient.removeQueries({ queryKey: ["friends"] });
+            queryClient.invalidateQueries({ queryKey: ["friends"] });
+
+            // Trigger custom event for components listening
             window.dispatchEvent(new CustomEvent('friendListUpdate'));
 
-            // Also trigger refresh after delay to ensure it works
+            // Additional delayed refresh to ensure data is updated
             setTimeout(() => {
-              console.log('Delayed friend list refresh triggered');
               window.dispatchEvent(new CustomEvent('friendListUpdate'));
-            }, 500);
-
-            setTimeout(() => {
-              console.log('Second delayed friend list refresh triggered');
-              window.dispatchEvent(new CustomEvent('friendListUpdate'));
-            }, 2000);
+            }, 1000);
             break;
         }
       } catch (error) {
