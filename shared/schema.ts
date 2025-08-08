@@ -19,6 +19,7 @@ export const users = pgTable("users", {
   status: text("status").default("online"),
   createdAt: timestamp("created_at").defaultNow(),
   profilePhotoUrl: text("profile_photo_url"),
+  phoneNumber: varchar("phone_number", { length: 20 }), // Added phone number field
   fansCount: integer("fans_count").default(0),
   followingCount: integer("following_count").default(0),
   isMentor: boolean("is_mentor").default(false),

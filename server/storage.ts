@@ -165,31 +165,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async updateUserProfile(userId: string, profileData: {
-    bio?: string | null;
-    country?: string | null;
-    profilePhotoUrl?: string | null;
-  }): Promise<void> {
-    const updateData: any = {
-      lastSeen: new Date()
-    };
-
-    if (profileData.bio !== undefined) {
-      updateData.bio = profileData.bio;
-    }
-
-    if (profileData.country !== undefined) {
-      updateData.country = profileData.country;
-    }
-
-    if (profileData.profilePhotoUrl) {
-      updateData.profilePhotoUrl = profileData.profilePhotoUrl;
-    }
-
-    await this.db
-      .update(users)
-      .set(updateData)
-      .where(eq(users.id, userId));
+  async updateUserProfile(userId: string, data: { bio?: string | null; country?: string | null; phoneNumber?: string | null; profilePhotoUrl?: string | null }) {
+    return await db.update(users)
+      .set({
+        bio: data.bio,
+        country: data.country,
+        phoneNumber: data.phoneNumber,
+        ...(data.profilePhotoUrl && { profilePhotoUrl: data.profilePhotoUrl })
+      })
+      .where(eq(users.id, userId))
+      .returning();
   }
 
   async searchUsers(query: string, currentUserId: string): Promise<User[]> {
@@ -315,7 +300,7 @@ export class DatabaseStorage implements IStorage {
 
       // Combine all friends and remove duplicates
       const allFriends = [...userFriends, ...acceptedFriendships, ...reverseFriendships];
-      
+
       // Remove duplicates based on user ID
       const uniqueFriends = allFriends.filter((friend, index, self) =>
         index === self.findIndex(f => f.id === friend.id)
@@ -342,7 +327,7 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`=== STORAGE: getFriendshipStatus ===`);
       console.log(`Looking for friendship between users: ${userId} <-> ${friendId}`);
-      
+
       // Check all friendships to find any between these users
       const friendships = await this.db
         .select()
@@ -353,9 +338,9 @@ export class DatabaseStorage implements IStorage {
             and(eq(friendships.userId, friendId), eq(friendships.friendId, userId))
           )
         );
-      
+
       console.log(`Found ${friendships.length} friendship records:`, friendships);
-      
+
       if (friendships.length === 0) {
         console.log(`No friendship found between ${userId} and ${friendId}`);
         return undefined;
@@ -364,7 +349,7 @@ export class DatabaseStorage implements IStorage {
       // Return the first friendship found (prioritize pending ones)
       const pendingFriendship = friendships.find(f => f.status === 'pending');
       const foundFriendship = pendingFriendship || friendships[0];
-      
+
       console.log(`Returning friendship:`, foundFriendship);
       return foundFriendship;
     } catch (error) {
@@ -377,7 +362,7 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`=== STORAGE: acceptFriendRequest ===`);
       console.log(`Accepting friend request - acceptor: ${userId}, requester: ${friendId}`);
-      
+
       // Find ALL friendship records between these users
       const allFriendships = await this.db
         .select()
@@ -388,13 +373,13 @@ export class DatabaseStorage implements IStorage {
             and(eq(friendships.userId, userId), eq(friendships.friendId, friendId))
           )
         );
-      
+
       console.log(`All friendships between users:`, allFriendships);
-      
+
       // Find pending friendship(s)
       const pendingFriendships = allFriendships.filter(f => f.status === 'pending');
       console.log(`Pending friendships:`, pendingFriendships);
-      
+
       if (pendingFriendships.length === 0) {
         console.log(`No pending friendships found. All friendships:`, allFriendships);
         throw new Error('No pending friend request found to accept');
@@ -418,30 +403,30 @@ export class DatabaseStorage implements IStorage {
       // NOW ADD TO FRIENDS TABLE - this is crucial for the friends list to work
       try {
         console.log(`Adding both users to friends table...`);
-        
+
         // Check if friends entries already exist for both directions
         const existingFriendsUser1 = await this.db
           .select()
           .from(friends)
           .where(
             and(
-              eq(friends.userId, userId), 
+              eq(friends.userId, userId),
               eq(friends.friendUserId, friendId)
             )
           );
-        
+
         const existingFriendsUser2 = await this.db
           .select()
           .from(friends)
           .where(
             and(
-              eq(friends.userId, friendId), 
+              eq(friends.userId, friendId),
               eq(friends.friendUserId, userId)
             )
           );
-        
+
         console.log(`Existing friends entries - User1->User2: ${existingFriendsUser1.length}, User2->User1: ${existingFriendsUser2.length}`);
-        
+
         // Add entry for acceptor -> requester if it doesn't exist
         if (existingFriendsUser1.length === 0) {
           try {
@@ -475,7 +460,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       console.log(`Successfully accepted ${pendingFriendships.length} friend request(s)`);
-      
+
     } catch (error) {
       console.error('=== STORAGE ERROR in acceptFriendRequest ===');
       console.error('Error details:', error);

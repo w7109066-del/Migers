@@ -89,17 +89,25 @@ export function registerRoutes(app: Express): Server {
   app.put("/api/user/profile", requireAuth, upload.single('profilePhoto'), async (req, res) => {
     try {
       const userId = req.user!.id;
-      const { bio, country } = req.body;
+      const { bio, country, phoneNumber } = req.body;
 
       let profilePhotoUrl = null;
       if (req.file) {
         profilePhotoUrl = `/uploads/${req.file.filename}`;
       }
 
+      // Validate phone number format if provided
+      if (phoneNumber && !/^\+\d{10,15}$/.test(phoneNumber)) {
+        return res.status(400).json({ 
+          message: 'Invalid phone number format. Use international format starting with +' 
+        });
+      }
+
       // Update user profile in database
       await storage.updateUserProfile(userId, {
         bio: bio || null,
         country: country || null,
+        phoneNumber: phoneNumber || null,
         profilePhotoUrl
       });
 
@@ -1327,9 +1335,30 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/user/send-otp', requireAuth, async (req, res) => {
     try {
       const { phoneNumber } = req.body;
+      const userId = req.user!.id;
 
       if (!phoneNumber) {
         return res.status(400).json({ message: 'Phone number is required' });
+      }
+
+      // Get current user to check registered phone number
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if phone number matches user's registered number
+      if (currentUser.phoneNumber && currentUser.phoneNumber !== phoneNumber) {
+        return res.status(400).json({ 
+          message: 'You can only send OTP to your registered phone number. Please update your profile first.' 
+        });
+      }
+
+      // If user doesn't have a phone number registered, require them to register it first
+      if (!currentUser.phoneNumber) {
+        return res.status(400).json({ 
+          message: 'Please register your phone number in your profile first before requesting OTP.' 
+        });
       }
 
       // Generate 6-digit OTP

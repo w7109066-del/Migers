@@ -10,6 +10,7 @@ import { X, Camera, Save, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+import { cn } from "@/lib/utils"; // Assuming cn is available for conditional styling
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -21,14 +22,15 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     bio: user?.bio || "",
-    country: user?.country || "",
-    gender: user?.gender || "", // Added gender to formData
+    country: user?.country || "ID",
+    phoneNumber: user?.phoneNumber || "",
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showCountryField, setShowCountryField] = useState(!!user?.country);
   const [showGenderField, setShowGenderField] = useState(!!user?.gender); // Added state for gender toggle
   const [isLoading, setIsLoading] = useState(false);
+  const isDarkMode = false; // Placeholder for dark mode state if it exists in context
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -90,6 +92,10 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       } else {
         formDataToSend.append('gender', ''); // Clear gender if toggle is off
       }
+
+      // Append phone number
+      formDataToSend.append('phoneNumber', formData.phoneNumber);
+
 
       // Add photo if selected
       if (selectedPhoto) {
@@ -160,20 +166,20 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-1">
                 <div className="w-full h-full rounded-full bg-white p-1 overflow-hidden">
                   {photoPreview ? (
-                    <img 
-                      src={photoPreview} 
-                      alt="Profile preview" 
+                    <img
+                      src={photoPreview}
+                      alt="Profile preview"
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : user.profilePhotoUrl ? (
-                    <img 
-                      src={user.profilePhotoUrl} 
-                      alt="Profile" 
+                    <img
+                      src={user.profilePhotoUrl}
+                      alt="Profile"
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
-                    <UserAvatar 
-                      username={user.username} 
+                    <UserAvatar
+                      username={user.username}
                       size="xl"
                       isOnline={user.isOnline || false}
                       className="w-full h-full"
@@ -263,16 +269,36 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               </div>
 
               {showCountryField && (
-                <div className="space-y-1 sm:space-y-2">
-                  <Label htmlFor="country" className="text-sm font-medium">Country</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange('country', e.target.value)}
-                    placeholder="Enter your country"
-                    className="text-sm"
-                    maxLength={50}
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
+                    <SelectTrigger className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ID">🇮🇩 Indonesia</SelectItem>
+                      <SelectItem value="US">🇺🇸 United States</SelectItem>
+                      <SelectItem value="MY">🇲🇾 Malaysia</SelectItem>
+                      <SelectItem value="SG">🇸🇬 Singapore</SelectItem>
+                      <SelectItem value="TH">🇹🇭 Thailand</SelectItem>
+                      <SelectItem value="PH">🇵🇭 Philippines</SelectItem>
+                      <SelectItem value="VN">🇻🇳 Vietnam</SelectItem>
+                      <SelectItem value="JP">🇯🇵 Japan</SelectItem>
+                      <SelectItem value="KR">🇰🇷 South Korea</SelectItem>
+                      <SelectItem value="CN">🇨🇳 China</SelectItem>
+                      <SelectItem value="IN">🇮🇳 India</SelectItem>
+                      <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                      <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
+                      <SelectItem value="DE">🇩🇪 Germany</SelectItem>
+                      <SelectItem value="FR">🇫🇷 France</SelectItem>
+                      <SelectItem value="IT">🇮🇹 Italy</SelectItem>
+                      <SelectItem value="ES">🇪🇸 Spain</SelectItem>
+                      <SelectItem value="BR">🇧🇷 Brazil</SelectItem>
+                      <SelectItem value="MX">🇲🇽 Mexico</SelectItem>
+                      <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                      <SelectItem value="OTHER">🌍 Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
@@ -308,19 +334,35 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 </div>
               )}
             </div>
+
+            {/* Phone Number Input */}
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                placeholder="+628123456789"
+                className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
+              />
+              <p className="text-xs text-gray-500">
+                Use international format (e.g., +628123456789). This will be used for OTP verification.
+              </p>
+            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex space-x-2 sm:space-x-3 pt-3 sm:pt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={onClose}
               className="flex-1 text-sm py-2"
               disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSave}
               className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-sm py-2"
               disabled={isLoading}
