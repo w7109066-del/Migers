@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
@@ -55,6 +56,8 @@ interface RoomMember {
     username: string;
     level: number;
     isOnline: boolean;
+    profilePhotoUrl?: string;
+    isAdmin?: boolean;
   };
   role?: string;
 }
@@ -80,7 +83,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   useEffect(() => {
     console.log('ChatRoom useEffect:', { isConnected, roomId, roomName });
 
-    if (roomId && roomName) {
+    if (roomId && roomName && isConnected) {
       console.log('Initializing chat room:', roomId);
 
       // Clear previous messages first
@@ -109,7 +112,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       setMessages(welcomeMessages);
       console.log('Set welcome messages for room:', roomId);
 
-      // Always try to join room, regardless of connection status
+      // Join room when connected
       const joinTimeout = setTimeout(() => {
         console.log('Attempting to join room:', roomId);
         joinRoom(roomId);
@@ -124,7 +127,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
       return () => clearTimeout(joinTimeout);
     } else {
-      console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
+      console.warn('ChatRoom not initialized - missing requirements:', { roomId, roomName, isConnected });
     }
 
     // Cleanup when roomId changes
@@ -133,24 +136,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       setMessages([]);
       setIsUserListOpen(false);
     };
-  }, [roomId, roomName, joinRoom, refetchMembers]);
-
-  // Separate effect for joining room when connection is established
-  useEffect(() => {
-    if (isConnected && roomId) {
-      console.log('WebSocket connected, joining room:', roomId);
-      // Add a small delay to prevent race conditions
-      const timer = setTimeout(() => {
-        joinRoom(roomId);
-        // Refresh member list when connected
-        refetchMembers();
-      }, 200);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isConnected, roomId, joinRoom, refetchMembers]);
-
-  // Note: Removed the "Currently in the room" message to avoid chat spam when users join
+  }, [roomId, roomName, isConnected, joinRoom, refetchMembers]);
 
   // WebSocket event listeners
   useEffect(() => {
@@ -212,7 +198,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
   const handleChatUser = (user: any) => {
     console.log('Opening private chat with:', user.username);
-    // Open DM chat without disconnecting from room
     if (onUserClick) {
       onUserClick({
         id: user.id,
@@ -225,13 +210,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   };
 
   const handleViewProfile = (user: any) => {
-    // Open detailed profile view
     console.log('View profile for:', user.username);
-    // You can implement profile modal here if needed
   };
 
   const handleUserInfo = (username: string) => {
-    // Send whois command
     if (roomId) {
       sendChatMessage(`/whois ${username}`, roomId);
     }
@@ -254,9 +236,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   }, [roomId, sendChatMessage]);
 
   const handleReportUser = (user: any) => {
-    // Handle user reporting
     console.log('Report user:', user.username);
-    // You can implement reporting functionality here
   };
 
   const handleKickUser = async (userId: string, username: string) => {
@@ -270,7 +250,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       });
 
       if (response.ok) {
-        // Show success message
         const kickMessage = {
           id: `kick-${Date.now()}`,
           content: `${username} has been kicked from the room`,
@@ -306,7 +285,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
       if (response.ok) {
         leaveRoom(roomId);
-        // Navigate back or show success message
         window.history.back();
       }
     } catch (error) {
@@ -314,20 +292,15 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     }
   };
 
-  // Check if current user is admin/moderator
-  const isAdmin = user?.level >= 5; // Assuming level 5+ are admins
+  const isAdmin = user?.level >= 5;
 
-  // More lenient loading check - only require roomId and roomName
   if (!roomId || !roomName) {
     console.log('ChatRoom: Missing required props:', { roomId, roomName, isConnected });
     return (
       <div className="h-full flex flex-col bg-gray-50">
-        {/* Header placeholder */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-center flex-shrink-0">
           <div className="w-32 h-4 bg-gray-200 rounded animate-pulse"></div>
         </div>
-
-        {/* Loading content */}
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
@@ -411,59 +384,57 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400">⚙️</span>
                         </div>
                       </ContextMenuTrigger>
-                    <ContextMenuContent className="w-64 text-base">
-                      <ContextMenuGroup>
-                        <ContextMenuItem 
-                          onClick={() => handleViewProfile(member.user)}
-                          className="py-3 px-4 text-base"
-                        >
-                          <Eye className="w-5 h-5 mr-3" />
-                          View Profile
-                        </ContextMenuItem>
-                        <ContextMenuItem 
-                          onClick={() => handleUserInfo(member.user.username)}
-                          className="py-3 px-4 text-base"
-                        >
-                          <Info className="w-5 h-5 mr-3" />
-                          Info
-                        </ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem 
-                          onClick={() => handleChatUser(member.user)}
-                          className="py-3 px-4 text-base"
-                        >
-                          <MessageCircle className="w-5 h-5 mr-3" />
-                          Private Chat
-                        </ContextMenuItem>
-                      </ContextMenuGroup>
-                      {/* Show kick option only for admins and not for current user */}
-                      {isAdmin && member.user.id !== user?.id && (
-                        <>
+                      <ContextMenuContent className="w-64 text-base">
+                        <ContextMenuGroup>
+                          <ContextMenuItem 
+                            onClick={() => handleViewProfile(member.user)}
+                            className="py-3 px-4 text-base"
+                          >
+                            <Eye className="w-5 h-5 mr-3" />
+                            View Profile
+                          </ContextMenuItem>
+                          <ContextMenuItem 
+                            onClick={() => handleUserInfo(member.user.username)}
+                            className="py-3 px-4 text-base"
+                          >
+                            <Info className="w-5 h-5 mr-3" />
+                            Info
+                          </ContextMenuItem>
                           <ContextMenuSeparator />
                           <ContextMenuItem 
-                            onClick={() => handleKickUser(member.user.id, member.user.username)}
-                            className="text-red-600 focus:text-red-600 py-3 px-4 text-base"
+                            onClick={() => handleChatUser(member.user)}
+                            className="py-3 px-4 text-base"
                           >
-                            <UserMinus className="w-5 h-5 mr-3" />
-                            Kick
+                            <MessageCircle className="w-5 h-5 mr-3" />
+                            Private Chat
                           </ContextMenuItem>
-                        </>
-                      )}
-                      {/* Show report option for all users except current user */}
-                      {member.user.id !== user?.id && (
-                        <>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem 
-                            onClick={() => handleReportUser(member.user)}
-                            className="text-orange-600 focus:text-orange-600 py-3 px-4 text-base"
-                          >
-                            <Flag className="w-5 h-5 mr-3" />
-                            Report
-                          </ContextMenuItem>
-                        </>
-                      )}
-                    </ContextMenuContent>
-                  </ContextMenu>
+                        </ContextMenuGroup>
+                        {isAdmin && member.user.id !== user?.id && (
+                          <>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem 
+                              onClick={() => handleKickUser(member.user.id, member.user.username)}
+                              className="text-red-600 focus:text-red-600 py-3 px-4 text-base"
+                            >
+                              <UserMinus className="w-5 h-5 mr-3" />
+                              Kick
+                            </ContextMenuItem>
+                          </>
+                        )}
+                        {member.user.id !== user?.id && (
+                          <>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem 
+                              onClick={() => handleReportUser(member.user)}
+                              className="text-orange-600 focus:text-orange-600 py-3 px-4 text-base"
+                            >
+                              <Flag className="w-5 h-5 mr-3" />
+                              Report
+                            </ContextMenuItem>
+                          </>
+                        )}
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))
                 ) : (
                   <div className="text-center text-gray-500 py-4">
@@ -493,7 +464,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
               </DialogHeader>
 
               <div className="space-y-4">
-                {/* Room Info */}
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-2 mb-3">
                     <Info className="w-4 h-4 text-blue-500" />
@@ -507,7 +477,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                   </div>
                 </div>
 
-                {/* Admin Actions */}
                 {isAdmin && (
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2 mb-2">
@@ -515,7 +484,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                       <span className="font-medium">Admin Actions</span>
                     </div>
 
-                    {/* Kick Users */}
                     <div className="p-3 border rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
@@ -591,7 +559,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                       </div>
                     </div>
 
-                    {/* Close Room */}
                     {roomId && !['1', '2', '3', '4'].includes(roomId) && (
                       <div className="p-3 border border-red-200 rounded-lg">
                         <div className="flex items-center justify-between">
@@ -658,8 +625,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       <div className="flex-shrink-0">
         <MessageInput onSendMessage={handleSendMessage} roomId={roomId} />
       </div>
-
-      
     </div>
   );
 }
