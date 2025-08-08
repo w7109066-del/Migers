@@ -242,10 +242,10 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={cn("sm:max-w-md max-h-[90vh] overflow-y-auto relative", isDarkMode ? "bg-gray-900" : "bg-white")}>
+      <DialogContent className={cn("sm:max-w-md max-h-[90vh] overflow-y-auto relative", isDarkMode ? "bg-gray-900" : "bg-white")} style={{ zIndex: 9999 }}>
         {/* Loading Overlay */}
         {isLoading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[99999] rounded-lg">
             <div className="text-center">
               <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin mx-auto mb-2"></div>
               <p className="text-sm text-gray-600">Processing...</p>

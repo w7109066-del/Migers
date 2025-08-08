@@ -54,8 +54,6 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
               onClick={() => {
                 console.log('Change Password clicked');
                 setShowChangePassword(true);
-                // Close parent modal to avoid conflicts
-                handleClose();
               }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
@@ -80,8 +78,6 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
               onClick={() => {
                 console.log('Change Email clicked');
                 setShowChangeEmail(true);
-                // Close parent modal to avoid conflicts
-                handleClose();
               }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
@@ -106,8 +102,6 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
               onClick={() => {
                 console.log('Set PIN clicked');
                 setShowSetPin(true);
-                // Close parent modal to avoid conflicts
-                handleClose();
               }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
