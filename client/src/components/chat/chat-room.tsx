@@ -69,10 +69,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   // Room members data
   const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", roomId, "members"],
-    enabled: Boolean(isConnected && roomId),
-    refetchInterval: 3000,
-    staleTime: 1000,
-    retry: 1
+    enabled: Boolean(roomId),
+    refetchInterval: 5000,
+    staleTime: 2000,
+    retry: 3
   });
 
   // Initialize room and messages
@@ -89,15 +89,15 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       const welcomeMessages = [
         {
           id: `welcome-${roomId}`,
-          content: `Welcome to ${roomName} official chat room.`,
+          content: `Welcome to ${roomName} chat room.`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
           messageType: 'system'
         },
         {
-          id: `room-managed-${roomId}`,
-          content: `This room is managed by ${roomName.toLowerCase()}`,
+          id: `room-info-${roomId}`,
+          content: `You are now in ${roomName}. Start chatting!`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
@@ -108,28 +108,24 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       setMessages(welcomeMessages);
       console.log('Set welcome messages for room:', roomId);
 
-      // Join room if connected, or wait for connection
-      if (isConnected) {
+      // Always try to join room, regardless of connection status
+      setTimeout(() => {
         joinRoom(roomId);
         console.log('Joined room:', roomId);
-      }
+        // Force refresh member list
+        refetchMembers();
+      }, 500);
     } else {
       console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
     }
 
-    // Cleanup when roomId changes - but don't leave room on minimize
+    // Cleanup when roomId changes
     return () => {
       console.log('Cleaning up chat room:', roomId);
       setMessages([]);
       setIsUserListOpen(false);
-      
-      // Only leave room if we're actually changing rooms, not just minimizing
-      if (!document.hidden && roomId) {
-        console.log('Leaving room due to room change:', roomId);
-        leaveRoom(roomId);
-      }
     };
-  }, [roomId, roomName, joinRoom]);
+  }, [roomId, roomName, joinRoom, refetchMembers]);
 
   // Separate effect for joining room when connection is established
   useEffect(() => {
@@ -138,11 +134,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       // Add a small delay to prevent race conditions
       const timer = setTimeout(() => {
         joinRoom(roomId);
-      }, 100);
+        // Refresh member list when connected
+        refetchMembers();
+      }, 200);
 
       return () => clearTimeout(timer);
     }
-  }, [isConnected, roomId, joinRoom]);
+  }, [isConnected, roomId, joinRoom, refetchMembers]);
 
   // Note: Removed the "Currently in the room" message to avoid chat spam when users join
 
@@ -368,7 +366,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-4 space-y-3">
-                {roomMembers?.map((member) => (
+                {roomMembers && roomMembers.length > 0 ? roomMembers.map((member) => (
                   <ContextMenu key={member.user.id}>
                     <ContextMenuTrigger asChild>
                       <div 
@@ -457,12 +455,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                       )}
                     </ContextMenuContent>
                   </ContextMenu>
-                ))}
-
-                {(!roomMembers || roomMembers.length === 0) && (
+                )) : (
                   <div className="text-center text-gray-500 py-4">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No members found</p>
+                    <p className="text-sm">Loading members...</p>
+                    {!isConnected && (
+                      <p className="text-xs text-orange-500 mt-1">WebSocket disconnected</p>
+                    )}
                   </div>
                 )}
               </div>
