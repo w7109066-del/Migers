@@ -20,7 +20,14 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
   const [showSetPin, setShowSetPin] = useState(false);
 
   const handleClose = () => {
-    // Reset all modal states when closing main modal
+    // Only close if no sub-modals are open
+    if (!showChangePassword && !showChangeEmail && !showSetPin) {
+      onClose();
+    }
+  };
+
+  const handleMainClose = () => {
+    // Force close all modals
     setShowChangePassword(false);
     setShowChangeEmail(false);
     setShowSetPin(false);
@@ -29,13 +36,13 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={handleClose}>
+      <Dialog open={isOpen} onOpenChange={handleMainClose}>
         <DialogContent className={cn("sm:max-w-md", isDarkMode ? "bg-gray-900" : "bg-white")} style={{ zIndex: 9998 }}>
           <DialogHeader className="flex flex-row items-center space-y-0 space-x-2 pb-4 border-b">
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleClose}
+              onClick={handleMainClose}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -52,8 +59,9 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
             {/* Change Password */}
             <button
               onClick={() => {
-                console.log('Change Password clicked');
+                console.log('Change Password clicked - current state:', showChangePassword);
                 setShowChangePassword(true);
+                console.log('Change Password state set to true');
               }}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
