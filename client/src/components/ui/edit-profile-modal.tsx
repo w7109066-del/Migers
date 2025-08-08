@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { X, Camera, Save, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -22,10 +22,12 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const [formData, setFormData] = useState({
     bio: user?.bio || "",
     country: user?.country || "",
+    gender: user?.gender || "", // Added gender to formData
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showCountryField, setShowCountryField] = useState(!!user?.country);
+  const [showGenderField, setShowGenderField] = useState(!!user?.gender); // Added state for gender toggle
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
@@ -59,7 +61,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       }
 
       setSelectedPhoto(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -72,9 +74,9 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      
+
       const formDataToSend = new FormData();
-      
+
       // Add form fields
       formDataToSend.append('bio', formData.bio);
       if (showCountryField) {
@@ -82,7 +84,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       } else {
         formDataToSend.append('country', ''); // Clear country if toggle is off
       }
-      
+
+      if (showGenderField) {
+        formDataToSend.append('gender', formData.gender); // Append gender if toggle is on
+      } else {
+        formDataToSend.append('gender', ''); // Clear gender if toggle is off
+      }
+
       // Add photo if selected
       if (selectedPhoto) {
         formDataToSend.append('profilePhoto', selectedPhoto);
@@ -137,14 +145,14 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             </div>
           </div>
         )}
-        
+
         <DialogHeader>
           <DialogTitle className="text-center">Edit Profile</DialogTitle>
           <DialogDescription className="text-center text-sm text-gray-500">
             Update your profile information and photo
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Avatar Section with Photo Upload */}
           <div className="flex flex-col items-center space-y-4">
@@ -182,7 +190,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 <Camera className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <input
               ref={fileInputRef}
               type="file"
@@ -190,7 +198,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               onChange={handlePhotoSelect}
               className="hidden"
             />
-            
+
             <div className="text-center">
               <p className="text-sm text-gray-500 mb-2">Click camera icon to change photo</p>
               {selectedPhoto && (
@@ -253,7 +261,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   onCheckedChange={setShowCountryField}
                 />
               </div>
-              
+
               {showCountryField && (
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
@@ -264,6 +272,38 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                     placeholder="Enter your country"
                     maxLength={50}
                   />
+                </div>
+              )}
+            </div>
+
+            {/* Gender Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-gender">Show Gender</Label>
+                <Switch
+                  id="show-gender"
+                  checked={showGenderField}
+                  onCheckedChange={setShowGenderField}
+                />
+              </div>
+
+              {showGenderField && (
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value) => handleInputChange('gender', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="non-binary">Non-binary</SelectItem>
+                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
