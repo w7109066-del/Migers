@@ -559,12 +559,6 @@ function HomePageContent() {
     setSelectedDirectMessage(null); // Clear DM when entering room
   };
 
-  const getCurrentPageTitle = () => {
-    // This function would normally determine the title based on the current route or state.
-    // For this example, we'll assume it's always 'Home'.
-    return 'Home';
-  };
-
   const tabs = [
     {
       id: "home",
@@ -574,26 +568,8 @@ function HomePageContent() {
         <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
           {/* Header with user info, notifications, and search */}
           <div className={cn("border-b px-4 py-3 flex-shrink-0", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <svg className="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-                <h1 className={cn("text-xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
-                  {getCurrentPageTitle()}
-                </h1>
-              </div>
-              <div className="flex items-center space-x-3">
-                {/* Help & Support button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowHelpSupport(true)}
-                  className={cn("p-2", isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-600 hover:bg-gray-100")}
-                >
-                  <HelpCircle className="w-5 h-5" />
-                </Button>
-
                 {/* User Avatar and Info */}
                 <div className="flex items-center space-x-3">
                   <UserAvatar
@@ -612,7 +588,7 @@ function HomePageContent() {
                             ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500"
                             : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400"
                         )}>
-                          <span className="text-xs leading-none">{user.level}</span>
+                          <span className="text-xs leading-none">{user.level || 1}</span>
                         </Badge>
                         {/* Sparkle effect */}
                         <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-yellow-400 rounded-full animate-ping"></div>
