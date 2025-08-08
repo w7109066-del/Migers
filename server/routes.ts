@@ -1668,7 +1668,14 @@ export function registerRoutes(app: Express): Server {
             if (!message.roomId || !userId) break;
 
             try {
-              console.log(`User ${user?.username} attempting to join room ${message.roomId}`);
+              // Get user data first
+              const user = await storage.getUser(userId);
+              if (!user) {
+                console.log(`User ${userId} not found during join room attempt`);
+                break;
+              }
+
+              console.log(`User ${user.username} attempting to join room ${message.roomId}`);
 
               // Check if user is already active in this room
               const isAlreadyInRoom = userConnections.get(userId)?.currentRoomId === message.roomId;
@@ -1711,7 +1718,7 @@ export function registerRoutes(app: Express): Server {
                   roomId: message.roomId,
                 }, ws);
 
-                console.log(`User ${user.username} joined room ${message.roomId}. Total members: ${await storage.getRoomMemberCount(message.roomId)}`);
+                console.log(`User ${user.username} joined room ${message.roomId}`);
               } else {
                 console.log(`User ${userId} already in room ${message.roomId}, skipping duplicate join`);
               }
@@ -1729,6 +1736,9 @@ export function registerRoutes(app: Express): Server {
             if (!message.roomId || !userId) break;
 
             try {
+              // Get user data first
+              const user = await storage.getUser(userId);
+              
               // Check if user is actually in this room
               const userConn = userConnections.get(userId);
               if (userConn?.currentRoomId === message.roomId) {
@@ -1743,10 +1753,10 @@ export function registerRoutes(app: Express): Server {
                   type: 'user_left',
                   userId,
                   roomId: message.roomId,
-                  username: user?.username
+                  username: user?.username || 'Unknown User'
                 }, ws);
 
-                console.log(`User ${user?.username} left room ${message.roomId}`);
+                console.log(`User ${user?.username || 'Unknown User'} left room ${message.roomId}`);
               } else {
                 console.log(`User ${userId} not in room ${message.roomId}, skipping leave`);
               }
