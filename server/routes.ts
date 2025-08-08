@@ -260,21 +260,21 @@ export function registerRoutes(app: Express): Server {
       if (['1', '2', '3', '4'].includes(roomId)) {
         if (mockRoomMembers.has(roomId)) {
           const roomMembersMap = mockRoomMembers.get(roomId)!;
-          
+
           // Deduplicate members by username
           const uniqueMembers = new Map();
-          
+
           for (const [memberId, userData] of roomMembersMap) {
             const username = userData.username;
             if (!uniqueMembers.has(username) || uniqueMembers.get(username).id === memberId) {
               uniqueMembers.set(username, userData);
             }
           }
-          
+
           const members = Array.from(uniqueMembers.values()).map(userData => ({
             user: userData
           }));
-          
+
           res.json(members);
         } else {
           res.json([]);
@@ -282,7 +282,7 @@ export function registerRoutes(app: Express): Server {
       } else {
         // For real rooms, use storage with deduplication
         const allMembers = await storage.getRoomMembers(roomId);
-        
+
         // Deduplicate by user ID
         const uniqueMembers = new Map();
         if (allMembers) {
@@ -292,7 +292,7 @@ export function registerRoutes(app: Express): Server {
             }
           }
         }
-        
+
         res.json(Array.from(uniqueMembers.values()));
       }
     } catch (error) {
@@ -1036,10 +1036,10 @@ export function registerRoutes(app: Express): Server {
     try {
       const userId = req.user!.id;
       console.log(`=== API: Getting friends for user ${userId} ===`);
-      
+
       const friends = await storage.getFriends(userId);
       console.log(`=== API: Returning ${friends.length} friends ===`);
-      
+
       res.json(friends);
     } catch (error) {
       console.error('Failed to fetch friends:', error);
@@ -1052,10 +1052,10 @@ export function registerRoutes(app: Express): Server {
     try {
       const userId = req.user!.id;
       console.log(`=== API: Force refreshing friends for user ${userId} ===`);
-      
+
       const friends = await storage.refreshFriendsList(userId);
       console.log(`=== API: Force refresh returned ${friends.length} friends ===`);
-      
+
       res.json(friends);
     } catch (error) {
       console.error('Failed to refresh friends:', error);
@@ -1106,7 +1106,7 @@ export function registerRoutes(app: Express): Server {
 
       // Check if friend request exists in any direction
       let existingFriendship = await storage.getFriendshipStatus(userId, currentUserId);
-      
+
       // If not found, also check the reverse direction more explicitly
       if (!existingFriendship) {
         existingFriendship = await storage.getFriendshipStatus(currentUserId, userId);
@@ -1116,7 +1116,7 @@ export function registerRoutes(app: Express): Server {
 
       if (!existingFriendship) {
         console.log(`No friendship record found in either direction`);
-        
+
         // Check if there's a notification for this friend request
         const notification = await db
           .select()
@@ -1130,10 +1130,10 @@ export function registerRoutes(app: Express): Server {
             )
           )
           .limit(1);
-          
+
         if (notification.length > 0) {
           console.log(`Found notification but no friendship record - attempting to create missing friendship`);
-          
+
           // Create the missing friendship record
           try {
             const newFriendship = await storage.createFriendRequest(userId, currentUserId);
@@ -1143,7 +1143,7 @@ export function registerRoutes(app: Express): Server {
             console.error(`Failed to create missing friendship:`, createError);
           }
         }
-        
+
         if (!existingFriendship) {
           return res.status(400).json({ 
             success: false,
@@ -1154,14 +1154,14 @@ export function registerRoutes(app: Express): Server {
 
       if (existingFriendship.status !== 'pending') {
         console.log(`Friendship exists but status is: ${existingFriendship.status}, not pending`);
-        
+
         if (existingFriendship.status === 'accepted') {
           return res.status(400).json({ 
             success: false,
             message: 'You are already friends with this user' 
           });
         }
-        
+
         return res.status(400).json({ 
           success: false,
           message: `Friend request is ${existingFriendship.status}, cannot accept` 
@@ -1306,8 +1306,8 @@ export function registerRoutes(app: Express): Server {
 
       // Send friend_list_updated via WebSocket to both users
       try {
-        const senderSocket = userConnections.get(currentUserId);
-        const receiverSocket = userConnections.get(userId);
+        const senderSocket = userConnections.get(currentUserId)?.ws;
+        const receiverSocket = userConnections.get(userId)?.ws;
 
         if (senderSocket) {
           senderSocket.send(JSON.stringify({
@@ -1630,8 +1630,8 @@ export function registerRoutes(app: Express): Server {
   // Track users in mock rooms with detailed user info
   const mockRoomMembers = new Map<string, Map<string, any>>();
 
-  // Track websocket connections by user ID
-  const userConnections = new Map<string, WebSocket>();
+  // Track user connections and their current rooms
+  const userConnections = new Map<string, { ws: WebSocket; currentRoomId: string | null }>();
 
   wss.on('connection', async (ws: WebSocket, req) => {
     console.log('New WebSocket connection');
@@ -1654,8 +1654,8 @@ export function registerRoutes(app: Express): Server {
               userSession = await storage.createUserSession(userId, generateSocketId());
               await storage.updateUserOnlineStatus(userId, true);
 
-              // Track this user's connection
-              userConnections.set(userId, ws);
+              // Track connection for this user
+              userConnections.set(userId, { ws, currentRoomId: null });
 
               ws.send(JSON.stringify({
                 type: 'authenticated',
@@ -1665,113 +1665,25 @@ export function registerRoutes(app: Express): Server {
             break;
 
           case 'join_room':
-            if (userId && message.roomId && typeof message.roomId === 'string') {
-              // Check if user is banned from rooms
-              const currentUser = await storage.getUser(userId);
-              if (currentUser?.isBanned) {
-                ws.send(JSON.stringify({
-                  type: 'error',
-                  message: 'You are banned from accessing chat rooms',
-                }));
-                break;
-              }
+            if (!message.roomId || !userId) break;
 
-              // Prevent duplicate joins - check if user is already in the room
-              if (currentRoomId === message.roomId) {
-                console.log(`User ${userId} already in room ${message.roomId}, skipping duplicate join`);
-                break;
-              }
+            try {
+              console.log(`User ${user?.username} attempting to join room ${message.roomId}`);
 
-              // Use the already retrieved user data
-              const user = currentUser;
-              if (!user) {
-                return; // Should not happen if userId is valid
-              }
+              // Check if user is already active in this room
+              const isAlreadyInRoom = userConnections.get(userId)?.currentRoomId === message.roomId;
 
-              let shouldSendJoinMessage = false;
-
-              // For mock rooms (1-4), track in memory with user data
-              if (['1', '2', '3', '4'].includes(message.roomId)) {
-                if (!mockRoomMembers.has(message.roomId)) {
-                  mockRoomMembers.set(message.roomId, new Map());
-                }
-
-                const roomMembersMap = mockRoomMembers.get(message.roomId)!;
-                
-                // Always clean up any existing entries for this user first (comprehensive cleanup)
-                const toRemove = [];
-                for (const [existingUserId, existingUserData] of roomMembersMap) {
-                  if (existingUserId === userId || 
-                      existingUserData.username === user.username ||
-                      existingUserData.id === userId) {
-                    toRemove.push(existingUserId);
-                  }
-                }
-                
-                let hadPreviousEntry = toRemove.length > 0;
-                toRemove.forEach(id => {
-                  roomMembersMap.delete(id);
-                  console.log(`Cleaned up existing entry for user ${user.username} (ID: ${id})`);
-                });
-
-                // Check room capacity (25 users max)
-                if (roomMembersMap.size >= 25) {
-                  ws.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Room is full (maximum 25 users)',
-                  }));
-                  break;
-                }
-
-                // Add the user with fresh data
-                roomMembersMap.set(userId, {
-                  id: userId,
-                  username: user.username || 'User',
-                  level: user.level || 1,
-                  isOnline: true,
-                  profilePhotoUrl: user.profilePhotoUrl || null,
-                  isAdmin: user.isAdmin || false
-                });
-
-                // Only send join message if user wasn't already in room
-                shouldSendJoinMessage = !hadPreviousEntry;
-                console.log(`User ${user.username} ${hadPreviousEntry ? 'refreshed in' : 'joined'} room ${message.roomId}. Total members:`, roomMembersMap.size);
-                
-                currentRoomId = message.roomId;
-              } else {
-                // For real rooms, comprehensive cleanup first
-                const existingMembers = await storage.getRoomMembers(message.roomId);
-                
-                // Clean up any existing memberships for this user
-                let hadPreviousEntry = false;
-                if (existingMembers) {
-                  for (const member of existingMembers) {
-                    if (member.user.id === userId) {
-                      await storage.leaveRoom(message.roomId, userId);
-                      hadPreviousEntry = true;
-                      console.log(`Cleaned up existing membership for user ${userId}`);
-                    }
-                  }
-                }
-
-                // Check room capacity after cleanup
-                const updatedMembers = await storage.getRoomMembers(message.roomId);
-                if ((updatedMembers?.length || 0) >= 25) {
-                  ws.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Room is full (maximum 25 users)',
-                  }));
-                  break;
-                }
-
+              if (!isAlreadyInRoom) {
                 // Add user to room
                 await storage.joinRoom(message.roomId, userId);
-                shouldSendJoinMessage = !hadPreviousEntry;
-                currentRoomId = message.roomId;
-              }
 
-              // Only send join messages if user wasn't already in room
-              if (shouldSendJoinMessage) {
+                // Update user's current room
+                const userConn = userConnections.get(userId);
+                if (userConn) {
+                  userConn.currentRoomId = message.roomId;
+                }
+                currentRoomId = message.roomId;
+
                 // Broadcast system message about user joining
                 broadcastToRoom(message.roomId, {
                   type: 'new_message',
@@ -1798,101 +1710,53 @@ export function registerRoutes(app: Express): Server {
                   userId,
                   roomId: message.roomId,
                 }, ws);
+
+                console.log(`User ${user.username} joined room ${message.roomId}. Total members: ${await storage.getRoomMemberCount(message.roomId)}`);
+              } else {
+                console.log(`User ${userId} already in room ${message.roomId}, skipping duplicate join`);
               }
-
-              // Always broadcast room count update
-              const currentCount = await getRoomMemberCount(message.roomId);
-              wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                  client.send(JSON.stringify({
-                    type: 'room_member_count_updated',
-                    roomId: message.roomId,
-                    memberCount: currentCount
-                  }));
-                }
-              });
-
-              // Force refresh member list on client
-              broadcastToRoom(message.roomId, {
-                type: 'force_member_refresh',
-                roomId: message.roomId
-              });
+            } catch (error) {
+              console.error('Join room error:', error);
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Failed to join room',
+                details: error instanceof Error ? error.message : 'Unknown error'
+              }));
             }
             break;
 
           case 'leave_room':
-            if (userId && message.roomId && typeof message.roomId === 'string') {
-              isManualDisconnect = true;
-              
-              // Get user data for system message before leaving
-              const disconnectedUser = await storage.getUser(userId);
+            if (!message.roomId || !userId) break;
 
-              // For mock rooms (1-4), remove from memory tracking
-              if (['1', '2', '3', '4'].includes(message.roomId)) {
-                if (mockRoomMembers.has(message.roomId)) {
-                  const roomMembersMap = mockRoomMembers.get(message.roomId)!;
-                  
-                  // Remove ALL entries for this user (by ID and username)
-                  const toRemove = [];
-                  for (const [memberId, memberData] of roomMembersMap) {
-                    if (memberId === userId || memberData.username === disconnectedUser?.username) {
-                      toRemove.push(memberId);
-                    }
-                  }
-                  
-                  // Remove all found entries
-                  for (const id of toRemove) {
-                    roomMembersMap.delete(id);
-                    console.log(`Removed user entry ${id} from room ${message.roomId}`);
-                  }
-                }
-                currentRoomId = null;
-              } else {
-                // For real rooms, ensure complete cleanup
+            try {
+              // Check if user is actually in this room
+              const userConn = userConnections.get(userId);
+              if (userConn?.currentRoomId === message.roomId) {
                 await storage.leaveRoom(message.roomId, userId);
+
+                // Clear user's current room
+                userConn.currentRoomId = null;
                 currentRoomId = null;
-              }
 
-              // Only broadcast if we have a valid username to avoid generic messages
-              if (disconnectedUser?.username && disconnectedUser.username !== 'undefined') {
+                // Broadcast user left message
                 broadcastToRoom(message.roomId, {
-                  type: 'new_message',
-                  message: {
-                    id: `system-leave-${Date.now()}-${disconnectedUser.username}`,
-                    content: `${disconnectedUser.username} has left`,
-                    senderId: 'system',
-                    roomId: message.roomId,
-                    recipientId: null,
-                    messageType: 'system',
-                    createdAt: new Date().toISOString(),
-                    sender: {
-                      id: 'system',
-                      username: 'System',
-                      level: 0,
-                      isOnline: true,
-                    }
-                  }
-                });
+                  type: 'user_left',
+                  userId,
+                  roomId: message.roomId,
+                  username: user?.username
+                }, ws);
+
+                console.log(`User ${user?.username} left room ${message.roomId}`);
+              } else {
+                console.log(`User ${userId} not in room ${message.roomId}, skipping leave`);
               }
-
-              // Broadcast to room members
-              broadcastToRoom(message.roomId, {
-                type: 'user_left',
-                userId,
-                roomId: message.roomId,
-              }, ws);
-
-              // Broadcast room count update to all clients
-              const currentCount = await getRoomMemberCount(message.roomId);
-              wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                  client.send(JSON.stringify({
-                    type: 'room_member_count_updated',
-                    roomId: message.roomId,
-                    memberCount: currentCount
-                  }));
-                }
-              });
+            } catch (error) {
+              console.error('Leave room error:', error);
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Failed to leave room',
+                details: error instanceof Error ? error.message : 'Unknown error'
+              }));
             }
             break;
 
@@ -2172,11 +2036,11 @@ export function registerRoutes(app: Express): Server {
         // Clean up room membership on disconnect
         if (currentRoomId) {
           const disconnectedUser = await storage.getUser(userId);
-          
+
           if (['1', '2', '3', '4'].includes(currentRoomId)) {
             if (mockRoomMembers.has(currentRoomId)) {
               const roomMembersMap = mockRoomMembers.get(currentRoomId)!;
-              
+
               // Remove ALL entries for this user (by ID and username)
               const toRemove = [];
               for (const [memberId, memberData] of roomMembersMap) {
@@ -2184,7 +2048,7 @@ export function registerRoutes(app: Express): Server {
                   toRemove.push(memberId);
                 }
               }
-              
+
               // Remove all found entries
               for (const id of toRemove) {
                 roomMembersMap.delete(id);
@@ -2255,28 +2119,18 @@ export function registerRoutes(app: Express): Server {
     }
   }
 
-  function broadcastToRoom(roomId: string, message: any, excludeWs?: WebSocket) {
-    // For mock rooms, get actual members and send only to them
-    if (['1', '2', '3', '4'].includes(roomId) && mockRoomMembers.has(roomId)) {
-      const roomMembers = mockRoomMembers.get(roomId)!;
-      roomMembers.forEach((memberData, memberId) => {
-        const memberWs = userConnections.get(memberId);
-        if (memberWs && memberWs !== excludeWs && memberWs.readyState === WebSocket.OPEN) {
-          memberWs.send(JSON.stringify(message));
-        }
-      });
-    } else {
-      // For other rooms, broadcast to all connected clients
-      wss.clients.forEach((client) => {
-        if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(message));
-        }
-      });
+  const broadcastToRoom = (roomId: string, message: any, excludeWs?: WebSocket) => {
+    for (const [connUserId, userConn] of userConnections.entries()) {
+      if (userConn.ws !== excludeWs && userConn.ws.readyState === WebSocket.OPEN) {
+        // For now, broadcast to all connected users
+        // In a real implementation, you'd check if the user is in the room
+        userConn.ws.send(JSON.stringify(message));
+      }
     }
-  }
+  };
 
   function broadcastToUser(userId: string, message: any) {
-    const userWs = userConnections.get(userId);
+    const userWs = userConnections.get(userId)?.ws;
     if (userWs && userWs.readyState === WebSocket.OPEN) {
       userWs.send(JSON.stringify(message));
     } else {

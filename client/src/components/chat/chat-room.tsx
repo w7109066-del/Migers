@@ -160,15 +160,23 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     const handleUserJoin = (event: CustomEvent) => {
       const { username, roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId && username && username !== 'undefined') {
-        const joinMessage = {
-          id: `join-${Date.now()}-${username}`,
-          content: `${username} has entered`,
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        };
-        setMessages(prev => [...prev, joinMessage]);
+        // Check if we already have a recent join message for this user to prevent duplicates
+        const recentJoinMessages = messages.filter(msg => 
+          msg.content.includes(`${username} has entered`) && 
+          Date.now() - new Date(msg.createdAt).getTime() < 3000 // within 3 seconds
+        );
+
+        if (recentJoinMessages.length === 0) {
+          const joinMessage = {
+            id: `join-${Date.now()}-${username}`,
+            content: `${username} has entered`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          };
+          setMessages(prev => [...prev, joinMessage]);
+        }
         setTimeout(() => refetchMembers(), 100);
       }
     };
@@ -181,7 +189,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
           msg.content.includes(`${username} has left`) && 
           Date.now() - new Date(msg.createdAt).getTime() < 5000 // within 5 seconds
         );
-        
+
         if (recentLeaveMessages.length === 0) {
           const leaveMessage = {
             id: `leave-${Date.now()}-${username}`,
@@ -261,7 +269,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     if (roomId) {
       // Send whois command that will show user info in room context
       sendChatMessage(`/whois ${username}`, roomId);
-      
+
       // Also show room-specific information
       const roomInfoMessage = {
         id: `room-info-${Date.now()}`,
@@ -278,7 +286,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
           isOnline: true,
         }
       };
-      
+
       // Dispatch event to show room info message
       window.dispatchEvent(new CustomEvent('newMessage', {
         detail: roomInfoMessage
@@ -482,7 +490,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                             <span className="text-xs text-gray-500">Mini profile preview</span>
                           </div>
                         </ContextMenuItem>
-                        
+
                         <ContextMenuItem 
                           onClick={() => handleUserInfo(member.user.username)}
                           className="py-3 px-4 text-base hover:bg-green-50 focus:bg-green-50"
@@ -493,9 +501,9 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                             <span className="text-xs text-gray-500">Room information</span>
                           </div>
                         </ContextMenuItem>
-                        
+
                         <ContextMenuSeparator />
-                        
+
                         <ContextMenuItem 
                           onClick={() => handleChatUser(member.user)}
                           className="py-3 px-4 text-base hover:bg-purple-50 focus:bg-purple-50"
@@ -507,7 +515,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                           </div>
                         </ContextMenuItem>
                       </ContextMenuGroup>
-                      
+
                       {/* Show kick option only for admins and not for current user */}
                       {isAdmin && member.user.id !== user?.id && (
                         <>
@@ -524,7 +532,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                           </ContextMenuItem>
                         </>
                       )}
-                      
+
                       {/* Show leave option only for current user */}
                       {member.user.id === user?.id && (
                         <>
@@ -541,7 +549,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                           </ContextMenuItem>
                         </>
                       )}
-                      
+
                       {/* Show report option for all users except current user */}
                       {member.user.id !== user?.id && (
                         <>
