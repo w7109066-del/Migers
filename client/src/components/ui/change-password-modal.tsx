@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,7 @@ interface ChangePasswordModalProps {
 
 export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProps) {
   const { user, isDarkMode } = useAuth();
-  
+
   console.log('ChangePasswordModal render - isOpen:', isOpen);
   const [formData, setFormData] = useState({
     oldPassword: "",
@@ -258,9 +257,17 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
     <Dialog open={isOpen} onOpenChange={handleClose} modal>
       <DialogContent 
         className={cn("sm:max-w-md max-h-[90vh] overflow-y-auto relative", isDarkMode ? "bg-gray-900" : "bg-white")} 
-        style={{ zIndex: 10000 }}
+        style={{ 
+          zIndex: 10002,
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        }}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        forceMount={isOpen}
       >
         {/* Loading Overlay */}
         {isLoading && (
@@ -271,7 +278,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </div>
           </div>
         )}
-        
+
         <DialogHeader className="flex flex-row items-center space-y-0 space-x-2 pb-4 border-b">
           <Button
             variant="ghost"
@@ -284,11 +291,11 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
           <DialogTitle className="flex-1 text-center">Change Password</DialogTitle>
           <div className="w-8"></div> {/* Spacer to center the title */}
         </DialogHeader>
-        
+
         <DialogDescription className="sr-only">
           Change your account password by providing your current password and entering a new one. Phone verification is required for security.
         </DialogDescription>
-        
+
         <div className="space-y-6 pt-4">
           {/* Password Fields */}
           <div className="space-y-4">

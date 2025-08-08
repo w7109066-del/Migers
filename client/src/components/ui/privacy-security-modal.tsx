@@ -37,7 +37,21 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleMainClose}>
-        <DialogContent className={cn("sm:max-w-md", isDarkMode ? "bg-gray-900" : "bg-white")} style={{ zIndex: 9998 }}>
+        <DialogContent
+          className={cn("sm:max-w-md", isDarkMode ? "bg-gray-900" : "bg-white")}
+          style={{ zIndex: 9998 }}
+          onPointerDownOutside={(e) => {
+            // Prevent closing if any sub-modal is open
+            if (showChangePassword || showChangeEmail || showSetPin) {
+              e.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            if (showChangePassword || showChangeEmail || showSetPin) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader className="flex flex-row items-center space-y-0 space-x-2 pb-4 border-b">
             <Button
               variant="ghost"
@@ -58,11 +72,14 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
           <div className="space-y-2 pt-4">
             {/* Change Password */}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 console.log('Change Password clicked - current state:', showChangePassword);
                 setShowChangePassword(true);
                 console.log('Change Password state set to true');
               }}
+              onMouseDown={(e) => e.stopPropagation()}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
@@ -87,6 +104,7 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
                 console.log('Change Email clicked');
                 setShowChangeEmail(true);
               }}
+              onMouseDown={(e) => e.stopPropagation()}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
@@ -111,6 +129,7 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
                 console.log('Set PIN clicked');
                 setShowSetPin(true);
               }}
+              onMouseDown={(e) => e.stopPropagation()}
               className={cn(
                 "w-full p-4 text-left flex items-center space-x-3 rounded-lg transition-colors",
                 isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
