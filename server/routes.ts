@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
+import { Server as SocketIOServer } from "socket.io";
 import multer from "multer";
 import path from "path";
 import { setupAuth } from "./auth";
@@ -1621,457 +1621,440 @@ export function registerRoutes(app: Express): Server {
 
   const httpServer = createServer(app);
 
-  // WebSocket server for real-time features
-  const wss = new WebSocketServer({ 
-    server: httpServer, 
-    path: '/ws' 
+  // Socket.IO server for real-time features
+  const io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    },
+    path: "/socket.io/"
   });
 
   // Track users in mock rooms with detailed user info
   const mockRoomMembers = new Map<string, Map<string, any>>();
 
   // Track user connections and their current rooms
-  const userConnections = new Map<string, { ws: WebSocket; currentRoomId: string | null }>();
+  const userConnections = new Map<string, { socket: any; currentRoomId: string | null }>();
 
-  wss.on('connection', async (ws: WebSocket, req) => {
-    console.log('New WebSocket connection');
+  io.on('connection', async (socket) => {
+    console.log('New Socket.IO connection:', socket.id);
 
     let userId: string | null = null;
     let userSession: any = null;
     let currentRoomId: string | null = null;
     let isManualDisconnect = false;
 
-    ws.on('message', async (data) => {
+    socket.on('authenticate', async (data) => {
       try {
-        const message = JSON.parse(data.toString());
+        // Simple authentication using session
+        // In production, you'd want proper JWT or session validation
+        if (data.userId) {
+          userId = data.userId;
+          userSession = await storage.createUserSession(userId, socket.id);
+          await storage.updateUserOnlineStatus(userId, true);
 
-        switch (message.type) {
-          case 'authenticate':
-            // Simple authentication using session
-            // In production, you'd want proper JWT or session validation
-            if (message.userId) {
-              userId = message.userId;
-              userSession = await storage.createUserSession(userId, generateSocketId());
-              await storage.updateUserOnlineStatus(userId, true);
+          // Track connection for this user
+          userConnections.set(userId, { socket, currentRoomId: null });
 
-              // Track connection for this user
-              userConnections.set(userId, { ws, currentRoomId: null });
-
-              ws.send(JSON.stringify({
-                type: 'authenticated',
-                success: true,
-              }));
-            }
-            break;
-
-          case 'join_room':
-            if (!message.roomId || !userId) {
-              ws.send(JSON.stringify({
-                type: 'error',
-                message: 'Missing room ID or user ID',
-              }));
-              break;
-            }
-
-            try {
-              // Get user data first
-              const user = await storage.getUser(userId);
-              if (!user) {
-                console.log(`User ${userId} not found during join room attempt`);
-                ws.send(JSON.stringify({
-                  type: 'error',
-                  message: 'User not found',
-                }));
-                break;
-              }
-
-              console.log(`User ${user.username} attempting to join room ${message.roomId}`);
-
-              // Check if user is banned from rooms
-              if (user.isBanned) {
-                ws.send(JSON.stringify({
-                  type: 'error',
-                  message: 'You are banned from accessing chat rooms',
-                }));
-                break;
-              }
-
-              // Check if user is already active in this room
-              const isAlreadyInRoom = userConnections.get(userId)?.currentRoomId === message.roomId;
-
-              if (!isAlreadyInRoom) {
-                // Leave previous room if in another room
-                if (userConnections.get(userId)?.currentRoomId) {
-                  try {
-                    await storage.leaveRoom(userConnections.get(userId)!.currentRoomId!, userId);
-                    broadcastToRoom(userConnections.get(userId)!.currentRoomId!, {
-                      type: 'user_left',
-                      userId,
-                      roomId: userConnections.get(userId)!.currentRoomId!,
-                      username: user.username
-                    }, ws);
-                  } catch (leaveError) {
-                    console.error('Error leaving previous room:', leaveError);
-                  }
-                }
-
-                // Join new room
-                if (['1', '2', '3', '4'].includes(message.roomId)) {
-                  // Mock room handling
-                  if (!mockRoomMembers.has(message.roomId)) {
-                    mockRoomMembers.set(message.roomId, new Map());
-                  }
-                  const roomMembers = mockRoomMembers.get(message.roomId)!;
-                  roomMembers.set(userId, {
-                    id: userId,
-                    username: user.username,
-                    level: user.level || 1,
-                    isOnline: true,
-                    profilePhotoUrl: user.profilePhotoUrl,
-                    isAdmin: user.isAdmin || false
-                  });
-                } else {
-                  // Real room
-                  await storage.joinRoom(message.roomId, userId);
-                }
-
-                // Update user's current room
-                if (userConnections.has(userId)) {
-                  userConnections.get(userId)!.currentRoomId = message.roomId;
-                }
-                currentRoomId = message.roomId;
-
-                // Send success confirmation to user
-                ws.send(JSON.stringify({
-                  type: 'room_joined',
-                  roomId: message.roomId,
-                  success: true
-                }));
-
-                // Broadcast to room members (excluding sender)
-                broadcastToRoom(message.roomId, {
-                  type: 'user_joined',
-                  userId,
-                  username: user.username,
-                  roomId: message.roomId,
-                }, ws);
-
-                console.log(`User ${user.username} successfully joined room ${message.roomId}`);
-              } else {
-                // Already in room, send confirmation
-                ws.send(JSON.stringify({
-                  type: 'room_joined',
-                  roomId: message.roomId,
-                  success: true,
-                  message: 'Already in room'
-                }));
-                console.log(`User ${userId} already in room ${message.roomId}`);
-              }
-            } catch (error) {
-              console.error('Join room error:', error);
-              ws.send(JSON.stringify({
-                type: 'error',
-                message: 'Failed to join room',
-                details: error instanceof Error ? error.message : 'Unknown error'
-              }));
-            }
-            break;
-
-          case 'leave_room':
-            if (!message.roomId || !userId) break;
-
-            try {
-              // Get user data first
-              const user = await storage.getUser(userId);
-
-              // Check if user is actually in this room
-              const userConn = userConnections.get(userId);
-              if (userConn?.currentRoomId === message.roomId) {
-                await storage.leaveRoom(message.roomId, userId);
-
-                // Clear user's current room
-                userConn.currentRoomId = null;
-                currentRoomId = null;
-
-                // Broadcast user left message
-                broadcastToRoom(message.roomId, {
-                  type: 'user_left',
-                  userId,
-                  roomId: message.roomId,
-                  username: user?.username || 'Unknown User'
-                }, ws);
-
-                console.log(`User ${user?.username || 'Unknown User'} left room ${message.roomId}`);
-              } else {
-                console.log(`User ${userId} not in room ${message.roomId}, skipping leave`);
-              }
-            } catch (error) {
-              console.error('Leave room error:', error);
-              ws.send(JSON.stringify({
-                type: 'error',
-                message: 'Failed to leave room',
-                details: error instanceof Error ? error.message : 'Unknown error'
-              }));
-            }
-            break;
-
-          case 'send_message':
-            if (userId && message.content) {
-              // Check if user is banned from rooms (only for room messages)
-              if (message.roomId) {
-                const currentUser = await storage.getUser(userId);
-                if (currentUser?.isBanned) {
-                  ws.send(JSON.stringify({
-                    type: 'error',
-                    message: 'You are banned from sending messages in chat rooms',
-                  }));
-                  break;
-                }
-              }
-
-              if (message.roomId) {
-                // Check if message is a whois command
-                const whoisCommandRegex = /^\/whois\s+(.+)$/i;
-                const whoisMatch = message.content.match(whoisCommandRegex);
-
-                if (whoisMatch) {
-                  const [, targetUsername] = whoisMatch;
-
-                  // Find user in current room
-                  let targetUser = null;
-
-                  if (['1', '2', '3', '4'].includes(message.roomId)) {
-                    // Search in mock room members
-                    const roomMembers = mockRoomMembers.get(message.roomId);
-                    if (roomMembers) {
-                      for (const [memberId, memberData] of roomMembers) {
-                        if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
-                          targetUser = memberData;
-                          break;
-                        }
-                      }
-                    }
-                  } else {
-                    // Search in real room members
-                    const roomMembers = await storage.getRoomMembers(message.roomId);
-                    targetUser = roomMembers?.find(member => 
-                      member.user.username.toLowerCase() === targetUsername.toLowerCase()
-                    )?.user;
-                  }
-
-                  if (targetUser) {
-                    // Format creation date
-                    const createdAt = targetUser.createdAt ? new Date(targetUser.createdAt) : null;
-                    const formattedDate = createdAt ? 
-                      `${createdAt.getDate().toString().padStart(2, '0')}/${(createdAt.getMonth() + 1).toString().padStart(2, '0')}/${createdAt.getFullYear()}` : 
-                      'Unknown';
-
-                    // Send whois info only to the requesting user
-                    const whoisInfo = {
-                      id: `whois-${Date.now()}`,
-                      content: `📋 User Info for ${targetUser.username}:\n` +
-                               `• Level: ${targetUser.level}\n` +
-                               `• Status: ${targetUser.isOnline ? 'Online' : 'Offline'}\n` +
-                               `• Country: ${targetUser.country || 'Not specified'}\n` +
-                               `• Account created: ${formattedDate}`,
-                      senderId: 'system',
-                      roomId: message.roomId,
-                      recipientId: null,
-                      messageType: 'system',
-                      createdAt: new Date().toISOString(),
-                      sender: {
-                        id: 'system',
-                        username: 'System',
-                        level: 0,
-                        isOnline: true,
-                      }
-                    };
-
-                    // Send only to requesting user
-                    ws.send(JSON.stringify({
-                      type: 'new_message',
-                      message: whoisInfo,
-                    }));
-                  } else {
-                    // User not found
-                    const notFoundMessage = {
-                      id: `whois-error-${Date.now()}`,
-                      content: `❌ User '${targetUsername}' not found in this room.`,
-                      senderId: 'system',
-                      roomId: message.roomId,
-                      recipientId: null,
-                      messageType: 'system',
-                      createdAt: new Date().toISOString(),
-                      sender: {
-                        id: 'system',
-                        username: 'System',
-                        level: 0,
-                        isOnline: true,
-                      }
-                    };
-
-                    // Send only to requesting user
-                    ws.send(JSON.stringify({
-                      type: 'new_message',
-                      message: notFoundMessage,
-                    }));
-                  }
-                  break;
-                }
-
-                // Check if message is a /me command
-                const meCommandRegex = /^\/me\s*(.*)$/i;
-                const meMatch = message.content.match(meCommandRegex);
-
-                if (meMatch) {
-                  const [, actionText] = meMatch;
-                  const senderUser = await storage.getUser(userId);
-
-                  // Create /me action message
-                  const meActionContent = actionText.trim() ? 
-                    `* ${senderUser.username || 'User'} ${actionText.trim()}` : 
-                    `* ${senderUser.username || 'User'}`;
-
-                  // For mock rooms (1-4), create a mock message
-                  if (['1', '2', '3', '4'].includes(message.roomId)) {
-                    const meMessage = {
-                      id: `me-${Date.now()}`,
-                      content: meActionContent,
-                      senderId: userId,
-                      roomId: message.roomId,
-                      recipientId: null,
-                      messageType: 'action',
-                      metadata: { isAction: true },
-                      createdAt: new Date().toISOString(),
-                      sender: {
-                        id: userId,
-                        username: senderUser.username || 'User',
-                        level: senderUser.level || 1,
-                        isOnline: senderUser.isOnline || true,
-                        profilePhotoUrl: senderUser.profilePhotoUrl || null
-                      }
-                    };
-
-                    // Broadcast to room
-                    broadcastToRoom(message.roomId, {
-                      type: 'new_message',
-                      message: meMessage,
-                    });
-                  } else {
-                    // Real room message
-                    const messageData = insertMessageSchema.parse({
-                      content: meActionContent,
-                      senderId: userId,
-                      roomId: message.roomId,
-                      recipientId: null,
-                      messageType: 'action',
-                      metadata: { isAction: true },
-                    });
-
-                    const newMessage = await storage.createMessage(messageData);
-
-                    // Broadcast to room
-                    broadcastToRoom(message.roomId, {
-                      type: 'new_message',
-                      message: newMessage,
-                    });
-                  }
-                  break;
-                }
-
-                // For mock rooms (1-4), create a mock message instead of using database
-                if (['1', '2', '3', '4'].includes(message.roomId)) {
-                  // Get user data for the mock message
-                  const senderUser = await storage.getUser(userId);
-
-                  const mockMessage = {
-                    id: `mock-${Date.now()}`,
-                    content: message.content,
-                    senderId: userId,
-                    roomId: message.roomId,
-                    recipientId: null,
-                    messageType: message.messageType || 'text',
-                    metadata: message.metadata || null,
-                    createdAt: new Date().toISOString(),
-                    sender: {
-                      id: userId,
-                      username: senderUser.username || 'User',
-                      level: senderUser.level || 1,
-                      isOnline: senderUser.isOnline || true,
-                      profilePhotoUrl: senderUser.profilePhotoUrl || null // Include profilePhotoUrl
-                    }
-                  };
-
-                  // Broadcast to room
-                  broadcastToRoom(message.roomId, {
-                    type: 'new_message',
-                    message: mockMessage,
-                  });
-                } else {
-                  // Real room message
-                  const messageData = insertMessageSchema.parse({
-                    content: message.content,
-                    senderId: userId,
-                    roomId: message.roomId,
-                    recipientId: null,
-                    messageType: message.messageType || 'text',
-                    metadata: message.metadata || null,
-                  });
-
-                  const newMessage = await storage.createMessage(messageData);
-
-                  // Broadcast to room
-                  broadcastToRoom(message.roomId, {
-                    type: 'new_message',
-                    message: newMessage,
-                  });
-                }
-              } else if (message.recipientId) {
-                // Direct message
-                const directMessage = await storage.createDirectMessage({
-                  content: message.content,
-                  senderId: userId,
-                  recipientId: message.recipientId,
-                  messageType: message.messageType || 'text'
-                });
-
-                // Send to recipient
-                broadcastToUser(message.recipientId, {
-                  type: 'new_direct_message',
-                  message: directMessage,
-                });
-
-                // Send confirmation to sender
-                ws.send(JSON.stringify({
-                  type: 'message_sent',
-                  message: directMessage,
-                }));
-              }
-            }
-            break;
-
-          case 'typing':
-            if (userId && message.roomId) {
-              broadcastToRoom(message.roomId, {
-                type: 'user_typing',
-                userId,
-                roomId: message.roomId,
-                isTyping: message.isTyping,
-              }, ws);
-            }
-            break;
+          socket.emit('authenticated', {
+            success: true,
+          });
         }
       } catch (error) {
-        console.error('WebSocket message error:', error);
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Message processing failed',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        }));
+        console.error('Authentication error:', error);
+        socket.emit('error', {
+          message: 'Authentication failed',
+        });
       }
     });
 
-    ws.on('close', async () => {
+    socket.on('join_room', async (data) => {
+
+          if (!data.roomId || !userId) {
+        socket.emit('error', {
+          message: 'Missing room ID or user ID',
+        });
+        return;
+      }
+
+      try {
+        // Get user data first
+        const user = await storage.getUser(userId);
+        if (!user) {
+          console.log(`User ${userId} not found during join room attempt`);
+          socket.emit('error', {
+            message: 'User not found',
+          });
+          return;
+        }
+
+        console.log(`User ${user.username} attempting to join room ${data.roomId}`);
+
+        // Check if user is banned from rooms
+        if (user.isBanned) {
+          socket.emit('error', {
+            message: 'You are banned from accessing chat rooms',
+          });
+          return;
+        }
+
+        // Check if user is already active in this room
+        const isAlreadyInRoom = userConnections.get(userId)?.currentRoomId === data.roomId;
+
+        if (!isAlreadyInRoom) {
+          // Leave previous room if in another room
+          if (userConnections.get(userId)?.currentRoomId) {
+            try {
+              await storage.leaveRoom(userConnections.get(userId)!.currentRoomId!, userId);
+              socket.to(userConnections.get(userId)!.currentRoomId!).emit('user_left', {
+                userId,
+                roomId: userConnections.get(userId)!.currentRoomId!,
+                username: user.username
+              });
+              socket.leave(userConnections.get(userId)!.currentRoomId!);
+            } catch (leaveError) {
+              console.error('Error leaving previous room:', leaveError);
+            }
+          }
+
+          // Join new room
+          socket.join(data.roomId);
+          
+          if (['1', '2', '3', '4'].includes(data.roomId)) {
+            // Mock room handling
+            if (!mockRoomMembers.has(data.roomId)) {
+              mockRoomMembers.set(data.roomId, new Map());
+            }
+            const roomMembers = mockRoomMembers.get(data.roomId)!;
+            roomMembers.set(userId, {
+              id: userId,
+              username: user.username,
+              level: user.level || 1,
+              isOnline: true,
+              profilePhotoUrl: user.profilePhotoUrl,
+              isAdmin: user.isAdmin || false
+            });
+          } else {
+            // Real room
+            await storage.joinRoom(data.roomId, userId);
+          }
+
+          // Update user's current room
+          if (userConnections.has(userId)) {
+            userConnections.get(userId)!.currentRoomId = data.roomId;
+          }
+          currentRoomId = data.roomId;
+
+          // Send success confirmation to user
+          socket.emit('room_joined', {
+            roomId: data.roomId,
+            success: true
+          });
+
+          // Broadcast to room members (excluding sender)
+          socket.to(data.roomId).emit('user_joined', {
+            userId,
+            username: user.username,
+            roomId: data.roomId,
+          });
+
+          console.log(`User ${user.username} successfully joined room ${data.roomId}`);
+        } else {
+          // Already in room, send confirmation
+          socket.emit('room_joined', {
+            roomId: data.roomId,
+            success: true,
+            message: 'Already in room'
+          });
+          console.log(`User ${userId} already in room ${data.roomId}`);
+        }
+      } catch (error) {
+        console.error('Join room error:', error);
+        socket.emit('error', {
+          message: 'Failed to join room',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
+
+    socket.on('leave_room', async (data) => {
+
+          if (!data.roomId || !userId) return;
+
+      try {
+        // Get user data first
+        const user = await storage.getUser(userId);
+
+        // Check if user is actually in this room
+        const userConn = userConnections.get(userId);
+        if (userConn?.currentRoomId === data.roomId) {
+          await storage.leaveRoom(data.roomId, userId);
+
+          // Clear user's current room
+          userConn.currentRoomId = null;
+          currentRoomId = null;
+
+          // Leave the Socket.IO room
+          socket.leave(data.roomId);
+
+          // Broadcast user left message
+          socket.to(data.roomId).emit('user_left', {
+            userId,
+            roomId: data.roomId,
+            username: user?.username || 'Unknown User'
+          });
+
+          console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
+        } else {
+          console.log(`User ${userId} not in room ${data.roomId}, skipping leave`);
+        }
+      } catch (error) {
+        console.error('Leave room error:', error);
+        socket.emit('error', {
+          message: 'Failed to leave room',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
+
+    socket.on('send_message', async (data) => {
+            if (userId && data.content) {
+        // Check if user is banned from rooms (only for room messages)
+        if (data.roomId) {
+          const currentUser = await storage.getUser(userId);
+          if (currentUser?.isBanned) {
+            socket.emit('error', {
+              message: 'You are banned from sending messages in chat rooms',
+            });
+            return;
+          }
+        }
+
+        if (data.roomId) {
+          // Check if message is a whois command
+          const whoisCommandRegex = /^\/whois\s+(.+)$/i;
+          const whoisMatch = data.content.match(whoisCommandRegex);
+
+          if (whoisMatch) {
+            const [, targetUsername] = whoisMatch;
+
+            // Find user in current room
+            let targetUser = null;
+
+            if (['1', '2', '3', '4'].includes(data.roomId)) {
+              // Search in mock room members
+              const roomMembers = mockRoomMembers.get(data.roomId);
+              if (roomMembers) {
+                for (const [memberId, memberData] of roomMembers) {
+                  if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
+                    targetUser = memberData;
+                    break;
+                  }
+                }
+              }
+            } else {
+              // Search in real room members
+              const roomMembers = await storage.getRoomMembers(data.roomId);
+              targetUser = roomMembers?.find(member => 
+                member.user.username.toLowerCase() === targetUsername.toLowerCase()
+              )?.user;
+            }
+
+            if (targetUser) {
+              // Format creation date
+              const createdAt = targetUser.createdAt ? new Date(targetUser.createdAt) : null;
+              const formattedDate = createdAt ? 
+                `${createdAt.getDate().toString().padStart(2, '0')}/${(createdAt.getMonth() + 1).toString().padStart(2, '0')}/${createdAt.getFullYear()}` : 
+                'Unknown';
+
+              // Send whois info only to the requesting user
+              const whoisInfo = {
+                id: `whois-${Date.now()}`,
+                content: `📋 User Info for ${targetUser.username}:\n` +
+                         `• Level: ${targetUser.level}\n` +
+                         `• Status: ${targetUser.isOnline ? 'Online' : 'Offline'}\n` +
+                         `• Country: ${targetUser.country || 'Not specified'}\n` +
+                         `• Account created: ${formattedDate}`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              // Send only to requesting user
+              socket.emit('new_message', {
+                message: whoisInfo,
+              });
+            } else {
+              // User not found
+              const notFoundMessage = {
+                id: `whois-error-${Date.now()}`,
+                content: `❌ User '${targetUsername}' not found in this room.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              // Send only to requesting user
+              socket.emit('new_message', {
+                message: notFoundMessage,
+              });
+            }
+            return;
+          }
+
+                // Check if message is a /me command
+          const meCommandRegex = /^\/me\s*(.*)$/i;
+          const meMatch = data.content.match(meCommandRegex);
+
+          if (meMatch) {
+            const [, actionText] = meMatch;
+            const senderUser = await storage.getUser(userId);
+
+            // Create /me action message
+            const meActionContent = actionText.trim() ? 
+              `* ${senderUser.username || 'User'} ${actionText.trim()}` : 
+              `* ${senderUser.username || 'User'}`;
+
+            // For mock rooms (1-4), create a mock message
+            if (['1', '2', '3', '4'].includes(data.roomId)) {
+              const meMessage = {
+                id: `me-${Date.now()}`,
+                content: meActionContent,
+                senderId: userId,
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'action',
+                metadata: { isAction: true },
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: userId,
+                  username: senderUser.username || 'User',
+                  level: senderUser.level || 1,
+                  isOnline: senderUser.isOnline || true,
+                  profilePhotoUrl: senderUser.profilePhotoUrl || null
+                }
+              };
+
+              // Broadcast to room
+              io.to(data.roomId).emit('new_message', {
+                message: meMessage,
+              });
+            } else {
+              // Real room message
+              const messageData = insertMessageSchema.parse({
+                content: meActionContent,
+                senderId: userId,
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'action',
+                metadata: { isAction: true },
+              });
+
+              const newMessage = await storage.createMessage(messageData);
+
+              // Broadcast to room
+              io.to(data.roomId).emit('new_message', {
+                message: newMessage,
+              });
+            }
+            return;
+          }
+
+          // For mock rooms (1-4), create a mock message instead of using database
+          if (['1', '2', '3', '4'].includes(data.roomId)) {
+            // Get user data for the mock message
+            const senderUser = await storage.getUser(userId);
+
+            const mockMessage = {
+              id: `mock-${Date.now()}`,
+              content: data.content,
+              senderId: userId,
+              roomId: data.roomId,
+              recipientId: null,
+              messageType: data.messageType || 'text',
+              metadata: data.metadata || null,
+              createdAt: new Date().toISOString(),
+              sender: {
+                id: userId,
+                username: senderUser.username || 'User',
+                level: senderUser.level || 1,
+                isOnline: senderUser.isOnline || true,
+                profilePhotoUrl: senderUser.profilePhotoUrl || null
+              }
+            };
+
+            // Broadcast to room
+            io.to(data.roomId).emit('new_message', {
+              message: mockMessage,
+            });
+          } else {
+            // Real room message
+            const messageData = insertMessageSchema.parse({
+              content: data.content,
+              senderId: userId,
+              roomId: data.roomId,
+              recipientId: null,
+              messageType: data.messageType || 'text',
+              metadata: data.metadata || null,
+            });
+
+            const newMessage = await storage.createMessage(messageData);
+
+            // Broadcast to room
+            io.to(data.roomId).emit('new_message', {
+              message: newMessage,
+            });
+          }
+        } else if (data.recipientId) {
+          // Direct message
+          const directMessage = await storage.createDirectMessage({
+            content: data.content,
+            senderId: userId,
+            recipientId: data.recipientId,
+            messageType: data.messageType || 'text'
+          });
+
+          // Send to recipient
+          broadcastToUser(data.recipientId, {
+            type: 'new_direct_message',
+            message: directMessage,
+          });
+
+          // Send confirmation to sender
+          socket.emit('message_sent', {
+            message: directMessage,
+          });
+        }
+      }
+    });
+
+    socket.on('typing', (data) => {
+      if (userId && data.roomId) {
+        socket.to(data.roomId).emit('user_typing', {
+          userId,
+          roomId: data.roomId,
+          isTyping: data.isTyping,
+        });
+      }
+    });
+
+    socket.on('disconnect', async () => {
       if (userId) {
         // Remove from user connections tracking
         userConnections.delete(userId);
@@ -2112,8 +2095,7 @@ export function registerRoutes(app: Express): Server {
 
               // Only send leave message if it was a manual disconnect
               if (isManualDisconnect && disconnectedUser?.username && disconnectedUser.username !== 'undefined') {
-                broadcastToRoom(currentRoomId, {
-                  type: 'new_message',
+                io.to(currentRoomId).emit('new_message', {
                   message: {
                     id: `system-leave-${Date.now()}`,
                     content: `${disconnectedUser.username} has left`,
@@ -2134,14 +2116,9 @@ export function registerRoutes(app: Express): Server {
 
               // Broadcast room count update to all clients
               const currentCount = await getRoomMemberCount(currentRoomId);
-              wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                  client.send(JSON.stringify({
-                    type: 'room_member_count_updated',
-                    roomId: currentRoomId,
-                    memberCount: currentCount
-                  }));
-                }
+              io.emit('room_member_count_updated', {
+                roomId: currentRoomId,
+                memberCount: currentCount
               });
             }
           } else {
@@ -2150,14 +2127,9 @@ export function registerRoutes(app: Express): Server {
           }
         }
       }
-      console.log('WebSocket connection closed');
+      console.log('Socket.IO connection closed:', socket.id);
     });
   });
-
-  function generateSocketId(): string {
-    return Math.random().toString(36).substring(2, 15) + 
-           Math.random().toString(36).substring(2, 15);
-  }
 
   async function getRoomMemberCount(roomId: string): Promise<number> {
     // For mock rooms, return actual member count
@@ -2174,27 +2146,13 @@ export function registerRoutes(app: Express): Server {
     }
   }
 
-  const broadcastToRoom = (roomId: string, message: any, excludeWs?: WebSocket) => {
-    for (const [connUserId, userConn] of userConnections.entries()) {
-      if (userConn.ws !== excludeWs && userConn.ws.readyState === WebSocket.OPEN) {
-        // For now, broadcast to all connected users
-        // In a real implementation, you'd check if the user is in the room
-        userConn.ws.send(JSON.stringify(message));
-      }
-    }
-  };
-
   function broadcastToUser(userId: string, message: any) {
-    const userWs = userConnections.get(userId)?.ws;
-    if (userWs && userWs.readyState === WebSocket.OPEN) {
-      userWs.send(JSON.stringify(message));
+    const userSocket = userConnections.get(userId)?.socket;
+    if (userSocket) {
+      userSocket.emit(message.type, message);
     } else {
       // Fallback: broadcast to all clients if direct connection not found
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(message));
-        }
-      });
+      io.emit(message.type, message);
     }
   }
 
