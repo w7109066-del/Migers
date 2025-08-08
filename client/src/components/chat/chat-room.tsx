@@ -69,77 +69,72 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
   const { user } = useAuth();
 
-  // Room members data
+  // Room members data - optimized query settings
   const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", roomId, "members"],
-    enabled: Boolean(roomId),
-    refetchInterval: 10000,
-    staleTime: 5000,
-    retry: 3,
-    refetchOnWindowFocus: false
+    enabled: Boolean(roomId && isConnected),
+    refetchInterval: 30000, // Increased from 10s to 30s
+    staleTime: 20000, // Increased from 5s to 20s  
+    retry: 2, // Reduced retries
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false, // Prevent refetch on reconnect
+    refetchOnMount: true // Only refetch when component mounts
   });
 
-  // Initialize room and messages
+  // Initialize room and messages - simplified to prevent excessive re-renders
   useEffect(() => {
-    console.log('ChatRoom useEffect:', { isConnected, roomId, roomName });
+    if (!roomId || !roomName) {
+      console.log('ChatRoom: Missing required props, skipping initialization');
+      return;
+    }
 
-    if (roomId && roomName && isConnected) {
-      console.log('Initializing chat room:', roomId);
+    console.log('ChatRoom: Initializing room:', roomId);
 
-      // Clear previous messages first
-      setMessages([]);
+    // Clear previous messages
+    setMessages([]);
 
-      // Set welcome messages immediately
-      const welcomeMessages = [
-        {
-          id: `welcome-${roomId}`,
-          content: `Welcome to ${roomName} chat room.`,
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        },
-        {
-          id: `room-info-${roomId}`,
-          content: `You are now in ${roomName}. Start chatting!`,
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        }
-      ];
+    // Set welcome messages
+    const welcomeMessages = [
+      {
+        id: `welcome-${roomId}`,
+        content: `Welcome to ${roomName} chat room.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      }
+    ];
 
-      setMessages(welcomeMessages);
-      console.log('Set welcome messages for room:', roomId);
+    setMessages(welcomeMessages);
 
-      // Join room when connected
+    // Cleanup function
+    return () => {
+      console.log('ChatRoom: Cleaning up room:', roomId);
+      setIsUserListOpen(false);
+    };
+  }, [roomId, roomName]); // Removed isConnected, joinRoom, refetchMembers to prevent excessive re-renders
+
+  // Separate effect for joining room when connected
+  useEffect(() => {
+    if (roomId && isConnected) {
+      console.log('ChatRoom: Joining room due to connection:', roomId);
       const joinTimeout = setTimeout(() => {
-        console.log('Attempting to join room:', roomId);
         joinRoom(roomId);
-        console.log('Joined room:', roomId);
         
-        // Force refresh member list after joining
+        // Refresh member list once after joining
         setTimeout(() => {
-          console.log('Refreshing member list for room:', roomId);
           refetchMembers();
-        }, 1000);
+        }, 500);
       }, 100);
 
       return () => clearTimeout(joinTimeout);
-    } else {
-      console.warn('ChatRoom not initialized - missing requirements:', { roomId, roomName, isConnected });
     }
+  }, [roomId, isConnected]); // Minimal dependencies
 
-    // Cleanup when roomId changes
-    return () => {
-      console.log('Cleaning up chat room:', roomId);
-      setMessages([]);
-      setIsUserListOpen(false);
-    };
-  }, [roomId, roomName, isConnected, joinRoom, refetchMembers]);
-
-  // WebSocket event listeners
+  // WebSocket event listeners - optimized to prevent excessive member refreshes
   useEffect(() => {
+    if (!roomId) return;
+
     const handleNewMessage = (event: CustomEvent) => {
       const newMessage = event.detail;
       if (newMessage.roomId === roomId) {
@@ -159,7 +154,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
           messageType: 'system'
         };
         setMessages(prev => [...prev, joinMessage]);
-        setTimeout(() => refetchMembers(), 100);
+        
+        // Debounced member refresh to prevent excessive calls
+        const timeoutId = setTimeout(() => refetchMembers(), 1000);
+        return () => clearTimeout(timeoutId);
       }
     };
 
@@ -175,7 +173,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
           messageType: 'system'
         };
         setMessages(prev => [...prev, leaveMessage]);
-        setTimeout(() => refetchMembers(), 100);
+        
+        // Debounced member refresh to prevent excessive calls
+        const timeoutId = setTimeout(() => refetchMembers(), 1000);
+        return () => clearTimeout(timeoutId);
       }
     };
 
@@ -188,7 +189,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       window.removeEventListener('userJoined', handleUserJoin as EventListener);
       window.removeEventListener('userLeft', handleUserLeave as EventListener);
     };
-  }, [roomId, refetchMembers]);
+  }, [roomId]); // Removed refetchMembers from dependencies
 
   const handleSendMessage = (content: string) => {
     if (roomId) {
