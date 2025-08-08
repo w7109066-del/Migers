@@ -135,7 +135,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose} modal={true}>
       <DialogOverlay className="fixed inset-0 z-50 bg-black/50" />
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto relative z-[9999] fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] bg-white shadow-lg border rounded-lg">
+      <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto relative z-[9999] fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] bg-white shadow-lg border rounded-lg p-4 sm:p-6">
         {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
@@ -146,18 +146,18 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
           </div>
         )}
 
-        <DialogHeader>
-          <DialogTitle className="text-center">Edit Profile</DialogTitle>
-          <DialogDescription className="text-center text-sm text-gray-500">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-center text-lg sm:text-xl">Edit Profile</DialogTitle>
+          <DialogDescription className="text-center text-xs sm:text-sm text-gray-500">
             Update your profile information and photo
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Avatar Section with Photo Upload */}
-          <div className="flex flex-col items-center space-y-4">
+          <div className="flex flex-col items-center space-y-3 sm:space-y-4">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-1">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 p-1">
                 <div className="w-full h-full rounded-full bg-white p-1 overflow-hidden">
                   {photoPreview ? (
                     <img 
@@ -184,10 +184,10 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               <Button
                 size="sm"
                 variant="outline"
-                className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 rounded-full w-7 h-7 sm:w-8 sm:h-8 p-0"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Camera className="w-4 h-4" />
+                <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             </div>
 
@@ -200,61 +200,61 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             />
 
             <div className="text-center">
-              <p className="text-sm text-gray-500 mb-2">Click camera icon to change photo</p>
+              <p className="text-xs sm:text-sm text-gray-500 mb-2">Click camera icon to change photo</p>
               {selectedPhoto && (
-                <p className="text-xs text-green-600">New photo selected: {selectedPhoto.name}</p>
+                <p className="text-xs text-green-600 truncate max-w-[250px]">New photo: {selectedPhoto.name}</p>
               )}
             </div>
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Read-only Username */}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="username" className="text-sm font-medium">Username</Label>
               <Input
                 id="username"
                 value={user.username}
                 disabled
-                className="bg-gray-100 cursor-not-allowed"
+                className="bg-gray-100 cursor-not-allowed text-sm"
                 placeholder="Username cannot be changed"
               />
               <p className="text-xs text-gray-500">Username cannot be modified</p>
             </div>
 
             {/* Read-only Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={user.email}
                 disabled
-                className="bg-gray-100 cursor-not-allowed"
+                className="bg-gray-100 cursor-not-allowed text-sm"
                 placeholder="Email cannot be changed"
               />
               <p className="text-xs text-gray-500">Email cannot be modified</p>
             </div>
 
             {/* Bio */}
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="bio" className="text-sm font-medium">Bio</Label>
               <Textarea
                 id="bio"
                 value={formData.bio}
                 onChange={(e) => handleInputChange('bio', e.target.value)}
                 placeholder="Tell us about yourself..."
-                className="resize-none"
-                rows={3}
+                className="resize-none text-sm"
+                rows={2}
                 maxLength={200}
               />
               <p className="text-xs text-gray-500">{formData.bio.length}/200 characters</p>
             </div>
 
             {/* Country Toggle */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="show-country">Show Country</Label>
+                <Label htmlFor="show-country" className="text-sm font-medium">Show Country</Label>
                 <Switch
                   id="show-country"
                   checked={showCountryField}
@@ -263,13 +263,14 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               </div>
 
               {showCountryField && (
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="country" className="text-sm font-medium">Country</Label>
                   <Input
                     id="country"
                     value={formData.country}
                     onChange={(e) => handleInputChange('country', e.target.value)}
                     placeholder="Enter your country"
+                    className="text-sm"
                     maxLength={50}
                   />
                 </div>
@@ -277,9 +278,9 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             </div>
 
             {/* Gender Toggle */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="show-gender">Show Gender</Label>
+                <Label htmlFor="show-gender" className="text-sm font-medium">Show Gender</Label>
                 <Switch
                   id="show-gender"
                   checked={showGenderField}
@@ -288,13 +289,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               </div>
 
               {showGenderField && (
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="gender" className="text-sm font-medium">Gender</Label>
                   <Select
                     value={formData.gender}
                     onValueChange={(value) => handleInputChange('gender', value)}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full text-sm">
                       <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -310,29 +311,31 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3 pt-4">
+          <div className="flex space-x-2 sm:space-x-3 pt-3 sm:pt-4">
             <Button 
               variant="outline" 
               onClick={onClose}
-              className="flex-1"
+              className="flex-1 text-sm py-2"
               disabled={isLoading}
             >
               Cancel
             </Button>
             <Button 
               onClick={handleSave}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-sm py-2"
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Saving...
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span className="hidden sm:inline">Saving...</span>
+                  <span className="sm:hidden">Save</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Save Changes</span>
+                  <span className="sm:hidden">Save</span>
                 </>
               )}
             </Button>
