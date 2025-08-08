@@ -16,6 +16,7 @@ import { EditProfileModal } from "@/components/ui/edit-profile-modal";
 import { UserSearchModal } from "@/components/ui/user-search-modal";
 import { StatusUpdateModal } from "@/components/ui/status-update-modal";
 import { PrivacySecurityModal } from "@/components/ui/privacy-security-modal";
+import { HelpSupportModal } from "@/components/ui/help-support-modal";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,7 @@ function HomePageContent() {
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [showPrivacySecurity, setShowPrivacySecurity] = useState(false);
+  const [showHelpSupport, setShowHelpSupport] = useState(false); // Added state for Help Support modal
 
   const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string } | null>(null);
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
@@ -1286,7 +1288,7 @@ function HomePageContent() {
                     <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
                   </div>
 
-                  <button 
+                  <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
                     onClick={() => setShowPrivacySecurity(true)}
                   >
@@ -1294,7 +1296,10 @@ function HomePageContent() {
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Privacy & Security</span>
                   </button>
 
-                  <button className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
+                  <button
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    onClick={() => setShowHelpSupport(true)}
+                  >
                     <HelpCircle className="h-5 w-5 text-primary" />
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>Help & Support</span>
                   </button>
@@ -1433,11 +1438,14 @@ function HomePageContent() {
       {/* Privacy & Security Modal */}
       <PrivacySecurityModal
         isOpen={showPrivacySecurity}
-        onClose={() => setShowPrivacySecurity(false)}
+        onOpenChange={setShowPrivacySecurity}
       />
 
-      {/* Change Password Modal */}
-
+      {/* Help Support Modal */}
+      <HelpSupportModal
+        open={showHelpSupport}
+        onOpenChange={setShowHelpSupport}
+      />
 
       {/* Share Modal */}
       {showShareModal && (
