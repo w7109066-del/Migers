@@ -1645,7 +1645,6 @@ export function registerRoutes(app: Express): Server {
                 return; // Should not happen if userId is valid
               }
 
-              // Check if user is already in this specific room to prevent duplicates
               let userAlreadyInRoom = false;
 
               // For mock rooms (1-4), track in memory with user data
@@ -1654,44 +1653,44 @@ export function registerRoutes(app: Express): Server {
                   mockRoomMembers.set(message.roomId, new Map());
                 }
 
-                // Check if user already exists in room - also check by username to prevent duplicates
                 const roomMembersMap = mockRoomMembers.get(message.roomId)!;
-                userAlreadyInRoom = roomMembersMap.has(userId);
                 
-                // Also check if username already exists (additional safety check)
-                if (!userAlreadyInRoom) {
-                  for (const [existingUserId, existingUserData] of roomMembersMap) {
-                    if (existingUserData.username === user.username && existingUserId !== userId) {
-                      // Remove the old entry with same username but different ID
-                      roomMembersMap.delete(existingUserId);
-                      console.log(`Removed duplicate username ${user.username} with old ID ${existingUserId}`);
-                      break;
-                    }
+                // First, clean up any existing entries for this user (by ID or username)
+                for (const [existingUserId, existingUserData] of roomMembersMap) {
+                  if (existingUserId === userId || existingUserData.username === user.username) {
+                    roomMembersMap.delete(existingUserId);
+                    console.log(`Cleaned up existing entry for user ${user.username} (ID: ${existingUserId})`);
                   }
                 }
 
-                if (!userAlreadyInRoom) {
-                  roomMembersMap.set(userId, {
-                    id: userId,
-                    username: user.username || 'User',
-                    level: user.level || 1,
-                    isOnline: true,
-                    profilePhotoUrl: user.profilePhotoUrl || null,
-                    isAdmin: user.isAdmin || false // Include admin status
-                  });
-                  currentRoomId = message.roomId;
+                // Now add the user cleanly
+                roomMembersMap.set(userId, {
+                  id: userId,
+                  username: user.username || 'User',
+                  level: user.level || 1,
+                  isOnline: true,
+                  profilePhotoUrl: user.profilePhotoUrl || null,
+                  isAdmin: user.isAdmin || false
+                });
+                currentRoomId = message.roomId;
 
-                  console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, roomMembersMap.size);
-                }
+                console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, roomMembersMap.size);
               } else {
-                // For real rooms, check membership first
+                // For real rooms, check membership first and clean up duplicates
                 const existingMembers = await storage.getRoomMembers(message.roomId);
-                userAlreadyInRoom = existingMembers?.some(member => member.user.id === userId) || false;
-
-                if (!userAlreadyInRoom) {
-                  await storage.joinRoom(message.roomId, userId);
-                  currentRoomId = message.roomId;
+                
+                // Remove any existing memberships for this user
+                for (const member of existingMembers || []) {
+                  if (member.user.id === userId) {
+                    await storage.leaveRoom(message.roomId, userId);
+                    console.log(`Cleaned up existing membership for user ${userId}`);
+                    break;
+                  }
                 }
+
+                // Add user to room
+                await storage.joinRoom(message.roomId, userId);
+                currentRoomId = message.roomId;
               }
 
               // Only send messages if user wasn't already in room
@@ -1761,22 +1760,25 @@ export function registerRoutes(app: Express): Server {
                 if (mockRoomMembers.has(message.roomId)) {
                   const roomMembersMap = mockRoomMembers.get(message.roomId)!;
                   
-                  // Remove user by ID
-                  roomMembersMap.delete(userId);
-                  
-                  // Also remove any entries with same username (cleanup duplicates)
-                  if (disconnectedUser?.username) {
-                    for (const [memberId, memberData] of roomMembersMap) {
-                      if (memberData.username === disconnectedUser.username && memberId !== userId) {
-                        roomMembersMap.delete(memberId);
-                        console.log(`Cleaned up duplicate entry for ${disconnectedUser.username}`);
-                      }
+                  // Remove ALL entries for this user (by ID and username)
+                  const toRemove = [];
+                  for (const [memberId, memberData] of roomMembersMap) {
+                    if (memberId === userId || memberData.username === disconnectedUser?.username) {
+                      toRemove.push(memberId);
                     }
+                  }
+                  
+                  // Remove all found entries
+                  for (const id of toRemove) {
+                    roomMembersMap.delete(id);
+                    console.log(`Removed user entry ${id} from room ${message.roomId}`);
                   }
                 }
                 currentRoomId = null;
               } else {
+                // For real rooms, ensure complete cleanup
                 await storage.leaveRoom(message.roomId, userId);
+                currentRoomId = null;
               }
 
               // Only broadcast if we have a valid username to avoid generic messages
@@ -2095,61 +2097,66 @@ export function registerRoutes(app: Express): Server {
           await storage.removeUserSession(userSession.socketId);
         }
 
-        // Only clean up room membership if it was a manual disconnect
-        if (isManualDisconnect && currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
-          if (mockRoomMembers.has(currentRoomId)) {
-            const disconnectedUser = await storage.getUser(userId);
-            const roomMembersMap = mockRoomMembers.get(currentRoomId)!;
-            
-            // Remove user by ID
-            roomMembersMap.delete(userId);
-            
-            // Also clean up any duplicate entries with same username
-            if (disconnectedUser?.username) {
+        // Clean up room membership on disconnect
+        if (currentRoomId) {
+          const disconnectedUser = await storage.getUser(userId);
+          
+          if (['1', '2', '3', '4'].includes(currentRoomId)) {
+            if (mockRoomMembers.has(currentRoomId)) {
+              const roomMembersMap = mockRoomMembers.get(currentRoomId)!;
+              
+              // Remove ALL entries for this user (by ID and username)
+              const toRemove = [];
               for (const [memberId, memberData] of roomMembersMap) {
-                if (memberData.username === disconnectedUser.username) {
-                  roomMembersMap.delete(memberId);
-                  console.log(`Cleaned up duplicate entry for ${disconnectedUser.username} on disconnect`);
+                if (memberId === userId || memberData.username === disconnectedUser?.username) {
+                  toRemove.push(memberId);
                 }
               }
+              
+              // Remove all found entries
+              for (const id of toRemove) {
+                roomMembersMap.delete(id);
+                console.log(`Cleaned up user entry ${id} on disconnect from room ${currentRoomId}`);
+              }
+
+              // Only send leave message if it was a manual disconnect
+              if (isManualDisconnect && disconnectedUser?.username && disconnectedUser.username !== 'undefined') {
+                broadcastToRoom(currentRoomId, {
+                  type: 'new_message',
+                  message: {
+                    id: `system-leave-${Date.now()}`,
+                    content: `${disconnectedUser.username} has left`,
+                    senderId: 'system',
+                    roomId: currentRoomId,
+                    recipientId: null,
+                    messageType: 'system',
+                    createdAt: new Date().toISOString(),
+                    sender: {
+                      id: 'system',
+                      username: 'System',
+                      level: 0,
+                      isOnline: true,
+                    }
+                  }
+                });
+              }
+
+              // Broadcast room count update to all clients
+              const currentCount = await getRoomMemberCount(currentRoomId);
+              wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(JSON.stringify({
+                    type: 'room_member_count_updated',
+                    roomId: currentRoomId,
+                    memberCount: currentCount
+                  }));
+                }
+              });
             }
-
-            console.log(`User ${disconnectedUser?.username} manually left room ${currentRoomId}. Remaining members:`, roomMembersMap.size);
-
-            // Broadcast system message about user leaving
-            broadcastToRoom(currentRoomId, {
-              type: 'new_message',
-              message: {
-                id: `system-leave-${Date.now()}`,
-                content: `${disconnectedUser?.username || 'User'} has left`,
-                senderId: 'system',
-                roomId: currentRoomId,
-                recipientId: null,
-                messageType: 'system',
-                createdAt: new Date().toISOString(),
-                sender: {
-                  id: 'system',
-                  username: 'System',
-                  level: 0,
-                  isOnline: true,
-                }
-              }
-            });
-
-            // Broadcast room count update to all clients
-            const currentCount = await getRoomMemberCount(currentRoomId);
-            wss.clients.forEach((client) => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                  type: 'room_member_count_updated',
-                  roomId: currentRoomId,
-                  memberCount: currentCount
-                }));
-              }
-            });
+          } else {
+            // For real rooms, ensure cleanup
+            await storage.leaveRoom(currentRoomId, userId);
           }
-        } else if (currentRoomId) {
-          console.log(`User ${userId} disconnected but staying in room ${currentRoomId} (not manual)`);
         }
       }
       console.log('WebSocket connection closed');
