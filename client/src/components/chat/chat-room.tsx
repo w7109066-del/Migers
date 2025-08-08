@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -123,7 +123,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       console.log('Cleaning up chat room:', roomId);
       setMessages([]);
       setIsUserListOpen(false);
-      
+
       // Only leave room if we're actually changing rooms, not just minimizing
       if (!document.hidden && roomId) {
         console.log('Leaving room due to room change:', roomId);
@@ -489,6 +489,9 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                   <Hash className="w-5 h-5" />
                   <span>{roomName} Settings</span>
                 </DialogTitle>
+                <DialogDescription>
+                  View and manage settings for the {roomName} room.
+                </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">
@@ -658,7 +661,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
         <MessageInput onSendMessage={handleSendMessage} roomId={roomId} />
       </div>
 
-      
+
     </div>
   );
 }
