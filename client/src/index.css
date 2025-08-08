@@ -141,14 +141,14 @@
     height: 100vh;
     width: 100vw;
   }
-  
+
   html {
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
   }
-  
+
   #root {
     height: 100vh;
     height: 100dvh; /* Use dynamic viewport height */
@@ -156,32 +156,32 @@
     display: flex;
     flex-direction: column;
   }
-  
+
   /* Safe area support for mobile devices */
   .safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   /* Custom scrollbar styles */
   .scroll-smooth {
     scroll-behavior: smooth;
   }
-  
+
   /* Hide scrollbar for swipe containers */
   .no-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  
+
   /* Animation classes */
   .animate-slide-up {
     animation: slideUp 0.3s ease;
   }
-  
+
   @keyframes slideUp {
     from { 
       opacity: 0; 
@@ -192,11 +192,11 @@
       transform: translateY(0); 
     }
   }
-  
+
   .animate-pulse-dot {
     animation: pulseDot 2s infinite;
   }
-  
+
   @keyframes pulseDot {
     0%, 100% { 
       opacity: 1; 
@@ -205,12 +205,21 @@
       opacity: 0.5; 
     }
   }
-  
+
   /* Mobile-specific styles */
   @media (max-width: 640px) {
     body {
       overflow-x: hidden;
     }
+  }
+
+  /* Background image for auth page */
+  .bg-auth-image {
+    background-image: url('/attached_assets/images (1)_1754636886228.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 }
 

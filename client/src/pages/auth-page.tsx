@@ -115,15 +115,18 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-700 to-orange-500 p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-auth-image">
+      {/* Background image overlay */}
+      <div className="absolute inset-0 bg-black/40"></div>
+      
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-700 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-ping animation-delay-4000"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-700 rounded-full mix-blend-multiply filter blur-xl opacity-5 animate-ping animation-delay-4000"></div>
       </div>
 
-      <Card className="w-full max-w-md backdrop-blur-sm bg-white/10 border border-white/20 shadow-2xl animate-fade-in-up">
+      <Card className="w-full max-w-md backdrop-blur-md bg-white/15 border border-white/30 shadow-2xl animate-fade-in-up relative z-10">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-white animate-fade-in">Welcome to ChatMe</CardTitle>
           <CardDescription className="text-gray-200 animate-fade-in animation-delay-200">
