@@ -1017,36 +1017,96 @@ export function registerRoutes(app: Express): Server {
       const { userId } = req.body;
       const currentUserId = req.user!.id;
 
-      console.log(`Accepting friend request from ${userId} by ${currentUserId}`);
+      console.log(`=== ACCEPT FRIEND REQUEST DEBUG ===`);
+      console.log(`Request body:`, req.body);
+      console.log(`Current user ID: ${currentUserId}`);
+      console.log(`Friend request from user ID: ${userId}`);
 
       if (!userId) {
-        return res.status(400).json({ message: 'User ID is required' });
+        console.log(`ERROR: Missing userId in request`);
+        return res.status(400).json({ 
+          success: false,
+          message: 'User ID is required' 
+        });
       }
+
+      // Check if users exist
+      const currentUser = await storage.getUser(currentUserId);
+      const friendUser = await storage.getUser(userId);
+
+      if (!currentUser) {
+        console.log(`ERROR: Current user not found: ${currentUserId}`);
+        return res.status(404).json({ 
+          success: false,
+          message: 'Current user not found' 
+        });
+      }
+
+      if (!friendUser) {
+        console.log(`ERROR: Friend user not found: ${userId}`);
+        return res.status(404).json({ 
+          success: false,
+          message: 'Friend user not found' 
+        });
+      }
+
+      console.log(`Users found - Current: ${currentUser.username}, Friend: ${friendUser.username}`);
 
       // Check if friend request exists
       const existingFriendship = await storage.getFriendshipStatus(userId, currentUserId);
-      if (!existingFriendship || existingFriendship.status !== 'pending') {
-        return res.status(400).json({ message: 'No pending friend request found' });
+      console.log(`Friendship status check result:`, existingFriendship);
+
+      if (!existingFriendship) {
+        console.log(`ERROR: No friendship record found between ${userId} and ${currentUserId}`);
+        return res.status(400).json({ 
+          success: false,
+          message: 'No friend request found' 
+        });
       }
 
-      console.log(`Found pending friend request:`, existingFriendship);
+      if (existingFriendship.status !== 'pending') {
+        console.log(`ERROR: Friendship status is not pending, current status: ${existingFriendship.status}`);
+        return res.status(400).json({ 
+          success: false,
+          message: `Friend request is ${existingFriendship.status}, not pending` 
+        });
+      }
+
+      console.log(`Valid pending friend request found, proceeding with acceptance...`);
 
       // Accept the friend request in friendships table
-      await storage.acceptFriendRequest(currentUserId, userId);
+      try {
+        await storage.acceptFriendRequest(currentUserId, userId);
+        console.log(`Successfully updated friendship status to accepted`);
+      } catch (acceptError) {
+        console.error(`ERROR accepting friend request in storage:`, acceptError);
+        return res.status(500).json({ 
+          success: false,
+          message: 'Failed to update friendship status',
+          error: acceptError instanceof Error ? acceptError.message : 'Unknown error'
+        });
+      }
 
       // Add the friend relationship in friends table
       try {
-        await db.insert(friends).values([
+        const friendsToInsert = [
           { userId: currentUserId, friendUserId: userId },
           { userId, friendUserId: currentUserId },
-        ]);
-        console.log(`Friend relationship created between ${currentUserId} and ${userId}`);
+        ];
+        
+        console.log(`Inserting friends relationships:`, friendsToInsert);
+        
+        await db.insert(friends).values(friendsToInsert);
+        console.log(`Successfully created friend relationships`);
       } catch (friendsInsertError) {
-        console.log('Friends relationship may already exist, continuing...');
+        console.log(`Friends insert error (may be duplicate):`, friendsInsertError);
+        // Continue anyway as this might be a duplicate constraint error
       }
 
       // Send friend_list_updated via WebSocket to both users
       try {
+        console.log(`Broadcasting friend_list_updated to both users...`);
+        
         broadcastToUser(currentUserId, {
           type: 'friend_list_updated'
         });
@@ -1055,58 +1115,75 @@ export function registerRoutes(app: Express): Server {
           type: 'friend_list_updated'
         });
 
-        console.log(`Sent friend_list_updated to both users`);
+        console.log(`Successfully sent friend_list_updated to both users`);
       } catch (websocketError) {
         console.error('Error sending WebSocket update for friend list:', websocketError);
       }
 
-      // Get user info for notification
-      const currentUser = await storage.getUser(currentUserId);
-      if (currentUser) {
-        // Create notification for the requester
-        try {
-          const notification = await storage.createNotification({
-            userId: userId,
-            type: 'friend_request_accepted',
-            title: 'Friend Request Accepted',
-            message: `${currentUser.username} accepted your friend request`,
-            fromUserId: currentUserId,
-            data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username }
-          });
+      // Create acceptance notification for the requester
+      try {
+        console.log(`Creating acceptance notification for ${userId}...`);
+        
+        const notification = await storage.createNotification({
+          userId: userId,
+          type: 'friend_request_accepted',
+          title: 'Friend Request Accepted',
+          message: `${currentUser.username} accepted your friend request`,
+          fromUserId: currentUserId,
+          data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username }
+        });
 
-          // Send real-time notification to the requester
-          if (notification) {
-            broadcastToUser(userId, {
-              type: 'new_notification',
-              notification: {
-                id: notification.id,
-                type: 'friend_request_accepted',
-                title: 'Friend Request Accepted',
-                message: `${currentUser.username} accepted your friend request`,
-                fromUser: {
-                  id: currentUserId,
-                  username: currentUser.username
-                },
-                data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username },
-                isRead: false,
-                createdAt: notification.createdAt || new Date().toISOString()
-              }
-            });
-          }
-        } catch (notificationError) {
-          console.error('Failed to create acceptance notification:', notificationError);
+        console.log(`Notification created:`, notification);
+
+        // Send real-time notification to the requester
+        if (notification) {
+          broadcastToUser(userId, {
+            type: 'new_notification',
+            notification: {
+              id: notification.id,
+              type: 'friend_request_accepted',
+              title: 'Friend Request Accepted',
+              message: `${currentUser.username} accepted your friend request`,
+              fromUser: {
+                id: currentUserId,
+                username: currentUser.username
+              },
+              data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username },
+              isRead: false,
+              createdAt: notification.createdAt || new Date().toISOString()
+            }
+          });
+          console.log(`Acceptance notification sent via WebSocket`);
         }
+      } catch (notificationError) {
+        console.error('Failed to create acceptance notification:', notificationError);
+        // Don't fail the request if notification fails
       }
 
-      console.log(`Friend request accepted successfully: ${userId} accepted by ${currentUserId}`);
+      console.log(`=== FRIEND REQUEST ACCEPTED SUCCESSFULLY ===`);
+      console.log(`${friendUser.username} (${userId}) accepted by ${currentUser.username} (${currentUserId})`);
 
-      res.json({ success: true, message: 'Friend request accepted' });
+      res.json({ 
+        success: true, 
+        message: 'Friend request accepted successfully',
+        data: {
+          friendId: userId,
+          friendUsername: friendUser.username
+        }
+      });
+
     } catch (error) {
-      console.error('Failed to accept friend request:', error);
+      console.error('=== FATAL ERROR IN ACCEPT FRIEND REQUEST ===');
+      console.error('Error details:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
       res.status(500).json({ 
         success: false,
         message: 'Failed to accept friend request',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        debug: process.env.NODE_ENV === 'development' ? {
+          stack: error instanceof Error ? error.stack : 'No stack trace'
+        } : undefined
       });
     }
   });

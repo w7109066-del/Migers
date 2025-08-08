@@ -137,14 +137,30 @@ export function NotificationDropdown() {
                                   className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
                                   onClick={async (e) => {
                                     e.stopPropagation();
+                                    console.log('=== ACCEPT BUTTON CLICKED ===');
+                                    console.log('Notification:', notification);
+                                    console.log('From user ID:', notification.fromUser?.id);
+                                    
                                     try {
+                                      const requestData = { userId: notification.fromUser?.id };
+                                      console.log('Sending request with data:', requestData);
+                                      
                                       const response = await fetch('/api/friends/accept', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         credentials: 'include',
-                                        body: JSON.stringify({ userId: notification.fromUser?.id }),
+                                        body: JSON.stringify(requestData),
                                       });
-                                      if (response.ok) {
+                                      
+                                      console.log('Response status:', response.status);
+                                      console.log('Response ok:', response.ok);
+                                      
+                                      const responseData = await response.json();
+                                      console.log('Response data:', responseData);
+                                      
+                                      if (response.ok && responseData.success) {
+                                        console.log('Friend request accepted successfully!');
+                                        
                                         removeNotification(notification.id);
                                         
                                         // Force refresh friend list with multiple methods
@@ -155,24 +171,28 @@ export function NotificationDropdown() {
                                         // Trigger friend list update event
                                         window.dispatchEvent(new CustomEvent('friendListUpdate'));
                                         
-                                        console.log('Friend request accepted, friend list should refresh');
+                                        toast({
+                                          title: "Success!",
+                                          description: `Friend request from ${notification.fromUser?.username} accepted`,
+                                        });
                                         
                                         // Also trigger a delayed refresh to ensure it works
                                         setTimeout(() => {
                                           window.dispatchEvent(new CustomEvent('friendListUpdate'));
                                         }, 1000);
                                       } else {
+                                        console.error('Failed to accept friend request:', responseData);
                                         toast({
                                           title: "Error",
-                                          description: "Failed to accept friend request",
+                                          description: responseData.message || "Failed to accept friend request",
                                           variant: "destructive",
                                         });
                                       }
                                     } catch (error) {
-                                      console.error('Failed to accept friend request:', error);
+                                      console.error('Network error accepting friend request:', error);
                                       toast({
                                         title: "Error",
-                                        description: "Failed to accept friend request",
+                                        description: "Network error. Please try again.",
                                         variant: "destructive",
                                       });
                                     }

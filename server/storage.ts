@@ -272,10 +272,48 @@ export class DatabaseStorage implements IStorage {
 
   async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
     try {
+      console.log(`=== STORAGE: acceptFriendRequest ===`);
+      console.log(`Accepting friend request - userId: ${userId}, friendId: ${friendId}`);
+      
+      // First, let's check what friendship records exist
+      const allFriendships = await this.db
+        .select()
+        .from(friendships)
+        .where(
+          or(
+            and(eq(friendships.userId, friendId), eq(friendships.friendId, userId)),
+            and(eq(friendships.userId, userId), eq(friendships.friendId, friendId))
+          )
+        );
+      
+      console.log(`All friendship records between users:`, allFriendships);
+      
+      // Find the pending request specifically
+      const pendingRequest = await this.db
+        .select()
+        .from(friendships)
+        .where(
+          and(
+            eq(friendships.userId, friendId),
+            eq(friendships.friendId, userId),
+            eq(friendships.status, "pending")
+          )
+        );
+      
+      console.log(`Pending request found:`, pendingRequest);
+      
+      if (pendingRequest.length === 0) {
+        console.log(`ERROR: No pending request found for userId=${friendId} -> friendId=${userId}`);
+        throw new Error('No pending friend request found to accept');
+      }
+
       // Update the friendship status to accepted
       const result = await this.db
         .update(friendships)
-        .set({ status: "accepted" })
+        .set({ 
+          status: "accepted",
+          // Update timestamp if you have one
+        })
         .where(
           and(
             eq(friendships.userId, friendId),
@@ -285,13 +323,18 @@ export class DatabaseStorage implements IStorage {
         )
         .returning();
 
-      console.log(`Updated friendship status:`, result);
+      console.log(`Update result:`, result);
 
       if (result.length === 0) {
-        throw new Error('No pending friend request found to accept');
+        throw new Error('Failed to update friendship status - no rows affected');
       }
+
+      console.log(`Successfully accepted friend request: ${friendId} -> ${userId}`);
+      
     } catch (error) {
-      console.error('Error accepting friend request:', error);
+      console.error('=== STORAGE ERROR in acceptFriendRequest ===');
+      console.error('Error details:', error);
+      console.error('Parameters - userId:', userId, 'friendId:', friendId);
       throw error;
     }
   }
