@@ -5,7 +5,7 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
@@ -363,6 +363,9 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
             <SheetContent side="right" className="w-80">
               <SheetHeader>
                 <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
+                <SheetDescription className="sr-only">
+                  List of all members currently in this chat room
+                </SheetDescription>
               </SheetHeader>
               <div className="mt-4 space-y-3">
                 {roomMembers?.map((member) => (
