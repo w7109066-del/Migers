@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode, useC
 import { useAuth } from "./use-auth";
 import { useToast } from "./use-toast";
 import { useNotifications } from './use-notifications';
-import { queryClient } from '../main'; // Assuming queryClient is exported from main.tsx
+import { queryClient } from '../lib/queryClient';
 
 type WebSocketContextType = {
   isConnected: boolean;
