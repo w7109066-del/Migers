@@ -9,7 +9,7 @@ import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
 import { eq, desc, and, or, exists, count, inArray, sql, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
-import { directMessages, users, messages, friendships } from "@shared/schema";
+import { directMessages, users, messages, friendships, notifications } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
 // Authentication middleware
@@ -1052,20 +1052,46 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Users found - Current: ${currentUser.username}, Friend: ${friendUser.username}`);
 
-      // Check if friend request exists (request sent FROM userId TO currentUserId)
+      // Check if friend request exists (should be pending)
       const existingFriendship = await storage.getFriendshipStatus(userId, currentUserId);
-      console.log(`Checking friendship status: ${userId} -> ${currentUserId}:`, existingFriendship);
+      console.log(`Checking friendship status between ${userId} and ${currentUserId}:`, existingFriendship);
 
       if (!existingFriendship) {
         console.log(`No friendship record found between ${userId} and ${currentUserId}`);
+        
+        // Try to find any notification for friend request to provide better error message
+        const notification = await db
+          .select()
+          .from(notifications)
+          .where(
+            and(
+              eq(notifications.userId, currentUserId),
+              eq(notifications.fromUserId, userId),
+              eq(notifications.type, 'friend_request_received')
+            )
+          )
+          .limit(1);
+          
+        if (notification.length > 0) {
+          console.log(`Found notification but no friendship record - this might be a data inconsistency`);
+        }
+        
         return res.status(400).json({ 
           success: false,
-          message: 'No friend request found between these users' 
+          message: 'No pending friend request found. The request may have been already processed or expired.' 
         });
       }
 
       if (existingFriendship.status !== 'pending') {
         console.log(`Friendship exists but status is: ${existingFriendship.status}, not pending`);
+        
+        if (existingFriendship.status === 'accepted') {
+          return res.status(400).json({ 
+            success: false,
+            message: 'You are already friends with this user' 
+          });
+        }
+        
         return res.status(400).json({ 
           success: false,
           message: `Friend request is ${existingFriendship.status}, cannot accept` 
