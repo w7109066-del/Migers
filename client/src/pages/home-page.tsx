@@ -1376,31 +1376,25 @@ function HomePageContent() {
 
   return (
     <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {selectedRoom ? (
-          <ChatRoom
-            roomId={selectedRoom.id}
-            roomName={selectedRoom.name}
-            onUserClick={handleUserProfileClick}
-            onLeaveRoom={() => setSelectedRoom(null)}
-          />
-        ) : selectedDirectMessage ? (
-          <DirectMessageChat
-            recipient={selectedDirectMessage}
-            onBack={() => setSelectedDirectMessage(null)}
-          />
-        ) : null}
-      </div>
-
-      {/* Admin Page */}
+      {/* Conditional Content Rendering */}
       {showAdmin ? (
         <AdminPage onBack={() => setShowAdmin(false)} />
-      ) : /* Mentor Page */
-      showMentor ? (
+      ) : showMentor ? (
         <MentorPage onBack={() => setShowMentor(false)} />
       ) : showCredits ? (
         <CreditsPage onBack={() => setShowCredits(false)} />
+      ) : selectedRoom ? (
+        <ChatRoom
+          roomId={selectedRoom.id}
+          roomName={selectedRoom.name}
+          onUserClick={handleUserProfileClick}
+          onLeaveRoom={() => setSelectedRoom(null)}
+        />
+      ) : selectedDirectMessage ? (
+        <DirectMessageChat
+          recipient={selectedDirectMessage}
+          onBack={() => setSelectedDirectMessage(null)}
+        />
       ) : (
         /* Use SwipeTabs component for proper swipe functionality */
         <SwipeTabs tabs={tabs} className="flex-1" isDarkMode={isDarkMode} />
