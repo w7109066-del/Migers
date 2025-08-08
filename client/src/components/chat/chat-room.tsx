@@ -456,16 +456,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                   roomMembers.map((member) => (
                     <ContextMenu key={member.user.id}>
                       <ContextMenuTrigger asChild>
-                        <div 
-                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group relative"
+                        <button 
+                          className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group relative text-left"
                           onClick={(e) => {
-                            // Left click also opens context menu for mobile/touch devices
-                            e.preventDefault();
                             console.log('Click on member:', member.user.username);
-                          }}
-                          onContextMenu={(e) => {
-                            console.log('Right click on member:', member.user.username);
-                            e.preventDefault();
                           }}
                           title={`Click for options: ${member.user.username}`}
                         >
@@ -493,10 +487,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                             </div>
                           </div>
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400 flex items-center space-x-1">
-                            <span className="text-xs">Click</span>
+                            <span className="text-xs">Right click</span>
                             <Settings className="w-3 h-3" />
                           </div>
-                        </div>
+                        </button>
                       </ContextMenuTrigger>
                     <ContextMenuContent className="w-64 text-base">
                       <ContextMenuGroup>
