@@ -128,35 +128,48 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   const joinRoomMutation = useMutation({
     mutationFn: async (roomData: Room) => {
-      const response = await fetch(`/api/rooms/${roomData.id}/join`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      try {
+        const response = await fetch(`/api/rooms/${roomData.id}/join`, {
+          method: 'POST',
+          credentials: 'include',
+        });
 
-      if (response.ok) {
-        console.log('Successfully joined room:', roomData.name);
-        setSelectedRoom({ id: roomData.id, name: roomData.name });
-        return roomData;
-      } else if (response.status === 403) {
-        const errorData = await response.json();
+        if (response.ok) {
+          console.log('Successfully joined room:', roomData.name);
+          setSelectedRoom({ id: roomData.id, name: roomData.name });
+          return roomData;
+        } else if (response.status === 403) {
+          const errorData = await response.json().catch(() => ({ message: "Access denied" }));
+          toast({
+            title: "Access Denied",
+            description: errorData.message || "You are banned from accessing chat rooms.",
+            variant: "destructive",
+          });
+          return null; // Don't throw, just return null to prevent further error handling
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error('Failed to join room:', response.status, errorText);
+          toast({
+            title: "Error",
+            description: `Failed to join room: ${response.status}. Please try again.`,
+            variant: "destructive",
+          });
+          return null; // Don't throw, just return null
+        }
+      } catch (error) {
+        console.error('Network error joining room:', error);
         toast({
-          title: "Access Denied",
-          description: errorData.message || "You are banned from accessing chat rooms.",
+          title: "Connection Error",
+          description: "Unable to connect to server. Please check your connection.",
           variant: "destructive",
         });
-        throw new Error('Access denied');
-      } else {
-        console.error('Failed to join room:', response.status);
-        toast({
-          title: "Error",
-          description: "Failed to join room. Please try again.",
-          variant: "destructive",
-        });
-        throw new Error('Failed to join room');
+        return null;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    onSuccess: (result) => {
+      if (result) {
+        queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+      }
     },
   });
 
@@ -226,22 +239,17 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     // Validate room data before proceeding
     if (!room || !room.id || !room.name) {
       console.error('Invalid room data:', room);
+      toast({
+        title: "Error",
+        description: "Invalid room data. Please refresh and try again.",
+        variant: "destructive",
+      });
       return;
     }
 
-    try {
-      console.log('Attempting to join room:', room.id);
-      await joinRoomMutation.mutateAsync(room);
-      // The mutation handler itself sets selectedRoom on success or shows toast on failure
-    } catch (error) {
-      console.error('An unexpected error occurred during room join attempt:', error);
-      // If the mutation itself throws an error (e.g., network issue before response), show a generic error.
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    }
+    console.log('Attempting to join room:', room.id);
+    // Use mutate instead of mutateAsync to avoid promise handling
+    joinRoomMutation.mutate(room);
   };
 
   const handleBackToRoomList = () => {
