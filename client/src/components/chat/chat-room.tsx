@@ -67,12 +67,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const { user } = useAuth();
 
   // Room members data
-  const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
+  const { data: roomMembers, refetch: refetchMembers, isLoading: isLoadingMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", roomId, "members"],
-    enabled: Boolean(isConnected && roomId),
-    refetchInterval: 3000,
-    staleTime: 1000,
-    retry: 1
+    enabled: Boolean(roomId),
+    refetchInterval: 5000,
+    staleTime: 2000,
+    retry: 3,
+    refetchOnWindowFocus: false
   });
 
   // Initialize room and messages
@@ -365,42 +366,48 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                 <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
               </SheetHeader>
               <div className="mt-4 space-y-3">
-                {roomMembers?.map((member) => (
-                  <ContextMenu key={member.user.id}>
-                    <ContextMenuTrigger asChild>
-                      <div 
-                        className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group"
-                        onContextMenu={(e) => {
-                          console.log('Right click on member:', member.user.username);
-                          e.preventDefault();
-                        }}
-                      >
-                        <UserAvatar 
-                          username={member.user.username}
-                          size="sm"
-                          isOnline={member.user.isOnline}
-                          profilePhotoUrl={member.user.profilePhotoUrl}
-                          isAdmin={member.user.isAdmin}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium text-gray-800">{member.user.username}</span>
-                            {(member.role === 'admin' || member.user.level >= 5) && (
-                              <Crown className="w-4 h-4 text-yellow-500" />
-                            )}
-                            {member.user.isAdmin && (
-                              <Badge variant="destructive" className="text-xs px-2 py-0.5">
-                                Admin
-                              </Badge>
-                            )}
+                {isLoadingMembers ? (
+                  <div className="text-center text-gray-500 py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p className="text-sm">Loading members...</p>
+                  </div>
+                ) : roomMembers && roomMembers.length > 0 ? (
+                  roomMembers.map((member) => (
+                    <ContextMenu key={member.user.id}>
+                      <ContextMenuTrigger asChild>
+                        <div 
+                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group"
+                          onContextMenu={(e) => {
+                            console.log('Right click on member:', member.user.username);
+                            e.preventDefault();
+                          }}
+                        >
+                          <UserAvatar 
+                            username={member.user.username}
+                            size="sm"
+                            isOnline={member.user.isOnline}
+                            profilePhotoUrl={member.user.profilePhotoUrl}
+                            isAdmin={member.user.isAdmin}
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium text-gray-800">{member.user.username}</span>
+                              {(member.role === 'admin' || member.user.level >= 5) && (
+                                <Crown className="w-4 h-4 text-yellow-500" />
+                              )}
+                              {member.user.isAdmin && (
+                                <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                                  Admin
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Level {member.user.level} • {member.user.isOnline ? "Online" : "Offline"}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            Level {member.user.level} • {member.user.isOnline ? "Online" : "Offline"}
-                          </div>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400">⚙️</span>
                         </div>
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400">⚙️</span>
-                      </div>
-                    </ContextMenuTrigger>
+                      </ContextMenuTrigger>
                     <ContextMenuContent className="w-64 text-base">
                       <ContextMenuGroup>
                         <ContextMenuItem 
@@ -456,10 +463,15 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                   </ContextMenu>
                 ))}
 
-                {(!roomMembers || roomMembers.length === 0) && (
+                ) : (
                   <div className="text-center text-gray-500 py-4">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No members found</p>
+                    {!isConnected && (
+                      <p className="text-xs text-red-500 mt-2">
+                        Connection lost - reconnecting...
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

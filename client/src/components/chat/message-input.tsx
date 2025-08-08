@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Send, Plus, Smile, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Lottie from "react-lottie-player";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { cn } from "@/lib/utils";
 
 import { gifts } from "@/animations/gifts";
 
@@ -205,14 +207,16 @@ const animatedEmoticons = [
 
 interface MessageInputProps {
   onSendMessage: (message: string) => void;
+  roomId?: string;
 }
 
-export function MessageInput({ onSendMessage }: MessageInputProps) {
+export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [showEmojis, setShowEmojis] = useState(false);
   const [showGifts, setShowGifts] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isConnected } = useWebSocket();
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) {
@@ -220,6 +224,9 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
     }
     if (message.trim() && !isSubmitting) {
       setIsSubmitting(true);
+      
+      // Check if we have a valid connection before sending
+      console.log('Attempting to send message:', message.trim());
       // Check if message is a whois command
       const whoisCommandRegex = /^\/whois\s+(.+)$/i;
       const whoisMatch = message.match(whoisCommandRegex);
@@ -447,19 +454,23 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Type a message, /whois {username}, /me {action}, or /send {gift} to {user}..."
+            placeholder={!isConnected ? "Connecting..." : "Type a message, /whois {username}, /me {action}, or /send {gift} to {user}..."}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && !isSubmitting) {
                 e.preventDefault();
-                if (message.trim()) {
+                if (message.trim() && isConnected) {
                   handleSubmit();
                 }
               }
             }}
-            className="flex-1 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary"
+            className={cn(
+              "flex-1 bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-primary",
+              !isConnected && "bg-red-50 text-red-500"
+            )}
             autoComplete="off"
+            disabled={!isConnected}
           />
           <Button
             onClick={() => handleSubmit()}

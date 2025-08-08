@@ -26,6 +26,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   const connect = () => {
     if (!user) return;
+    
+    // Prevent multiple connections
+    if (ws.current && ws.current.readyState === WebSocket.CONNECTING) {
+      console.log('WebSocket already connecting, skipping...');
+      return;
+    }
+    
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected, skipping...');
+      return;
+    }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     // For Replit environment, construct proper WebSocket URL
@@ -218,18 +229,25 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       setIsConnected(false);
 
       // Only reconnect if it's not a manual closure and user is still authenticated
-      if (user && event.code !== 1000) {
-        // Use exponential backoff for reconnection
-        const delay = Math.min(3000 * Math.pow(1.5, (global.reconnectAttempts || 0)), 30000);
-        global.reconnectAttempts = (global.reconnectAttempts || 0) + 1;
+      if (user && event.code !== 1000 && event.code !== 1006) {
+        // Use exponential backoff for reconnection, but limit attempts
+        const maxReconnectAttempts = 5;
+        const currentAttempts = global.reconnectAttempts || 0;
         
-        console.log(`Reconnecting in ${delay}ms (attempt ${global.reconnectAttempts})`);
-        
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (user) {
-            connect();
-          }
-        }, delay);
+        if (currentAttempts < maxReconnectAttempts) {
+          const delay = Math.min(3000 * Math.pow(1.5, currentAttempts), 15000);
+          global.reconnectAttempts = currentAttempts + 1;
+          
+          console.log(`Reconnecting in ${delay}ms (attempt ${global.reconnectAttempts}/${maxReconnectAttempts})`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (user && (!ws.current || ws.current.readyState === WebSocket.CLOSED)) {
+              connect();
+            }
+          }, delay);
+        } else {
+          console.log('Max reconnection attempts reached, stopping...');
+        }
       }
     };
 
@@ -261,6 +279,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         console.log('App restored - checking connection');
         if (user && (!ws.current || ws.current.readyState !== WebSocket.OPEN)) {
           console.log('Reconnecting after app restore');
+          // Reset reconnect attempts when user returns
+          global.reconnectAttempts = 0;
           connect();
         }
       }
