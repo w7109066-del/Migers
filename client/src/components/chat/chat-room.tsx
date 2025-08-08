@@ -439,7 +439,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                 <Users className="w-4 h-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-80" aria-describedby="member-list-description">
+            <SheetContent side="right" className="w-72 sm:w-80" aria-describedby="member-list-description">
               <SheetHeader>
                 <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
                 <div id="member-list-description" className="sr-only">
@@ -652,7 +652,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                               Kick
                             </Button>
                           </SheetTrigger>
-                          <SheetContent side="right" className="w-80">
+                          <SheetContent side="right" className="w-72 sm:w-80">
                             <SheetHeader>
                               <SheetTitle>Kick User</SheetTitle>
                             </SheetHeader>
