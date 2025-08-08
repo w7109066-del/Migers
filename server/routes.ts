@@ -245,7 +245,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get room members
-  app.get("/api/rooms/:roomId/members", async (req: AuthenticatedRequest, res) => {
+  app.get("/api/rooms/:roomId/members", async (req: any, res) => {
     try {
       const roomId = req.params.roomId;
       console.log('Fetching members for room:', roomId);
@@ -257,15 +257,15 @@ export function registerRoutes(app: Express): Server {
           user: {
             id: member.id,
             username: member.username,
-            level: member.level,
-            isOnline: member.isOnline,
+            level: member.level || 1,
+            isOnline: member.isOnline || true,
             profilePhotoUrl: member.profilePhotoUrl || null,
             isAdmin: member.isAdmin || false
           },
           role: member.role || 'member'
         }));
 
-        console.log('Mock room members:', membersArray.length);
+        console.log(`Mock room ${roomId} members:`, membersArray.length, 'members:', membersArray.map(m => m.user.username));
         return res.json(membersArray);
       }
 
@@ -275,7 +275,7 @@ export function registerRoutes(app: Express): Server {
       res.json(members || []);
     } catch (error) {
       console.error('Error fetching room members:', error);
-      res.status(500).json({ error: 'Failed to fetch room members' });
+      res.status(500).json({ error: 'Failed to fetch room members', members: [] });
     }
   });
 

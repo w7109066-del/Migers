@@ -70,9 +70,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const { data: roomMembers, refetch: refetchMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", roomId, "members"],
     enabled: Boolean(roomId),
-    refetchInterval: 5000,
-    staleTime: 2000,
-    retry: 3
+    refetchInterval: 10000,
+    staleTime: 5000,
+    retry: 3,
+    refetchOnWindowFocus: false
   });
 
   // Initialize room and messages
@@ -109,12 +110,19 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       console.log('Set welcome messages for room:', roomId);
 
       // Always try to join room, regardless of connection status
-      setTimeout(() => {
+      const joinTimeout = setTimeout(() => {
+        console.log('Attempting to join room:', roomId);
         joinRoom(roomId);
         console.log('Joined room:', roomId);
-        // Force refresh member list
-        refetchMembers();
-      }, 500);
+        
+        // Force refresh member list after joining
+        setTimeout(() => {
+          console.log('Refreshing member list for room:', roomId);
+          refetchMembers();
+        }, 1000);
+      }, 100);
+
+      return () => clearTimeout(joinTimeout);
     } else {
       console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
     }
@@ -366,42 +374,43 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-4 space-y-3">
-                {roomMembers && roomMembers.length > 0 ? roomMembers.map((member) => (
-                  <ContextMenu key={member.user.id}>
-                    <ContextMenuTrigger asChild>
-                      <div 
-                        className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group"
-                        onContextMenu={(e) => {
-                          console.log('Right click on member:', member.user.username);
-                          e.preventDefault();
-                        }}
-                      >
-                        <UserAvatar 
-                          username={member.user.username}
-                          size="sm"
-                          isOnline={member.user.isOnline}
-                          profilePhotoUrl={member.user.profilePhotoUrl}
-                          isAdmin={member.user.isAdmin}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium text-gray-800">{member.user.username}</span>
-                            {(member.role === 'admin' || member.user.level >= 5) && (
-                              <Crown className="w-4 h-4 text-yellow-500" />
-                            )}
-                            {member.user.isAdmin && (
-                              <Badge variant="destructive" className="text-xs px-2 py-0.5">
-                                Admin
-                              </Badge>
-                            )}
+                {roomMembers && roomMembers.length > 0 ? (
+                  roomMembers.map((member) => (
+                    <ContextMenu key={member.user.id}>
+                      <ContextMenuTrigger asChild>
+                        <div 
+                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group"
+                          onContextMenu={(e) => {
+                            console.log('Right click on member:', member.user.username);
+                            e.preventDefault();
+                          }}
+                        >
+                          <UserAvatar 
+                            username={member.user.username}
+                            size="sm"
+                            isOnline={member.user.isOnline}
+                            profilePhotoUrl={member.user.profilePhotoUrl}
+                            isAdmin={member.user.isAdmin}
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium text-gray-800">{member.user.username}</span>
+                              {(member.role === 'admin' || member.user.level >= 5) && (
+                                <Crown className="w-4 h-4 text-yellow-500" />
+                              )}
+                              {member.user.isAdmin && (
+                                <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                                  Admin
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Level {member.user.level} • {member.user.isOnline ? "Online" : "Offline"}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            Level {member.user.level} • {member.user.isOnline ? "Online" : "Offline"}
-                          </div>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400">⚙️</span>
                         </div>
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400">⚙️</span>
-                      </div>
-                    </ContextMenuTrigger>
+                      </ContextMenuTrigger>
                     <ContextMenuContent className="w-64 text-base">
                       <ContextMenuGroup>
                         <ContextMenuItem 
