@@ -254,7 +254,11 @@ export class DatabaseStorage implements IStorage {
 
   async getFriendshipStatus(userId: string, friendId: string): Promise<Friendship | undefined> {
     try {
-      const [friendship] = await this.db
+      console.log(`=== STORAGE: getFriendshipStatus ===`);
+      console.log(`Looking for friendship: userId=${userId}, friendId=${friendId}`);
+      
+      // Check both directions to find any existing friendship
+      const friendships = await this.db
         .select()
         .from(friendships)
         .where(
@@ -263,7 +267,18 @@ export class DatabaseStorage implements IStorage {
             and(eq(friendships.userId, friendId), eq(friendships.friendId, userId))
           )
         );
-      return friendship || undefined;
+      
+      console.log(`Found ${friendships.length} friendship records:`, friendships);
+      
+      if (friendships.length === 0) {
+        console.log(`No friendship found between ${userId} and ${friendId}`);
+        return undefined;
+      }
+
+      // Return the first friendship found (there should only be one)
+      const friendship = friendships[0];
+      console.log(`Returning friendship:`, friendship);
+      return friendship;
     } catch (error) {
       console.error('Error getting friendship status:', error);
       return undefined;
@@ -273,22 +288,9 @@ export class DatabaseStorage implements IStorage {
   async acceptFriendRequest(userId: string, friendId: string): Promise<void> {
     try {
       console.log(`=== STORAGE: acceptFriendRequest ===`);
-      console.log(`Accepting friend request - userId: ${userId}, friendId: ${friendId}`);
+      console.log(`Accepting friend request - currentUser: ${userId}, requester: ${friendId}`);
       
-      // First, let's check what friendship records exist
-      const allFriendships = await this.db
-        .select()
-        .from(friendships)
-        .where(
-          or(
-            and(eq(friendships.userId, friendId), eq(friendships.friendId, userId)),
-            and(eq(friendships.userId, userId), eq(friendships.friendId, friendId))
-          )
-        );
-      
-      console.log(`All friendship records between users:`, allFriendships);
-      
-      // Find the pending request specifically
+      // The pending request should be FROM friendId TO userId (requester -> receiver)
       const pendingRequest = await this.db
         .select()
         .from(friendships)
@@ -300,20 +302,48 @@ export class DatabaseStorage implements IStorage {
           )
         );
       
-      console.log(`Pending request found:`, pendingRequest);
+      console.log(`Pending request search result:`, pendingRequest);
       
       if (pendingRequest.length === 0) {
-        console.log(`ERROR: No pending request found for userId=${friendId} -> friendId=${userId}`);
-        throw new Error('No pending friend request found to accept');
+        // Also check the reverse direction just in case
+        const reverseRequest = await this.db
+          .select()
+          .from(friendships)
+          .where(
+            and(
+              eq(friendships.userId, userId),
+              eq(friendships.friendId, friendId),
+              eq(friendships.status, "pending")
+            )
+          );
+        
+        console.log(`Reverse direction check:`, reverseRequest);
+        
+        if (reverseRequest.length === 0) {
+          throw new Error('No pending friend request found in either direction');
+        }
+        
+        // Accept the reverse request
+        const result = await this.db
+          .update(friendships)
+          .set({ status: "accepted" })
+          .where(
+            and(
+              eq(friendships.userId, userId),
+              eq(friendships.friendId, friendId),
+              eq(friendships.status, "pending")
+            )
+          )
+          .returning();
+        
+        console.log(`Reverse request accepted:`, result);
+        return;
       }
 
-      // Update the friendship status to accepted
+      // Accept the normal direction request
       const result = await this.db
         .update(friendships)
-        .set({ 
-          status: "accepted",
-          // Update timestamp if you have one
-        })
+        .set({ status: "accepted" })
         .where(
           and(
             eq(friendships.userId, friendId),
@@ -323,7 +353,7 @@ export class DatabaseStorage implements IStorage {
         )
         .returning();
 
-      console.log(`Update result:`, result);
+      console.log(`Friend request accepted:`, result);
 
       if (result.length === 0) {
         throw new Error('Failed to update friendship status - no rows affected');

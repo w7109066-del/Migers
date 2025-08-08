@@ -1052,23 +1052,23 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Users found - Current: ${currentUser.username}, Friend: ${friendUser.username}`);
 
-      // Check if friend request exists
+      // Check if friend request exists (request sent FROM userId TO currentUserId)
       const existingFriendship = await storage.getFriendshipStatus(userId, currentUserId);
-      console.log(`Friendship status check result:`, existingFriendship);
+      console.log(`Checking friendship status: ${userId} -> ${currentUserId}:`, existingFriendship);
 
       if (!existingFriendship) {
-        console.log(`ERROR: No friendship record found between ${userId} and ${currentUserId}`);
+        console.log(`No friendship record found between ${userId} and ${currentUserId}`);
         return res.status(400).json({ 
           success: false,
-          message: 'No friend request found' 
+          message: 'No friend request found between these users' 
         });
       }
 
       if (existingFriendship.status !== 'pending') {
-        console.log(`ERROR: Friendship status is not pending, current status: ${existingFriendship.status}`);
+        console.log(`Friendship exists but status is: ${existingFriendship.status}, not pending`);
         return res.status(400).json({ 
           success: false,
-          message: `Friend request is ${existingFriendship.status}, not pending` 
+          message: `Friend request is ${existingFriendship.status}, cannot accept` 
         });
       }
 
@@ -1093,9 +1093,9 @@ export function registerRoutes(app: Express): Server {
           { userId: currentUserId, friendUserId: userId },
           { userId, friendUserId: currentUserId },
         ];
-        
+
         console.log(`Inserting friends relationships:`, friendsToInsert);
-        
+
         await db.insert(friends).values(friendsToInsert);
         console.log(`Successfully created friend relationships`);
       } catch (friendsInsertError) {
@@ -1106,7 +1106,7 @@ export function registerRoutes(app: Express): Server {
       // Send friend_list_updated via WebSocket to both users
       try {
         console.log(`Broadcasting friend_list_updated to both users...`);
-        
+
         broadcastToUser(currentUserId, {
           type: 'friend_list_updated'
         });
@@ -1123,7 +1123,7 @@ export function registerRoutes(app: Express): Server {
       // Create acceptance notification for the requester
       try {
         console.log(`Creating acceptance notification for ${userId}...`);
-        
+
         const notification = await storage.createNotification({
           userId: userId,
           type: 'friend_request_accepted',
@@ -1176,7 +1176,7 @@ export function registerRoutes(app: Express): Server {
       console.error('=== FATAL ERROR IN ACCEPT FRIEND REQUEST ===');
       console.error('Error details:', error);
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
+
       res.status(500).json({ 
         success: false,
         message: 'Failed to accept friend request',
