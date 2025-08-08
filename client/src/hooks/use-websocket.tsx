@@ -88,9 +88,16 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             break;
 
           case 'user_joined':
-            window.dispatchEvent(new CustomEvent('userJoined', {
-              detail: { userId: message.userId, username: message.username, roomId: message.roomId }
-            }));
+            // Only dispatch if we have a valid userId and roomId
+            if (message.userId && message.roomId) {
+              window.dispatchEvent(new CustomEvent('userJoined', {
+                detail: { 
+                  userId: message.userId, 
+                  username: message.username || 'User', 
+                  roomId: message.roomId 
+                }
+              }));
+            }
             break;
 
           case 'user_left':

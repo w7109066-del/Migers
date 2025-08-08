@@ -248,20 +248,44 @@ export function registerRoutes(app: Express): Server {
     try {
       const { roomId } = req.params;
 
-      // For mock rooms, return members from memory
+      // For mock rooms, return members from memory with deduplication
       if (['1', '2', '3', '4'].includes(roomId)) {
         if (mockRoomMembers.has(roomId)) {
-          const members = Array.from(mockRoomMembers.get(roomId)!.values()).map(userData => ({
+          const roomMembersMap = mockRoomMembers.get(roomId)!;
+          
+          // Deduplicate members by username
+          const uniqueMembers = new Map();
+          
+          for (const [memberId, userData] of roomMembersMap) {
+            const username = userData.username;
+            if (!uniqueMembers.has(username) || uniqueMembers.get(username).id === memberId) {
+              uniqueMembers.set(username, userData);
+            }
+          }
+          
+          const members = Array.from(uniqueMembers.values()).map(userData => ({
             user: userData
           }));
+          
           res.json(members);
         } else {
           res.json([]);
         }
       } else {
-        // For real rooms, use storage (these should have valid UUID format)
-        const members = await storage.getRoomMembers(roomId);
-        res.json(members || []);
+        // For real rooms, use storage with deduplication
+        const allMembers = await storage.getRoomMembers(roomId);
+        
+        // Deduplicate by user ID
+        const uniqueMembers = new Map();
+        if (allMembers) {
+          for (const member of allMembers) {
+            if (!uniqueMembers.has(member.user.id)) {
+              uniqueMembers.set(member.user.id, member);
+            }
+          }
+        }
+        
+        res.json(Array.from(uniqueMembers.values()));
       }
     } catch (error) {
       console.error("Failed to fetch room members:", error);
@@ -1629,16 +1653,6 @@ export function registerRoutes(app: Express): Server {
                 break;
               }
 
-              // Check room capacity (25 users max)
-              const roomMemberCount = await getRoomMemberCount(message.roomId);
-              if (roomMemberCount >= 25) {
-                ws.send(JSON.stringify({
-                  type: 'error',
-                  message: 'Room is full (maximum 25 users)',
-                }));
-                break;
-              }
-
               // Use the already retrieved user data
               const user = currentUser;
               if (!user) {
@@ -1646,6 +1660,7 @@ export function registerRoutes(app: Express): Server {
               }
 
               let userAlreadyInRoom = false;
+              let shouldSendJoinMessage = false;
 
               // For mock rooms (1-4), track in memory with user data
               if (['1', '2', '3', '4'].includes(message.roomId)) {
@@ -1655,56 +1670,88 @@ export function registerRoutes(app: Express): Server {
 
                 const roomMembersMap = mockRoomMembers.get(message.roomId)!;
                 
-                // First, clean up any existing entries for this user (by ID or username)
-                for (const [existingUserId, existingUserData] of roomMembersMap) {
-                  if (existingUserId === userId || existingUserData.username === user.username) {
-                    roomMembersMap.delete(existingUserId);
-                    console.log(`Cleaned up existing entry for user ${user.username} (ID: ${existingUserId})`);
-                  }
-                }
+                // Check if user is already in room (by ID or username)
+                userAlreadyInRoom = Array.from(roomMembersMap.entries()).some(([existingUserId, existingUserData]) => 
+                  existingUserId === userId || existingUserData.username === user.username
+                );
 
-                // Now add the user cleanly
-                roomMembersMap.set(userId, {
-                  id: userId,
-                  username: user.username || 'User',
-                  level: user.level || 1,
-                  isOnline: true,
-                  profilePhotoUrl: user.profilePhotoUrl || null,
-                  isAdmin: user.isAdmin || false
-                });
-                currentRoomId = message.roomId;
-
-                console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, roomMembersMap.size);
-              } else {
-                // For real rooms, check membership first and clean up duplicates
-                const existingMembers = await storage.getRoomMembers(message.roomId);
-                
-                // Remove any existing memberships for this user
-                for (const member of existingMembers || []) {
-                  if (member.user.id === userId) {
-                    await storage.leaveRoom(message.roomId, userId);
-                    console.log(`Cleaned up existing membership for user ${userId}`);
+                if (!userAlreadyInRoom) {
+                  // Check room capacity (25 users max) only if user is not already in room
+                  if (roomMembersMap.size >= 25) {
+                    ws.send(JSON.stringify({
+                      type: 'error',
+                      message: 'Room is full (maximum 25 users)',
+                    }));
                     break;
                   }
-                }
 
-                // Add user to room
-                await storage.joinRoom(message.roomId, userId);
+                  // Clean up any existing entries for this user (by ID or username)
+                  const toRemove = [];
+                  for (const [existingUserId, existingUserData] of roomMembersMap) {
+                    if (existingUserId === userId || existingUserData.username === user.username) {
+                      toRemove.push(existingUserId);
+                    }
+                  }
+                  
+                  toRemove.forEach(id => {
+                    roomMembersMap.delete(id);
+                    console.log(`Cleaned up existing entry for user ${user.username} (ID: ${id})`);
+                  });
+
+                  // Add the user
+                  roomMembersMap.set(userId, {
+                    id: userId,
+                    username: user.username || 'User',
+                    level: user.level || 1,
+                    isOnline: true,
+                    profilePhotoUrl: user.profilePhotoUrl || null,
+                    isAdmin: user.isAdmin || false
+                  });
+
+                  shouldSendJoinMessage = true;
+                  console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, roomMembersMap.size);
+                } else {
+                  console.log(`User ${user.username} already in room ${message.roomId}, not adding again`);
+                }
+                
+                currentRoomId = message.roomId;
+              } else {
+                // For real rooms, check membership first
+                const existingMembers = await storage.getRoomMembers(message.roomId);
+                
+                // Check if user is already a member
+                userAlreadyInRoom = existingMembers?.some(member => member.user.id === userId) || false;
+
+                if (!userAlreadyInRoom) {
+                  // Check room capacity (25 users max)
+                  if ((existingMembers?.length || 0) >= 25) {
+                    ws.send(JSON.stringify({
+                      type: 'error',
+                      message: 'Room is full (maximum 25 users)',
+                    }));
+                    break;
+                  }
+
+                  // Remove any existing memberships for this user (cleanup)
+                  for (const member of existingMembers || []) {
+                    if (member.user.id === userId) {
+                      await storage.leaveRoom(message.roomId, userId);
+                      console.log(`Cleaned up existing membership for user ${userId}`);
+                      break;
+                    }
+                  }
+
+                  // Add user to room
+                  await storage.joinRoom(message.roomId, userId);
+                  shouldSendJoinMessage = true;
+                }
+                
                 currentRoomId = message.roomId;
               }
 
-              // Only send messages if user wasn't already in room
-              if (!userAlreadyInRoom) {
-                // Get room name for welcome message
-                const roomNames = {
-                  '1': 'MeChat',
-                  '2': 'Indonesia', 
-                  '3': 'MeChat',
-                  '4': 'lowcard'
-                };
-                const roomName = roomNames[message.roomId as keyof typeof roomNames] || 'room';
-
-                // Broadcast system message about user joining (no welcome message to avoid spam)
+              // Only send join messages if user wasn't already in room
+              if (shouldSendJoinMessage) {
+                // Broadcast system message about user joining
                 broadcastToRoom(message.roomId, {
                   type: 'new_message',
                   message: {
@@ -1743,7 +1790,7 @@ export function registerRoutes(app: Express): Server {
                   }
                 });
               } else {
-                console.log(`User ${user.username} already in room ${message.roomId}, no duplicate join message sent`);
+                console.log(`User ${user.username} already in room ${message.roomId}, no join message sent`);
               }
             }
             break;
