@@ -105,12 +105,12 @@ export function SwipeTabs({ tabs, className, isDarkMode }: SwipeTabsProps) {
         <div className="flex items-center justify-around relative">
           {/* Tab Indicator */}
           <div
-            className={cn("absolute top-0 h-1 rounded-full transition-transform duration-300",
+            className={cn("absolute top-0 h-1 rounded-full transition-all duration-300",
               isDarkMode ? "bg-primary" : "bg-primary"
             )}
             style={{
-              width: `${100 / tabs.length}%`,
-              transform: `translateX(${activeTab * 100}%)`,
+              width: `calc(100% / ${tabs.length})`,
+              left: `calc(${activeTab} * (100% / ${tabs.length}))`,
             }}
           />
 
