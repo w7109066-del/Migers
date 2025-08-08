@@ -35,12 +35,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     }
 
     console.log('Attempting to connect to Socket.IO server');
-    socket.current = io({
+    socket.current = io(window.location.origin, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 3000,
       timeout: 20000,
+      transports: ['websocket', 'polling'],
+      upgrade: true,
+      forceNew: true,
     });
 
     socket.current.on('connect', () => {

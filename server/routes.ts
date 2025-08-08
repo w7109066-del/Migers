@@ -1625,9 +1625,14 @@ export function registerRoutes(app: Express): Server {
   const io = new SocketIOServer(httpServer, {
     cors: {
       origin: "*",
-      methods: ["GET", "POST"]
+      methods: ["GET", "POST"],
+      credentials: true
     },
-    path: "/socket.io/"
+    path: "/socket.io/",
+    transports: ['websocket', 'polling'],
+    allowEIO3: true,
+    pingTimeout: 60000,
+    pingInterval: 25000
   });
 
   // Track users in mock rooms with detailed user info
