@@ -216,32 +216,118 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriends(userId: string): Promise<(User & { friendshipStatus: string })[]> {
-    const userFriends = await this.db
-      .select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        level: users.level,
-        isOnline: users.isOnline,
-        country: users.country,
-        status: users.status,
-        profilePhotoUrl: users.profilePhotoUrl,
-        bio: users.bio,
-        coins: users.coins,
-        isMentor: users.isMentor,
-        isAdmin: users.isAdmin,
-        isBanned: users.isBanned,
-        isSuspended: users.isSuspended,
-        lastSeen: users.lastSeen,
-        password: users.password,
-        createdAt: users.createdAt,
-        friendshipStatus: sql<string>`'accepted'`,
-      })
-      .from(friends)
-      .innerJoin(users, eq(friends.friendUserId, users.id))
-      .where(eq(friends.userId, userId));
+    try {
+      console.log(`=== STORAGE: getFriends for user ${userId} ===`);
 
-    return userFriends;
+      // Get friends from the friends table
+      const userFriends = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          level: users.level,
+          isOnline: users.isOnline,
+          country: users.country,
+          status: users.status,
+          profilePhotoUrl: users.profilePhotoUrl,
+          bio: users.bio,
+          coins: users.coins,
+          isMentor: users.isMentor,
+          isAdmin: users.isAdmin,
+          isBanned: users.isBanned,
+          isSuspended: users.isSuspended,
+          lastSeen: users.lastSeen,
+          password: users.password,
+          createdAt: users.createdAt,
+          friendshipStatus: sql<string>`'accepted'`,
+        })
+        .from(friends)
+        .innerJoin(users, eq(friends.friendUserId, users.id))
+        .where(eq(friends.userId, userId));
+
+      console.log(`Found ${userFriends.length} friends from friends table:`, userFriends.map(f => f.username));
+
+      // Also check for any accepted friendships that might not be in friends table yet
+      const acceptedFriendships = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          level: users.level,
+          isOnline: users.isOnline,
+          country: users.country,
+          status: users.status,
+          profilePhotoUrl: users.profilePhotoUrl,
+          bio: users.bio,
+          coins: users.coins,
+          isMentor: users.isMentor,
+          isAdmin: users.isAdmin,
+          isBanned: users.isBanned,
+          isSuspended: users.isSuspended,
+          lastSeen: users.lastSeen,
+          password: users.password,
+          createdAt: users.createdAt,
+          friendshipStatus: friendships.status,
+        })
+        .from(friendships)
+        .innerJoin(users, eq(friendships.friendId, users.id))
+        .where(
+          and(
+            eq(friendships.userId, userId),
+            eq(friendships.status, 'accepted')
+          )
+        );
+
+      console.log(`Found ${acceptedFriendships.length} accepted friendships:`, acceptedFriendships.map(f => f.username));
+
+      // Also check reverse direction (where current user is the friendId)
+      const reverseFriendships = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          level: users.level,
+          isOnline: users.isOnline,
+          country: users.country,
+          status: users.status,
+          profilePhotoUrl: users.profilePhotoUrl,
+          bio: users.bio,
+          coins: users.coins,
+          isMentor: users.isMentor,
+          isAdmin: users.isAdmin,
+          isBanned: users.isBanned,
+          isSuspended: users.isSuspended,
+          lastSeen: users.lastSeen,
+          password: users.password,
+          createdAt: users.createdAt,
+          friendshipStatus: friendships.status,
+        })
+        .from(friendships)
+        .innerJoin(users, eq(friendships.userId, users.id))
+        .where(
+          and(
+            eq(friendships.friendId, userId),
+            eq(friendships.status, 'accepted')
+          )
+        );
+
+      console.log(`Found ${reverseFriendships.length} reverse accepted friendships:`, reverseFriendships.map(f => f.username));
+
+      // Combine all friends and remove duplicates
+      const allFriends = [...userFriends, ...acceptedFriendships, ...reverseFriendships];
+      
+      // Remove duplicates based on user ID
+      const uniqueFriends = allFriends.filter((friend, index, self) =>
+        index === self.findIndex(f => f.id === friend.id)
+      );
+
+      console.log(`Returning ${uniqueFriends.length} unique friends:`, uniqueFriends.map(f => f.username));
+
+      return uniqueFriends;
+    } catch (error) {
+      console.error('Error getting friends:', error);
+      return [];
+    }
   }
 
   async addFriend(userId: string, friendId: string): Promise<Friendship> {
@@ -333,33 +419,56 @@ export class DatabaseStorage implements IStorage {
       try {
         console.log(`Adding both users to friends table...`);
         
-        // Check if friends entries already exist
-        const existingFriends = await this.db
+        // Check if friends entries already exist for both directions
+        const existingFriendsUser1 = await this.db
           .select()
           .from(friends)
           .where(
-            or(
-              and(eq(friends.userId, userId), eq(friends.friendUserId, friendId)),
-              and(eq(friends.userId, friendId), eq(friends.friendUserId, userId))
+            and(
+              eq(friends.userId, userId), 
+              eq(friends.friendUserId, friendId)
             )
           );
         
-        console.log(`Existing friends entries:`, existingFriends);
+        const existingFriendsUser2 = await this.db
+          .select()
+          .from(friends)
+          .where(
+            and(
+              eq(friends.userId, friendId), 
+              eq(friends.friendUserId, userId)
+            )
+          );
         
-        if (existingFriends.length === 0) {
-          // Add bidirectional friendship entries
-          const friendsEntries = await this.db
-            .insert(friends)
-            .values([
-              { userId, friendUserId: friendId },
-              { userId: friendId, friendUserId: userId }
-            ])
-            .returning();
-          
-          console.log(`Successfully created friends entries:`, friendsEntries);
-        } else {
-          console.log(`Friends entries already exist, skipping insertion`);
+        console.log(`Existing friends entries - User1->User2: ${existingFriendsUser1.length}, User2->User1: ${existingFriendsUser2.length}`);
+        
+        // Add entry for acceptor -> requester if it doesn't exist
+        if (existingFriendsUser1.length === 0) {
+          try {
+            const entry1 = await this.db
+              .insert(friends)
+              .values({ userId, friendUserId: friendId })
+              .returning();
+            console.log(`Created friends entry: ${userId} -> ${friendId}`, entry1);
+          } catch (insertError) {
+            console.log(`Friends entry ${userId} -> ${friendId} may already exist`);
+          }
         }
+
+        // Add entry for requester -> acceptor if it doesn't exist
+        if (existingFriendsUser2.length === 0) {
+          try {
+            const entry2 = await this.db
+              .insert(friends)
+              .values({ userId: friendId, friendUserId: userId })
+              .returning();
+            console.log(`Created friends entry: ${friendId} -> ${userId}`, entry2);
+          } catch (insertError) {
+            console.log(`Friends entry ${friendId} -> ${userId} may already exist`);
+          }
+        }
+
+        console.log(`Successfully ensured bidirectional friends entries exist`);
       } catch (friendsError) {
         console.error('Error adding to friends table:', friendsError);
         // Don't throw here, the friendship status is already updated

@@ -37,15 +37,31 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      console.log('Manual refresh triggered');
+      console.log('=== MANUAL REFRESH TRIGGERED ===');
 
       // Clear cache completely
       queryClient.removeQueries({ queryKey: ["/api/friends"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
 
-      // Force refetch
+      // Try force refresh endpoint first
+      try {
+        const response = await fetch('/api/friends/refresh', {
+          method: 'POST',
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const refreshedFriends = await response.json();
+          console.log('Force refresh API returned:', refreshedFriends.length, 'friends');
+        }
+      } catch (apiError) {
+        console.error('Force refresh API failed:', apiError);
+      }
+
+      // Force refetch from query
       await refetch();
 
-      console.log('Manual refresh completed');
+      console.log('=== MANUAL REFRESH COMPLETED ===');
     } catch (error) {
       console.error('Failed to refresh friends:', error);
     } finally {
@@ -155,17 +171,16 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-xl font-bold text-gray-800">Friends</h1>
-          {showRefreshButton && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="text-primary border-primary hover:bg-primary hover:text-white"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="text-primary border-primary hover:bg-primary hover:text-white"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </div>
         <div className="flex items-center space-x-4">
           {/* Search Input */}

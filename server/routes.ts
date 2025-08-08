@@ -1003,11 +1003,31 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/friends', requireAuth, async (req, res) => {
     try {
       const userId = req.user!.id;
+      console.log(`=== API: Getting friends for user ${userId} ===`);
+      
       const friends = await storage.getFriends(userId);
+      console.log(`=== API: Returning ${friends.length} friends ===`);
+      
       res.json(friends);
     } catch (error) {
       console.error('Failed to fetch friends:', error);
       res.status(500).json({ message: 'Failed to fetch friends' });
+    }
+  });
+
+  // Force refresh friends endpoint
+  app.post('/api/friends/refresh', requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      console.log(`=== API: Force refreshing friends for user ${userId} ===`);
+      
+      const friends = await storage.refreshFriendsList(userId);
+      console.log(`=== API: Force refresh returned ${friends.length} friends ===`);
+      
+      res.json(friends);
+    } catch (error) {
+      console.error('Failed to refresh friends:', error);
+      res.status(500).json({ message: 'Failed to refresh friends' });
     }
   });
 
