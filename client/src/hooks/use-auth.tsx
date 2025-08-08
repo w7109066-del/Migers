@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await response.json();
         setUser(userData);
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
         throw new Error(errorData.message || 'Login failed');
       }
     } catch (err) {
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (username: string, email: string, password: string, country?: string, gender?: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Registration failed');
+        const errorData = await response.json().catch(() => ({ message: 'Registration failed' }));
+        throw new Error(errorData.message || 'Registration failed');
       }
 
       const userData = await response.json();
@@ -149,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', {
+      await fetch('/api/logout', {
         method: 'POST',
         credentials: 'include',
       });
