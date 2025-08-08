@@ -286,21 +286,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Handle beforeunload to prevent accidental disconnections
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only show warning if user is actually closing the tab/browser
-      if (!document.hidden) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
       
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
