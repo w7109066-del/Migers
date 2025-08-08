@@ -1,0 +1,18 @@
+
+{
+  "name": "MeChat - Real-time Chat",
+  "short_name": "MeChat",
+  "description": "Real-time chat application with friends and rooms",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
