@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Mail, Smartphone, Send } from "lucide-react";
+import { ArrowLeft, Mail, Smartphone, Send, Lock, Key } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -289,7 +289,7 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
             <div className="space-y-2">
               <Label htmlFor="newEmail" className="flex items-center space-x-2">
                 <Mail className="w-4 h-4" />
-                <span>New Email</span>
+                <span>New Email Address</span>
               </Label>
               <Input
                 id="newEmail"
@@ -298,12 +298,13 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
                 onChange={(e) => handleInputChange('newEmail', e.target.value)}
                 placeholder="Enter your new email address"
                 className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
+                autoComplete="email"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center space-x-2">
-                <Mail className="w-4 h-4" />
+                <Lock className="w-4 h-4" />
                 <span>Current Password</span>
               </Label>
               <Input
@@ -313,6 +314,7 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 placeholder="Enter your current password"
                 className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
+                autoComplete="current-password"
               />
             </div>
           </div>
@@ -324,25 +326,24 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
                 <Smartphone className="w-4 h-4" />
                 <span>Phone Number</span>
               </Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                  placeholder="+62812xxxxxxxx"
-                  className={cn("flex-1", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
-                  disabled={otpVerified}
-                />
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                placeholder="+62812xxxxxxxx"
+                className={cn("w-full", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
+                disabled={otpVerified}
+              />
+              <div className="flex justify-center mt-2">
                 <Button
                   onClick={handleSendOTP}
                   disabled={isLoading || !formData.phoneNumber.trim() || otpVerified}
-                  size="sm"
                   variant={otpSent ? "secondary" : "default"}
-                  className="whitespace-nowrap"
+                  className="px-8 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                 >
-                  <Send className="w-4 h-4 mr-1" />
-                  {otpSent ? "Sent" : "Send OTP"}
+                  <Send className="w-4 h-4 mr-2" />
+                  {otpSent ? "OTP Sent" : "Send OTP"}
                 </Button>
               </div>
               <p className="text-xs text-gray-500">
@@ -353,23 +354,27 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
             {/* OTP Input */}
             {otpSent && !otpVerified && (
               <div className="space-y-2">
-                <Label htmlFor="otpCode">Verification Code</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="otpCode"
-                    type="text"
-                    value={formData.otpCode}
-                    onChange={(e) => handleInputChange('otpCode', e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    maxLength={6}
-                    className={cn("flex-1", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
-                  />
+                <Label htmlFor="otpCode" className="flex items-center space-x-2">
+                  <Key className="w-4 h-4" />
+                  <span>Verification Code</span>
+                </Label>
+                <Input
+                  id="otpCode"
+                  type="text"
+                  value={formData.otpCode}
+                  onChange={(e) => handleInputChange('otpCode', e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  maxLength={6}
+                  className={cn("w-full text-center text-lg tracking-widest", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
+                />
+                <div className="flex justify-center mt-2">
                   <Button
                     onClick={handleVerifyOTP}
                     disabled={isLoading || !formData.otpCode.trim()}
-                    size="sm"
+                    className="px-8 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
                   >
-                    Verify
+                    <Key className="w-4 h-4 mr-2" />
+                    Verify Code
                   </Button>
                 </div>
               </div>
