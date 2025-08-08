@@ -175,15 +175,23 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     const handleUserLeave = (event: CustomEvent) => {
       const { username, roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId && username && username !== 'undefined') {
-        const leaveMessage = {
-          id: `leave-${Date.now()}-${username}`,
-          content: `${username} has left`,
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        };
-        setMessages(prev => [...prev, leaveMessage]);
+        // Check if we already have a recent leave message for this user to prevent duplicates
+        const recentLeaveMessages = messages.filter(msg => 
+          msg.content.includes(`${username} has left`) && 
+          Date.now() - new Date(msg.createdAt).getTime() < 5000 // within 5 seconds
+        );
+        
+        if (recentLeaveMessages.length === 0) {
+          const leaveMessage = {
+            id: `leave-${Date.now()}-${username}`,
+            content: `${username} has left`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          };
+          setMessages(prev => [...prev, leaveMessage]);
+        }
         setTimeout(() => refetchMembers(), 100);
       }
     };

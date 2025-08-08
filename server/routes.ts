@@ -1752,25 +1752,27 @@ export function registerRoutes(app: Express): Server {
                 await storage.leaveRoom(message.roomId, userId);
               }
 
-              // Broadcast system message about user leaving
-              broadcastToRoom(message.roomId, {
-                type: 'new_message',
-                message: {
-                  id: `system-leave-${Date.now()}`,
-                  content: `${disconnectedUser?.username || 'User'} has left`,
-                  senderId: 'system',
-                  roomId: message.roomId,
-                  recipientId: null,
-                  messageType: 'system',
-                  createdAt: new Date().toISOString(),
-                  sender: {
-                    id: 'system',
-                    username: 'System',
-                    level: 0,
-                    isOnline: true,
+              // Only broadcast if we have a valid username to avoid generic messages
+              if (disconnectedUser?.username && disconnectedUser.username !== 'undefined') {
+                broadcastToRoom(message.roomId, {
+                  type: 'new_message',
+                  message: {
+                    id: `system-leave-${Date.now()}-${disconnectedUser.username}`,
+                    content: `${disconnectedUser.username} has left`,
+                    senderId: 'system',
+                    roomId: message.roomId,
+                    recipientId: null,
+                    messageType: 'system',
+                    createdAt: new Date().toISOString(),
+                    sender: {
+                      id: 'system',
+                      username: 'System',
+                      level: 0,
+                      isOnline: true,
+                    }
                   }
-                }
-              });
+                });
+              }
 
               // Broadcast to room members
               broadcastToRoom(message.roomId, {
