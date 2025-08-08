@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import { z } from "zod";
 
 declare global {
   namespace Express {
