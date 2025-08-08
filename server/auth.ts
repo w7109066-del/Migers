@@ -37,9 +37,9 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || "chatme-chat-secret-key",
     resave: false,
     saveUninitialized: false,
-    store: new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    store: new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
     }),
     cookie: {
       secure: process.env.NODE_ENV === "production",
@@ -60,7 +60,7 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         }
-        
+
         // Update user online status
         await storage.updateUserOnlineStatus(user.id, true);
         return done(null, user);
@@ -84,7 +84,7 @@ export function setupAuth(app: Express) {
     try {
       // Additional server-side username validation
       const { username } = req.body;
-      
+
       // Validate username format
       if (!username || typeof username !== 'string') {
         return res.status(400).json({ message: "Username is required" });
@@ -112,7 +112,7 @@ export function setupAuth(app: Express) {
       }
 
       const validatedData = insertUserSchema.parse(req.body);
-      
+
       const existingUser = await storage.getUserByUsername(validatedData.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
@@ -150,7 +150,7 @@ export function setupAuth(app: Express) {
     if (req.user) {
       await storage.updateUserOnlineStatus(req.user.id, false);
     }
-    
+
     req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);

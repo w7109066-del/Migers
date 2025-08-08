@@ -29,7 +29,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string, country?: string, gender?: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isDarkMode: boolean;
@@ -115,7 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string, country?: string, gender?: string) => {
+    setIsLoading(true);
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -123,19 +124,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ 
+          username, 
+          email, 
+          password,
+          ...(country && { country }),
+          ...(gender && { gender })
+        }),
       });
 
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+      if (!response.ok) {
+        throw new Error('Registration failed');
       }
-    } catch (err) {
-      console.error('Registration failed:', err);
-      throw err;
+
+      const userData = await response.json();
+      setUser(userData);
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 

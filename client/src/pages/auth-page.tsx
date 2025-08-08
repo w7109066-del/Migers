@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { Navigate } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -27,8 +29,14 @@ export default function AuthPage() {
     username: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    country: "",
+    gender: ""
   });
+
+  // Toggle states for optional fields
+  const [showCountryField, setShowCountryField] = useState(false);
+  const [showGenderField, setShowGenderField] = useState(false);
 
   // If user is already authenticated, redirect to app
   if (user) {
@@ -90,7 +98,13 @@ export default function AuthPage() {
     }
 
     try {
-      await register(registerForm.username, registerForm.email, registerForm.password);
+      await register(
+        registerForm.username, 
+        registerForm.email, 
+        registerForm.password,
+        showCountryField ? registerForm.country : "",
+        showGenderField ? registerForm.gender : ""
+      );
     } catch (error) {
       console.error("Register error:", error);
       toast({
@@ -253,6 +267,68 @@ export default function AuthPage() {
                       )}
                     </Button>
                   </div>
+                </div>
+
+                {/* Country Toggle */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-country">Add Country</Label>
+                    <Switch
+                      id="show-country"
+                      checked={showCountryField}
+                      onCheckedChange={setShowCountryField}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  {showCountryField && (
+                    <div className="space-y-2">
+                      <Label htmlFor="register-country">Country</Label>
+                      <Input
+                        id="register-country"
+                        type="text"
+                        placeholder="Enter your country"
+                        value={registerForm.country}
+                        onChange={(e) => setRegisterForm({ ...registerForm, country: e.target.value })}
+                        disabled={isLoading}
+                        maxLength={50}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Gender Toggle */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-gender">Add Gender</Label>
+                    <Switch
+                      id="show-gender"
+                      checked={showGenderField}
+                      onCheckedChange={setShowGenderField}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  {showGenderField && (
+                    <div className="space-y-2">
+                      <Label htmlFor="register-gender">Gender</Label>
+                      <Select
+                        value={registerForm.gender}
+                        onValueChange={(value) => setRegisterForm({ ...registerForm, gender: value })}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select your gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="non-binary">Non-binary</SelectItem>
+                          <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
