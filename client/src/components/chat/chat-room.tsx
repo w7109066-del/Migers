@@ -117,11 +117,17 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
     }
 
-    // Cleanup when roomId changes
+    // Cleanup when roomId changes - but don't leave room on minimize
     return () => {
       console.log('Cleaning up chat room:', roomId);
       setMessages([]);
       setIsUserListOpen(false);
+      
+      // Only leave room if we're actually changing rooms, not just minimizing
+      if (!document.hidden && roomId) {
+        console.log('Leaving room due to room change:', roomId);
+        leaveRoom(roomId);
+      }
     };
   }, [roomId, roomName, joinRoom]);
 

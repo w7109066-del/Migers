@@ -38,6 +38,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     ws.current.onopen = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
+      
+      // Reset reconnection attempts on successful connection
+      global.reconnectAttempts = 0;
 
       // Send authentication message after connection is established
       setTimeout(() => {
@@ -210,12 +213,23 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    ws.current.onclose = () => {
+    ws.current.onclose = (event) => {
+      console.log('WebSocket closed:', event.code, event.reason);
       setIsConnected(false);
 
-      // Attempt to reconnect after 3 seconds
-      if (user) {
-        reconnectTimeoutRef.current = setTimeout(connect, 3000);
+      // Only reconnect if it's not a manual closure and user is still authenticated
+      if (user && event.code !== 1000) {
+        // Use exponential backoff for reconnection
+        const delay = Math.min(3000 * Math.pow(1.5, (global.reconnectAttempts || 0)), 30000);
+        global.reconnectAttempts = (global.reconnectAttempts || 0) + 1;
+        
+        console.log(`Reconnecting in ${delay}ms (attempt ${global.reconnectAttempts})`);
+        
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (user) {
+            connect();
+          }
+        }, delay);
       }
     };
 
@@ -237,7 +251,37 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       setIsConnected(false);
     }
 
+    // Handle page visibility changes
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden/minimized - don't disconnect, just reduce activity
+        console.log('App minimized - maintaining connection');
+      } else {
+        // Page is visible again - ensure connection is active
+        console.log('App restored - checking connection');
+        if (user && (!ws.current || ws.current.readyState !== WebSocket.OPEN)) {
+          console.log('Reconnecting after app restore');
+          connect();
+        }
+      }
+    };
+
+    // Handle beforeunload to prevent accidental disconnections
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only show warning if user is actually closing the tab/browser
+      if (!document.hidden) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }

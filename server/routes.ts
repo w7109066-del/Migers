@@ -1586,6 +1586,7 @@ export function registerRoutes(app: Express): Server {
     let userId: string | null = null;
     let userSession: any = null;
     let currentRoomId: string | null = null;
+    let isManualDisconnect = false;
 
     ws.on('message', async (data) => {
       try {
@@ -1736,6 +1737,8 @@ export function registerRoutes(app: Express): Server {
 
           case 'leave_room':
             if (userId && message.roomId && typeof message.roomId === 'string') {
+              isManualDisconnect = true;
+              
               // Get user data for system message before leaving
               const disconnectedUser = await storage.getUser(userId);
 
@@ -2051,18 +2054,25 @@ export function registerRoutes(app: Express): Server {
         // Remove from user connections tracking
         userConnections.delete(userId);
 
-        await storage.updateUserOnlineStatus(userId, false);
+        // Don't update offline status immediately - user might reconnect quickly
+        setTimeout(async () => {
+          // Check if user has reconnected in the meantime
+          if (!userConnections.has(userId)) {
+            await storage.updateUserOnlineStatus(userId, false);
+          }
+        }, 5000);
+
         if (userSession) {
           await storage.removeUserSession(userSession.socketId);
         }
 
-        // Clean up mock room membership
-        if (currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
+        // Only clean up room membership if it was a manual disconnect
+        if (isManualDisconnect && currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
           if (mockRoomMembers.has(currentRoomId)) {
             const disconnectedUser = await storage.getUser(userId);
             mockRoomMembers.get(currentRoomId)!.delete(userId);
 
-            console.log(`User ${disconnectedUser?.username} left room ${currentRoomId}. Remaining members:`, mockRoomMembers.get(currentRoomId)!.size);
+            console.log(`User ${disconnectedUser?.username} manually left room ${currentRoomId}. Remaining members:`, mockRoomMembers.get(currentRoomId)!.size);
 
             // Broadcast system message about user leaving
             broadcastToRoom(currentRoomId, {
@@ -2096,6 +2106,8 @@ export function registerRoutes(app: Express): Server {
               }
             });
           }
+        } else if (currentRoomId) {
+          console.log(`User ${userId} disconnected but staying in room ${currentRoomId} (not manual)`);
         }
       }
       console.log('WebSocket connection closed');
