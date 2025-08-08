@@ -1052,14 +1052,20 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Users found - Current: ${currentUser.username}, Friend: ${friendUser.username}`);
 
-      // Check if friend request exists (should be pending)
-      const existingFriendship = await storage.getFriendshipStatus(userId, currentUserId);
-      console.log(`Checking friendship status between ${userId} and ${currentUserId}:`, existingFriendship);
+      // Check if friend request exists in any direction
+      let existingFriendship = await storage.getFriendshipStatus(userId, currentUserId);
+      
+      // If not found, also check the reverse direction more explicitly
+      if (!existingFriendship) {
+        existingFriendship = await storage.getFriendshipStatus(currentUserId, userId);
+      }
+
+      console.log(`Final friendship check result:`, existingFriendship);
 
       if (!existingFriendship) {
-        console.log(`No friendship record found between ${userId} and ${currentUserId}`);
+        console.log(`No friendship record found in either direction`);
         
-        // Try to find any notification for friend request to provide better error message
+        // Check if there's a notification for this friend request
         const notification = await db
           .select()
           .from(notifications)
@@ -1067,19 +1073,31 @@ export function registerRoutes(app: Express): Server {
             and(
               eq(notifications.userId, currentUserId),
               eq(notifications.fromUserId, userId),
-              eq(notifications.type, 'friend_request_received')
+              eq(notifications.type, 'friend_request_received'),
+              eq(notifications.isRead, false)
             )
           )
           .limit(1);
           
         if (notification.length > 0) {
-          console.log(`Found notification but no friendship record - this might be a data inconsistency`);
+          console.log(`Found notification but no friendship record - attempting to create missing friendship`);
+          
+          // Create the missing friendship record
+          try {
+            const newFriendship = await storage.createFriendRequest(userId, currentUserId);
+            console.log(`Created missing friendship record:`, newFriendship);
+            existingFriendship = newFriendship;
+          } catch (createError) {
+            console.error(`Failed to create missing friendship:`, createError);
+          }
         }
         
-        return res.status(400).json({ 
-          success: false,
-          message: 'No pending friend request found. The request may have been already processed or expired.' 
-        });
+        if (!existingFriendship) {
+          return res.status(400).json({ 
+            success: false,
+            message: 'No friend request found between these users. The request may have expired or been deleted.' 
+          });
+        }
       }
 
       if (existingFriendship.status !== 'pending') {
