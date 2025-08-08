@@ -241,8 +241,17 @@ export function ChangeEmailModal({ isOpen, onClose }: ChangeEmailModalProps) {
   if (!user) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={cn("sm:max-w-md max-h-[90vh] overflow-y-auto relative", isDarkMode ? "bg-gray-900" : "bg-white")} style={{ zIndex: 9999 }}>
+    <Dialog open={isOpen} onOpenChange={handleClose} modal>
+      <DialogContent 
+        className={cn("sm:max-w-md max-h-[90vh] overflow-y-auto relative", isDarkMode ? "bg-gray-900" : "bg-white")} 
+        style={{ 
+          zIndex: 10001,
+          position: 'fixed'
+        }}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[99999] rounded-lg">

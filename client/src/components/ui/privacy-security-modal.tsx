@@ -100,7 +100,9 @@ export function PrivacySecurityModal({ isOpen, onClose }: PrivacySecurityModalPr
 
             {/* Change Email */}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 console.log('Change Email clicked');
                 setShowChangeEmail(true);
               }}
