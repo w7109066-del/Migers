@@ -24,7 +24,8 @@ import {
   Eye,
   Flag,
   User,
-  Crown
+  Crown,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -238,15 +239,50 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   };
 
   const handleViewProfile = (user: any) => {
-    // Open detailed profile view
-    console.log('View profile for:', user.username);
-    // You can implement profile modal here if needed
+    // Open mini profile modal
+    console.log('Opening mini profile for:', user.username);
+    if (onUserClick) {
+      onUserClick({
+        id: user.id,
+        username: user.username,
+        level: user.level,
+        status: "Available for chat",
+        isOnline: user.isOnline,
+        profilePhotoUrl: user.profilePhotoUrl,
+        country: user.country,
+        bio: user.bio,
+        showMiniProfile: true // Flag to show mini profile instead of chat
+      });
+    }
   };
 
   const handleUserInfo = (username: string) => {
-    // Send whois command
+    // Send enhanced whois command with room context
     if (roomId) {
+      // Send whois command that will show user info in room context
       sendChatMessage(`/whois ${username}`, roomId);
+      
+      // Also show room-specific information
+      const roomInfoMessage = {
+        id: `room-info-${Date.now()}`,
+        content: `🏠 Room: ${roomName} | 👥 Members: ${roomMembers?.length || 0}/25 | 🎯 Viewing info for: ${username}`,
+        senderId: 'system',
+        roomId: roomId,
+        recipientId: null,
+        messageType: 'system',
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: 'system',
+          username: 'System',
+          level: 0,
+          isOnline: true,
+        }
+      };
+      
+      // Dispatch event to show room info message
+      window.dispatchEvent(new CustomEvent('newMessage', {
+        detail: roomInfoMessage
+      }));
     }
   };
 
@@ -300,11 +336,15 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   };
 
   const handleLeaveRoom = () => {
-    if (roomId) {
-      leaveRoom(roomId);
-    }
-    if (onLeaveRoom) {
-      onLeaveRoom();
+    // Show confirmation before leaving
+    const confirmLeave = window.confirm(`Are you sure you want to leave ${roomName}?`);
+    if (confirmLeave) {
+      if (roomId) {
+        leaveRoom(roomId);
+      }
+      if (onLeaveRoom) {
+        onLeaveRoom();
+      }
     }
   };
 
@@ -394,11 +434,12 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                     <ContextMenu key={member.user.id}>
                       <ContextMenuTrigger asChild>
                         <div 
-                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group"
+                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 group relative"
                           onContextMenu={(e) => {
                             console.log('Right click on member:', member.user.username);
                             e.preventDefault();
                           }}
+                          title={`Right-click for options: ${member.user.username}`}
                         >
                           <UserAvatar 
                             username={member.user.username}
@@ -423,57 +464,97 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                               Level {member.user.level} • {member.user.isOnline ? "Online" : "Offline"}
                             </div>
                           </div>
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400">⚙️</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity text-sm text-gray-400 flex items-center space-x-1">
+                            <span className="text-xs">Right-click</span>
+                            <Settings className="w-3 h-3" />
+                          </div>
                         </div>
                       </ContextMenuTrigger>
                     <ContextMenuContent className="w-64 text-base">
                       <ContextMenuGroup>
                         <ContextMenuItem 
                           onClick={() => handleViewProfile(member.user)}
-                          className="py-3 px-4 text-base"
+                          className="py-3 px-4 text-base hover:bg-blue-50 focus:bg-blue-50"
                         >
-                          <Eye className="w-5 h-5 mr-3" />
-                          View Profile
+                          <Eye className="w-5 h-5 mr-3 text-blue-600" />
+                          <div className="flex flex-col">
+                            <span>View Profile</span>
+                            <span className="text-xs text-gray-500">Mini profile preview</span>
+                          </div>
                         </ContextMenuItem>
+                        
                         <ContextMenuItem 
                           onClick={() => handleUserInfo(member.user.username)}
-                          className="py-3 px-4 text-base"
+                          className="py-3 px-4 text-base hover:bg-green-50 focus:bg-green-50"
                         >
-                          <Info className="w-5 h-5 mr-3" />
-                          Info
+                          <Info className="w-5 h-5 mr-3 text-green-600" />
+                          <div className="flex flex-col">
+                            <span>User Info</span>
+                            <span className="text-xs text-gray-500">Room information</span>
+                          </div>
                         </ContextMenuItem>
+                        
                         <ContextMenuSeparator />
+                        
                         <ContextMenuItem 
                           onClick={() => handleChatUser(member.user)}
-                          className="py-3 px-4 text-base"
+                          className="py-3 px-4 text-base hover:bg-purple-50 focus:bg-purple-50"
                         >
-                          <MessageCircle className="w-5 h-5 mr-3" />
-                          Private Chat
+                          <MessageCircle className="w-5 h-5 mr-3 text-purple-600" />
+                          <div className="flex flex-col">
+                            <span>Private Chat</span>
+                            <span className="text-xs text-gray-500">Send direct message</span>
+                          </div>
                         </ContextMenuItem>
                       </ContextMenuGroup>
+                      
                       {/* Show kick option only for admins and not for current user */}
                       {isAdmin && member.user.id !== user?.id && (
                         <>
                           <ContextMenuSeparator />
                           <ContextMenuItem 
                             onClick={() => handleKickUser(member.user.id, member.user.username)}
-                            className="text-red-600 focus:text-red-600 py-3 px-4 text-base"
+                            className="text-red-600 focus:text-red-600 hover:bg-red-50 focus:bg-red-50 py-3 px-4 text-base"
                           >
                             <UserMinus className="w-5 h-5 mr-3" />
-                            Kick
+                            <div className="flex flex-col">
+                              <span>Kick User</span>
+                              <span className="text-xs text-red-400">Remove from room</span>
+                            </div>
                           </ContextMenuItem>
                         </>
                       )}
+                      
+                      {/* Show leave option only for current user */}
+                      {member.user.id === user?.id && (
+                        <>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem 
+                            onClick={handleLeaveRoom}
+                            className="text-orange-600 focus:text-orange-600 hover:bg-orange-50 focus:bg-orange-50 py-3 px-4 text-base"
+                          >
+                            <X className="w-5 h-5 mr-3" />
+                            <div className="flex flex-col">
+                              <span>Leave Room</span>
+                              <span className="text-xs text-orange-400">Disconnect from room</span>
+                            </div>
+                          </ContextMenuItem>
+                        </>
+                      )}
+                      
                       {/* Show report option for all users except current user */}
                       {member.user.id !== user?.id && (
                         <>
                           <ContextMenuSeparator />
                           <ContextMenuItem 
                             onClick={() => handleReportUser(member.user)}
-                            className="text-orange-600 focus:text-orange-600 py-3 px-4 text-base"
+                            className="text-gray-600 focus:text-gray-600 hover:bg-gray-50 focus:bg-gray-50 py-3 px-4 text-base"
                           >
                             <Flag className="w-5 h-5 mr-3" />
-                            Report
+                            <div className="flex flex-col">
+                              <span>Report User</span>
+                              <span className="text-xs text-gray-400">Report inappropriate behavior</span>
+                            </div>
                           </ContextMenuItem>
                         </>
                       )}
