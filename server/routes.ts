@@ -1697,18 +1697,17 @@ export function registerRoutes(app: Express): Server {
               }
 
               // Check if user is already active in this room
-              const userConn = userConnections.get(userId);
-              const isAlreadyInRoom = userConn?.currentRoomId === message.roomId;
+              const isAlreadyInRoom = userConnections.get(userId)?.currentRoomId === message.roomId;
 
               if (!isAlreadyInRoom) {
                 // Leave previous room if in another room
-                if (userConn?.currentRoomId) {
+                if (userConnections.get(userId)?.currentRoomId) {
                   try {
-                    await storage.leaveRoom(userConn.currentRoomId, userId);
-                    broadcastToRoom(userConn.currentRoomId, {
+                    await storage.leaveRoom(userConnections.get(userId)!.currentRoomId!, userId);
+                    broadcastToRoom(userConnections.get(userId)!.currentRoomId!, {
                       type: 'user_left',
                       userId,
-                      roomId: userConn.currentRoomId,
+                      roomId: userConnections.get(userId)!.currentRoomId!,
                       username: user.username
                     }, ws);
                   } catch (leaveError) {
@@ -1737,8 +1736,8 @@ export function registerRoutes(app: Express): Server {
                 }
 
                 // Update user's current room
-                if (userConn) {
-                  userConn.currentRoomId = message.roomId;
+                if (userConnections.has(userId)) {
+                  userConnections.get(userId)!.currentRoomId = message.roomId;
                 }
                 currentRoomId = message.roomId;
 
@@ -1784,7 +1783,7 @@ export function registerRoutes(app: Express): Server {
             try {
               // Get user data first
               const user = await storage.getUser(userId);
-              
+
               // Check if user is actually in this room
               const userConn = userConnections.get(userId);
               if (userConn?.currentRoomId === message.roomId) {
