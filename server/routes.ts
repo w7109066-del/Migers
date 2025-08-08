@@ -1665,62 +1665,108 @@ export function registerRoutes(app: Express): Server {
             break;
 
           case 'join_room':
-            if (!message.roomId || !userId) break;
+            if (!message.roomId || !userId) {
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Missing room ID or user ID',
+              }));
+              break;
+            }
 
             try {
               // Get user data first
               const user = await storage.getUser(userId);
               if (!user) {
                 console.log(`User ${userId} not found during join room attempt`);
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'User not found',
+                }));
                 break;
               }
 
               console.log(`User ${user.username} attempting to join room ${message.roomId}`);
 
+              // Check if user is banned from rooms
+              if (user.isBanned) {
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'You are banned from accessing chat rooms',
+                }));
+                break;
+              }
+
               // Check if user is already active in this room
-              const isAlreadyInRoom = userConnections.get(userId)?.currentRoomId === message.roomId;
+              const userConn = userConnections.get(userId);
+              const isAlreadyInRoom = userConn?.currentRoomId === message.roomId;
 
               if (!isAlreadyInRoom) {
-                // Add user to room
-                await storage.joinRoom(message.roomId, userId);
+                // Leave previous room if in another room
+                if (userConn?.currentRoomId) {
+                  try {
+                    await storage.leaveRoom(userConn.currentRoomId, userId);
+                    broadcastToRoom(userConn.currentRoomId, {
+                      type: 'user_left',
+                      userId,
+                      roomId: userConn.currentRoomId,
+                      username: user.username
+                    }, ws);
+                  } catch (leaveError) {
+                    console.error('Error leaving previous room:', leaveError);
+                  }
+                }
+
+                // Join new room
+                if (['1', '2', '3', '4'].includes(message.roomId)) {
+                  // Mock room handling
+                  if (!mockRoomMembers.has(message.roomId)) {
+                    mockRoomMembers.set(message.roomId, new Map());
+                  }
+                  const roomMembers = mockRoomMembers.get(message.roomId)!;
+                  roomMembers.set(userId, {
+                    id: userId,
+                    username: user.username,
+                    level: user.level || 1,
+                    isOnline: true,
+                    profilePhotoUrl: user.profilePhotoUrl,
+                    isAdmin: user.isAdmin || false
+                  });
+                } else {
+                  // Real room
+                  await storage.joinRoom(message.roomId, userId);
+                }
 
                 // Update user's current room
-                const userConn = userConnections.get(userId);
                 if (userConn) {
                   userConn.currentRoomId = message.roomId;
                 }
                 currentRoomId = message.roomId;
 
-                // Broadcast system message about user joining
-                broadcastToRoom(message.roomId, {
-                  type: 'new_message',
-                  message: {
-                    id: `system-join-${userId}-${Date.now()}`,
-                    content: `${user.username} has entered`,
-                    senderId: 'system',
-                    roomId: message.roomId,
-                    recipientId: null,
-                    messageType: 'system',
-                    createdAt: new Date().toISOString(),
-                    sender: {
-                      id: 'system',
-                      username: 'System',
-                      level: 0,
-                      isOnline: true,
-                    }
-                  }
-                });
+                // Send success confirmation to user
+                ws.send(JSON.stringify({
+                  type: 'room_joined',
+                  roomId: message.roomId,
+                  success: true
+                }));
 
-                // Broadcast to room members
+                // Broadcast to room members (excluding sender)
                 broadcastToRoom(message.roomId, {
                   type: 'user_joined',
                   userId,
+                  username: user.username,
                   roomId: message.roomId,
                 }, ws);
 
-                console.log(`User ${user.username} joined room ${message.roomId}`);
+                console.log(`User ${user.username} successfully joined room ${message.roomId}`);
               } else {
-                console.log(`User ${userId} already in room ${message.roomId}, skipping duplicate join`);
+                // Already in room, send confirmation
+                ws.send(JSON.stringify({
+                  type: 'room_joined',
+                  roomId: message.roomId,
+                  success: true,
+                  message: 'Already in room'
+                }));
+                console.log(`User ${userId} already in room ${message.roomId}`);
               }
             } catch (error) {
               console.error('Join room error:', error);
