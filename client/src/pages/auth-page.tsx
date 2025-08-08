@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,7 @@ export default function AuthPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!loginForm.username.trim() || !loginForm.password.trim()) {
       toast({
         title: "Error",
@@ -69,7 +68,7 @@ export default function AuthPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!registerForm.username.trim() || !registerForm.email.trim() || !registerForm.password.trim()) {
       toast({
         title: "Error",
@@ -99,8 +98,8 @@ export default function AuthPage() {
 
     try {
       await register(
-        registerForm.username, 
-        registerForm.email, 
+        registerForm.username,
+        registerForm.email,
         registerForm.password,
         showCountryField ? registerForm.country : "",
         showGenderField ? registerForm.gender : ""
@@ -116,14 +115,14 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-700 to-orange-500 p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-violet-600 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-ping animation-delay-4000"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-700 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-ping animation-delay-4000"></div>
       </div>
-      
+
       <Card className="w-full max-w-md backdrop-blur-sm bg-white/10 border border-white/20 shadow-2xl animate-fade-in-up">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-white animate-fade-in">Welcome to ChatMe</CardTitle>
@@ -137,7 +136,7 @@ export default function AuthPage() {
               <TabsTrigger value="login" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white transition-all duration-300">Login</TabsTrigger>
               <TabsTrigger value="register" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white transition-all duration-300">Register</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login" className="animate-fade-in">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
@@ -150,7 +149,7 @@ export default function AuthPage() {
                     onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                     disabled={isLoading}
                     required
-                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-purple-400 focus:ring-purple-400/20 transition-all duration-300"
+                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-300"
                   />
                 </div>
                 <div className="space-y-2">
@@ -164,7 +163,7 @@ export default function AuthPage() {
                       onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                       disabled={isLoading}
                       required
-                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-purple-400 focus:ring-purple-400/20 transition-all duration-300"
+                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-300"
                     />
                     <Button
                       type="button"
@@ -182,7 +181,7 @@ export default function AuthPage() {
                     </Button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-none shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white border-none shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" disabled={isLoading}>
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -194,7 +193,7 @@ export default function AuthPage() {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="register" className="animate-fade-in">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
@@ -207,7 +206,7 @@ export default function AuthPage() {
                     onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
                     disabled={isLoading}
                     required
-                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-purple-400 focus:ring-purple-400/20 transition-all duration-300"
+                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-300"
                   />
                 </div>
                 <div className="space-y-2">
@@ -220,7 +219,7 @@ export default function AuthPage() {
                     onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
                     disabled={isLoading}
                     required
-                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-purple-400 focus:ring-purple-400/20 transition-all duration-300"
+                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-300"
                   />
                 </div>
                 <div className="space-y-2">
@@ -234,7 +233,7 @@ export default function AuthPage() {
                       onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                       disabled={isLoading}
                       required
-                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-purple-400 focus:ring-purple-400/20 transition-all duration-300"
+                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-300"
                     />
                     <Button
                       type="button"
@@ -263,7 +262,7 @@ export default function AuthPage() {
                       onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
                       disabled={isLoading}
                       required
-                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-purple-400 focus:ring-purple-400/20 transition-all duration-300"
+                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-300"
                     />
                     <Button
                       type="button"
@@ -291,7 +290,7 @@ export default function AuthPage() {
                       checked={showCountryField}
                       onCheckedChange={setShowCountryField}
                       disabled={isLoading}
-                      className="data-[state=checked]:bg-purple-600"
+                      className="data-[state=checked]:bg-orange-500"
                     />
                   </div>
 
@@ -303,7 +302,7 @@ export default function AuthPage() {
                         onValueChange={(value) => setRegisterForm({ ...registerForm, country: value })}
                         disabled={isLoading}
                       >
-                        <SelectTrigger className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white focus:border-purple-400 focus:ring-purple-400/20">
+                        <SelectTrigger className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white focus:border-orange-400 focus:ring-orange-400/20">
                           <SelectValue placeholder="Select your country" />
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
@@ -518,7 +517,7 @@ export default function AuthPage() {
                       checked={showGenderField}
                       onCheckedChange={setShowGenderField}
                       disabled={isLoading}
-                      className="data-[state=checked]:bg-purple-600"
+                      className="data-[state=checked]:bg-orange-500"
                     />
                   </div>
 
@@ -530,7 +529,7 @@ export default function AuthPage() {
                         onValueChange={(value) => setRegisterForm({ ...registerForm, gender: value })}
                         disabled={isLoading}
                       >
-                        <SelectTrigger className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white focus:border-purple-400 focus:ring-purple-400/20">
+                        <SelectTrigger className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white focus:border-orange-400 focus:ring-orange-400/20">
                           <SelectValue placeholder="Select your gender" />
                         </SelectTrigger>
                         <SelectContent>
@@ -543,7 +542,7 @@ export default function AuthPage() {
                     </div>
                   )}
                 </div>
-                <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-none shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white border-none shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" disabled={isLoading}>
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
