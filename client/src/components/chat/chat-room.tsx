@@ -461,8 +461,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                       )}
                     </ContextMenuContent>
                   </ContextMenu>
-                ))}
-
+                ))
                 ) : (
                   <div className="text-center text-gray-500 py-4">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
