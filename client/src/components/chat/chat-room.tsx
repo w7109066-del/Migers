@@ -435,13 +435,16 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
         <div className="flex items-center space-x-2">
           <Sheet open={isUserListOpen} onOpenChange={setIsUserListOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2 text-gray-600">
+              <Button variant="ghost" size="sm" className="p-2 text-gray-600" aria-label="View room members">
                 <Users className="w-4 h-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-80">
+            <SheetContent side="right" className="w-80" aria-describedby="member-list-description">
               <SheetHeader>
                 <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
+                <div id="member-list-description" className="sr-only">
+                  List of all members currently in this chat room with their online status and user actions
+                </div>
               </SheetHeader>
               <div className="mt-4 space-y-3">
                 {isLoadingMembers ? (
@@ -603,7 +606,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2 text-gray-600">
+              <Button variant="ghost" size="sm" className="p-2 text-gray-600" aria-label="Open room settings">
                 <Settings className="w-4 h-4" />
               </Button>
             </DialogTrigger>
