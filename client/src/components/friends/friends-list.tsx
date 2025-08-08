@@ -194,31 +194,6 @@ export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsL
               className="pl-10 border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
             />
           </div>
-
-          {/* User Avatar and Level */}
-          <div className="flex items-center space-x-3">
-            <UserAvatar username={user?.username || ""} size="sm" isOnline={true} />
-            <div className="flex flex-col">
-              <span className="font-medium text-sm text-gray-700">{user?.username}</span>
-              <span className="text-xs text-gray-500">Level {user?.level || 1}</span>
-            </div>
-          </div>
-
-          {/* Notification Icon */}
-          <NotificationDropdown
-            notifications={notifications}
-            onMarkAsRead={markAsRead}
-            trigger={
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5 text-gray-600" />
-                {notifications && notifications.filter(n => !n.read).length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                    {notifications.filter(n => !n.read).length}
-                  </span>
-                )}
-              </Button>
-            }
-          />
         </div>
       </div>
 
