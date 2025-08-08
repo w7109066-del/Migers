@@ -1654,20 +1654,34 @@ export function registerRoutes(app: Express): Server {
                   mockRoomMembers.set(message.roomId, new Map());
                 }
 
-                // Check if user already exists in room
-                userAlreadyInRoom = mockRoomMembers.get(message.roomId)!.has(userId);
+                // Check if user already exists in room - also check by username to prevent duplicates
+                const roomMembersMap = mockRoomMembers.get(message.roomId)!;
+                userAlreadyInRoom = roomMembersMap.has(userId);
+                
+                // Also check if username already exists (additional safety check)
+                if (!userAlreadyInRoom) {
+                  for (const [existingUserId, existingUserData] of roomMembersMap) {
+                    if (existingUserData.username === user.username && existingUserId !== userId) {
+                      // Remove the old entry with same username but different ID
+                      roomMembersMap.delete(existingUserId);
+                      console.log(`Removed duplicate username ${user.username} with old ID ${existingUserId}`);
+                      break;
+                    }
+                  }
+                }
 
                 if (!userAlreadyInRoom) {
-                  mockRoomMembers.get(message.roomId)!.set(userId, {
+                  roomMembersMap.set(userId, {
                     id: userId,
                     username: user.username || 'User',
                     level: user.level || 1,
                     isOnline: true,
-                    profilePhotoUrl: user.profilePhotoUrl || null // Include profilePhotoUrl
+                    profilePhotoUrl: user.profilePhotoUrl || null,
+                    isAdmin: user.isAdmin || false // Include admin status
                   });
                   currentRoomId = message.roomId;
 
-                  console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, mockRoomMembers.get(message.roomId)!.size);
+                  console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, roomMembersMap.size);
                 }
               } else {
                 // For real rooms, check membership first
@@ -1745,7 +1759,20 @@ export function registerRoutes(app: Express): Server {
               // For mock rooms (1-4), remove from memory tracking
               if (['1', '2', '3', '4'].includes(message.roomId)) {
                 if (mockRoomMembers.has(message.roomId)) {
-                  mockRoomMembers.get(message.roomId)!.delete(userId);
+                  const roomMembersMap = mockRoomMembers.get(message.roomId)!;
+                  
+                  // Remove user by ID
+                  roomMembersMap.delete(userId);
+                  
+                  // Also remove any entries with same username (cleanup duplicates)
+                  if (disconnectedUser?.username) {
+                    for (const [memberId, memberData] of roomMembersMap) {
+                      if (memberData.username === disconnectedUser.username && memberId !== userId) {
+                        roomMembersMap.delete(memberId);
+                        console.log(`Cleaned up duplicate entry for ${disconnectedUser.username}`);
+                      }
+                    }
+                  }
                 }
                 currentRoomId = null;
               } else {
@@ -2072,9 +2099,22 @@ export function registerRoutes(app: Express): Server {
         if (isManualDisconnect && currentRoomId && ['1', '2', '3', '4'].includes(currentRoomId)) {
           if (mockRoomMembers.has(currentRoomId)) {
             const disconnectedUser = await storage.getUser(userId);
-            mockRoomMembers.get(currentRoomId)!.delete(userId);
+            const roomMembersMap = mockRoomMembers.get(currentRoomId)!;
+            
+            // Remove user by ID
+            roomMembersMap.delete(userId);
+            
+            // Also clean up any duplicate entries with same username
+            if (disconnectedUser?.username) {
+              for (const [memberId, memberData] of roomMembersMap) {
+                if (memberData.username === disconnectedUser.username) {
+                  roomMembersMap.delete(memberId);
+                  console.log(`Cleaned up duplicate entry for ${disconnectedUser.username} on disconnect`);
+                }
+              }
+            }
 
-            console.log(`User ${disconnectedUser?.username} manually left room ${currentRoomId}. Remaining members:`, mockRoomMembers.get(currentRoomId)!.size);
+            console.log(`User ${disconnectedUser?.username} manually left room ${currentRoomId}. Remaining members:`, roomMembersMap.size);
 
             // Broadcast system message about user leaving
             broadcastToRoom(currentRoomId, {
