@@ -225,6 +225,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
               window.dispatchEvent(new CustomEvent('friendListUpdate'));
             }, 1000);
             break;
+
+          case 'force_member_refresh':
+            // Force refresh room member list
+            window.dispatchEvent(new CustomEvent('forceMemberRefresh', {
+              detail: { roomId: message.roomId }
+            }));
+            break;
         }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error);

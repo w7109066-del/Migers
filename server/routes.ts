@@ -1659,7 +1659,6 @@ export function registerRoutes(app: Express): Server {
                 return; // Should not happen if userId is valid
               }
 
-              let userAlreadyInRoom = false;
               let shouldSendJoinMessage = false;
 
               // For mock rooms (1-4), track in memory with user data
@@ -1670,82 +1669,75 @@ export function registerRoutes(app: Express): Server {
 
                 const roomMembersMap = mockRoomMembers.get(message.roomId)!;
                 
-                // Check if user is already in room (by ID or username)
-                userAlreadyInRoom = Array.from(roomMembersMap.entries()).some(([existingUserId, existingUserData]) => 
-                  existingUserId === userId || existingUserData.username === user.username
-                );
-
-                if (!userAlreadyInRoom) {
-                  // Check room capacity (25 users max) only if user is not already in room
-                  if (roomMembersMap.size >= 25) {
-                    ws.send(JSON.stringify({
-                      type: 'error',
-                      message: 'Room is full (maximum 25 users)',
-                    }));
-                    break;
+                // Always clean up any existing entries for this user first (comprehensive cleanup)
+                const toRemove = [];
+                for (const [existingUserId, existingUserData] of roomMembersMap) {
+                  if (existingUserId === userId || 
+                      existingUserData.username === user.username ||
+                      existingUserData.id === userId) {
+                    toRemove.push(existingUserId);
                   }
-
-                  // Clean up any existing entries for this user (by ID or username)
-                  const toRemove = [];
-                  for (const [existingUserId, existingUserData] of roomMembersMap) {
-                    if (existingUserId === userId || existingUserData.username === user.username) {
-                      toRemove.push(existingUserId);
-                    }
-                  }
-                  
-                  toRemove.forEach(id => {
-                    roomMembersMap.delete(id);
-                    console.log(`Cleaned up existing entry for user ${user.username} (ID: ${id})`);
-                  });
-
-                  // Add the user
-                  roomMembersMap.set(userId, {
-                    id: userId,
-                    username: user.username || 'User',
-                    level: user.level || 1,
-                    isOnline: true,
-                    profilePhotoUrl: user.profilePhotoUrl || null,
-                    isAdmin: user.isAdmin || false
-                  });
-
-                  shouldSendJoinMessage = true;
-                  console.log(`User ${user.username} joined room ${message.roomId}. Total members:`, roomMembersMap.size);
-                } else {
-                  console.log(`User ${user.username} already in room ${message.roomId}, not adding again`);
                 }
+                
+                let hadPreviousEntry = toRemove.length > 0;
+                toRemove.forEach(id => {
+                  roomMembersMap.delete(id);
+                  console.log(`Cleaned up existing entry for user ${user.username} (ID: ${id})`);
+                });
+
+                // Check room capacity (25 users max)
+                if (roomMembersMap.size >= 25) {
+                  ws.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Room is full (maximum 25 users)',
+                  }));
+                  break;
+                }
+
+                // Add the user with fresh data
+                roomMembersMap.set(userId, {
+                  id: userId,
+                  username: user.username || 'User',
+                  level: user.level || 1,
+                  isOnline: true,
+                  profilePhotoUrl: user.profilePhotoUrl || null,
+                  isAdmin: user.isAdmin || false
+                });
+
+                // Only send join message if user wasn't already in room
+                shouldSendJoinMessage = !hadPreviousEntry;
+                console.log(`User ${user.username} ${hadPreviousEntry ? 'refreshed in' : 'joined'} room ${message.roomId}. Total members:`, roomMembersMap.size);
                 
                 currentRoomId = message.roomId;
               } else {
-                // For real rooms, check membership first
+                // For real rooms, comprehensive cleanup first
                 const existingMembers = await storage.getRoomMembers(message.roomId);
                 
-                // Check if user is already a member
-                userAlreadyInRoom = existingMembers?.some(member => member.user.id === userId) || false;
-
-                if (!userAlreadyInRoom) {
-                  // Check room capacity (25 users max)
-                  if ((existingMembers?.length || 0) >= 25) {
-                    ws.send(JSON.stringify({
-                      type: 'error',
-                      message: 'Room is full (maximum 25 users)',
-                    }));
-                    break;
-                  }
-
-                  // Remove any existing memberships for this user (cleanup)
-                  for (const member of existingMembers || []) {
+                // Clean up any existing memberships for this user
+                let hadPreviousEntry = false;
+                if (existingMembers) {
+                  for (const member of existingMembers) {
                     if (member.user.id === userId) {
                       await storage.leaveRoom(message.roomId, userId);
+                      hadPreviousEntry = true;
                       console.log(`Cleaned up existing membership for user ${userId}`);
-                      break;
                     }
                   }
-
-                  // Add user to room
-                  await storage.joinRoom(message.roomId, userId);
-                  shouldSendJoinMessage = true;
                 }
-                
+
+                // Check room capacity after cleanup
+                const updatedMembers = await storage.getRoomMembers(message.roomId);
+                if ((updatedMembers?.length || 0) >= 25) {
+                  ws.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Room is full (maximum 25 users)',
+                  }));
+                  break;
+                }
+
+                // Add user to room
+                await storage.joinRoom(message.roomId, userId);
+                shouldSendJoinMessage = !hadPreviousEntry;
                 currentRoomId = message.roomId;
               }
 
@@ -1777,21 +1769,25 @@ export function registerRoutes(app: Express): Server {
                   userId,
                   roomId: message.roomId,
                 }, ws);
-
-                // Broadcast room count update to all clients
-                const currentCount = await getRoomMemberCount(message.roomId);
-                wss.clients.forEach((client) => {
-                  if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify({
-                      type: 'room_member_count_updated',
-                      roomId: message.roomId,
-                      memberCount: currentCount
-                    }));
-                  }
-                });
-              } else {
-                console.log(`User ${user.username} already in room ${message.roomId}, no join message sent`);
               }
+
+              // Always broadcast room count update
+              const currentCount = await getRoomMemberCount(message.roomId);
+              wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(JSON.stringify({
+                    type: 'room_member_count_updated',
+                    roomId: message.roomId,
+                    memberCount: currentCount
+                  }));
+                }
+              });
+
+              // Force refresh member list on client
+              broadcastToRoom(message.roomId, {
+                type: 'force_member_refresh',
+                roomId: message.roomId
+              });
             }
             break;
 

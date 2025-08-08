@@ -196,14 +196,24 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       }
     };
 
+    const handleForceMemberRefresh = (event: CustomEvent) => {
+      const { roomId: eventRoomId } = event.detail;
+      if (eventRoomId === roomId) {
+        console.log('Force refreshing member list for room:', roomId);
+        refetchMembers();
+      }
+    };
+
     window.addEventListener('newMessage', handleNewMessage as EventListener);
     window.addEventListener('userJoined', handleUserJoin as EventListener);
     window.addEventListener('userLeft', handleUserLeave as EventListener);
+    window.addEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
 
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
       window.removeEventListener('userJoined', handleUserJoin as EventListener);
       window.removeEventListener('userLeft', handleUserLeave as EventListener);
+      window.removeEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
     };
   }, [roomId, refetchMembers]);
 
