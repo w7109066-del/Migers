@@ -938,8 +938,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
                     Back to Room List
                   </Button>
 
-                  {/* Kick User Menu - Only for level 3+ users */}
-                  {(user?.level || 0) >= 3 && (
+                  {/* Kick User Menu - Only for level 1+ users */}
+                  {(user?.level || 0) >= 1 && (
                     <Sheet>
                       <SheetTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-orange-600 hover:text-orange-700">
@@ -1007,8 +1007,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
                                       >
                                         Vote Kick
                                       </Button>
-                                      {/* Direct Kick Button - Only for admins (level 5+) */}
-                                      {(user?.level || 0) >= 5 && (
+                                      {/* Direct Kick Button - Only for admins (level 1+) */}
+                                      {(user?.level || 0) >= 1 && (
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                             <Button

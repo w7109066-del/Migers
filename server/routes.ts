@@ -340,7 +340,7 @@ export function registerRoutes(app: Express): Server {
 
       // Check if kicker has permission (admin or room moderator)
       const kickerUser = await storage.getUserById(kickerUserId); // Assuming getUserById exists
-      if (!kickerUser || kickerUser.level < 3) { // Assuming level 3+ are moderators or admins
+      if (!kickerUser || kickerUser.level < 1) { // Assuming level 1+ are admins who can kick
         return res.status(403).json({ error: 'Insufficient permissions to kick users' });
       }
 
@@ -2014,12 +2014,12 @@ export function registerRoutes(app: Express): Server {
               return;
             }
 
-            // Check if sender is admin (level 5+) or room owner for user-created rooms
+            // Check if sender is admin (level 1+) or room owner for user-created rooms
             let isOwner = false;
             
             if (['1', '2', '3', '4'].includes(data.roomId)) {
               // For system rooms, only admins can add moderators
-              isOwner = (senderUser.level || 0) >= 5;
+              isOwner = (senderUser.level || 0) >= 1;
             } else {
               // For user-created rooms, check if user is the room creator
               const room = await storage.getChatRoom(data.roomId);
@@ -2027,7 +2027,7 @@ export function registerRoutes(app: Express): Server {
               
               // Also allow if user is admin
               if (!isOwner) {
-                isOwner = (senderUser.level || 0) >= 5;
+                isOwner = (senderUser.level || 0) >= 1;
               }
             }
 
