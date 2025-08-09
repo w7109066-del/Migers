@@ -55,7 +55,8 @@ import {
   Send,
   Smile,
   RefreshCw,
-  Hash
+  Hash,
+  Users // Added Users icon
 } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -399,7 +400,11 @@ function HomePageContent() {
     );
   }
 
-
+  // Function to handle direct message click
+  const handleDirectMessageClick = (profile: MiniProfileData) => {
+    console.log("Direct message clicked for:", profile.username);
+    setSelectedDirectMessage(profile);
+  };
 
   const closeMiniProfile = () => {
     setSelectedProfile(null);
@@ -1372,6 +1377,20 @@ function HomePageContent() {
         </div>
       ),
     },
+    {
+      id: "friends",
+      label: "Friends",
+      icon: <Users className="w-5 h-5" />,
+      content: (
+        <div className="h-full">
+          <FriendsList
+            onUserClick={handleUserProfileClick}
+            onMessageClick={handleDirectMessageClick}
+            showRefreshButton={true}
+          />
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -1418,10 +1437,14 @@ function HomePageContent() {
       )}
 
       {/* User Search Modal */}
-      <UserSearchModal
-        isOpen={showUserSearch}
-        onClose={() => setShowUserSearch(false)}
-      />
+      {showUserSearch && (
+        <UserSearchModal
+          isOpen={showUserSearch}
+          onClose={() => setShowUserSearch(false)}
+          onUserSelect={handleUserProfileClick}
+          onMessageClick={handleDirectMessageClick}
+        />
+      )}
 
       {/* Status Update Modal */}
       <StatusUpdateModal
@@ -1506,12 +1529,13 @@ function HomePageContent() {
   );
 }
 
-export default function HomePage() {
-  return (
-    <NotificationProvider>
-      <WebSocketProvider>
-        <HomePageContent />
-      </WebSocketProvider>
-    </NotificationProvider>
-  );
-}
+// Removed AuthProvider and NotificationsProvider as they are already handled by useAuth and useNotifications hooks at the top level
+// export default function HomePage() {
+//   return (
+//     <AuthProvider>
+//       <NotificationsProvider>
+//         <HomePageContent />
+//       </NotificationsProvider>
+//     </AuthProvider>
+//   );
+// }

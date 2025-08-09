@@ -17,10 +17,11 @@ interface Friend extends User {
 
 interface FriendsListProps {
   onUserClick: (profile: any) => void;
+  onMessageClick?: (user: any) => void;
   showRefreshButton?: boolean;
 }
 
-export function FriendsList({ onUserClick, showRefreshButton = false }: FriendsListProps) {
+export function FriendsList({ onUserClick, onMessageClick, showRefreshButton = false }: FriendsListProps) {
   const { user } = useAuth();
   const { notifications, markAsRead } = useNotifications(); // Assuming useNotifications provides notifications and a way to mark them as read
   const queryClient = useQueryClient();
