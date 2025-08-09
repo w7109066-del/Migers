@@ -11,23 +11,26 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils"; // Assuming cn is imported from utils
 
+// Define MiniProfileData interface for clarity, assuming it's used elsewhere
+interface MiniProfileData {
+  id: string;
+  username: string;
+  level: number;
+  status: string;
+  bio?: string;
+  isOnline: boolean;
+  country?: string;
+  profilePhotoUrl?: string;
+  fansCount?: number;
+  followingCount?: number;
+  isFriend?: boolean;
+  isAdmin?: boolean;
+}
+
 interface MiniProfileModalProps {
-  profile: {
-    id: string;
-    username: string;
-    level: number;
-    status: string;
-    bio?: string;
-    isOnline: boolean;
-    country?: string;
-    profilePhotoUrl?: string;
-    fansCount?: number;
-    followingCount?: number;
-    isFriend?: boolean;
-    isAdmin?: boolean; // Added isAdmin property
-  };
+  profile: MiniProfileData;
   onClose: () => void;
-  onMessageClick?: (user: any) => void;
+  onMessageClick?: (user: MiniProfileData) => void; // Made optional
 }
 
 export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfileModalProps) {
@@ -67,7 +70,10 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
 
 
   const handleSendMessage = () => {
-    onMessageClick(profile);
+    // Only call onMessageClick if it's provided
+    if (onMessageClick) {
+      onMessageClick(profile);
+    }
     onClose();
   };
 
@@ -268,13 +274,15 @@ export function MiniProfileModal({ profile, onClose, onMessageClick }: MiniProfi
           {/* Action buttons */}
           <div className="space-y-2">
             <div className="flex space-x-2">
-              <Button
-                onClick={handleSendMessage}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0 text-sm py-2"
-              >
-                <MessageCircle className="w-4 h-4 mr-1" />
-                Message
-              </Button>
+              {onMessageClick && ( // Conditionally render Message button
+                <Button
+                  onClick={handleSendMessage}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0 text-sm py-2"
+                >
+                  <MessageCircle className="w-4 h-4 mr-1" />
+                  Message
+                </Button>
+              )}
               <Button
                 onClick={() => setShowGiftModal(true)}
                 className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 text-sm py-2"
