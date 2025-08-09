@@ -257,6 +257,22 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               <p className="text-xs text-gray-500">{formData.bio.length}/200 characters</p>
             </div>
 
+            {/* Phone Number Input */}
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                placeholder="+628123456789"
+                className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
+              />
+              <p className="text-xs text-gray-500">
+                Use international format (e.g., +628123456789). This will be used for OTP verification.
+              </p>
+            </div>
+
             {/* Country Toggle */}
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between">
@@ -301,22 +317,6 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   </Select>
                 </div>
               )}
-            </div>
-
-            {/* Phone Number Input */}
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Phone Number</Label>
-              <Input
-                id="phoneNumber"
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                placeholder="+628123456789"
-                className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
-              />
-              <p className="text-xs text-gray-500">
-                Use international format (e.g., +628123456789). This will be used for OTP verification.
-              </p>
             </div>
 
             {/* Gender Toggle */}
