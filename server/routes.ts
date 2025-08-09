@@ -342,8 +342,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Track temporary bans (in production, use Redis or database)
-  const tempBans = global.tempBans || (global.tempBans = new Map());
+  
 
   // Kick user from room endpoint
   app.post('/api/rooms/:roomId/kick', async (req, res) => {
