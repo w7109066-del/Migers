@@ -1529,3 +1529,13 @@ function HomePageContent() {
     </div>
   );
 }
+
+export default function HomePage() {
+  return (
+    <NotificationProvider>
+      <WebSocketProvider>
+        <HomePageContent />
+      </WebSocketProvider>
+    </NotificationProvider>
+  );
+}
