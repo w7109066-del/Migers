@@ -778,17 +778,19 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                 <span className={cn(
                                   "font-medium text-sm truncate",
                                   // Apply special colors for admins (level 5+)
-                                  member.role === 'admin' || member.user.level >= 5 ? "text-orange-600" :
+                                  member.role === 'admin' || member.user.level >= 5 ? "text-orange-700" :
                                   member.role === 'owner' ? "text-yellow-500" :
                                   (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
                                 )}>
                                   {member.user.username}
                                 </span>
-                                {member.role === 'admin' && (
+                                {member.role === 'owner' && (
                                   <Crown className="w-3 h-3 text-yellow-500" />
                                 )}
-                                {member.user.level >= 5 && ( // Show shield for admins (level 5+)
-                                  <Shield className="w-3 h-3 text-red-600" />
+                                {(member.role === 'admin' || member.user.level >= 5) && (
+                                  <Badge variant="destructive" className="text-xs bg-red-600">
+                                    Admin
+                                  </Badge>
                                 )}
                               </div>
                               <div className="flex items-center space-x-2">
@@ -950,17 +952,19 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                           <span className={cn(
                                             "font-medium text-sm truncate",
                                             // Apply special colors for admins (level 5+)
-                                            member.role === 'admin' || member.user.level >= 5 ? "text-orange-600" :
+                                            member.role === 'admin' || member.user.level >= 5 ? "text-orange-700" :
                                             member.role === 'owner' ? "text-yellow-500" :
                                             (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
                                           )}>
                                             {member.user.username}
                                           </span>
-                                          {member.role === 'admin' && (
+                                          {member.role === 'owner' && (
                                             <Crown className="w-3 h-3 text-yellow-500" />
                                           )}
-                                          {member.user.level >= 5 && ( // Show shield for admins (level 5+)
-                                            <Shield className="w-3 h-3 text-red-600" />
+                                          {(member.role === 'admin' || member.user.level >= 5) && (
+                                            <Badge variant="destructive" className="text-xs bg-red-600">
+                                              Admin
+                                            </Badge>
                                           )}
                                         </div>
                                         <Badge variant="outline" className="text-xs">
