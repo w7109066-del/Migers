@@ -392,7 +392,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   }, [roomId, sendChatMessage]);
 
   // Kick command handler
-  const handleKickCommand = (targetUsername: string) => {
+  const handleKickCommand = async (targetUsername: string) => { // Added async keyword
     const targetUser = roomMembers?.find(member => member.user.username.toLowerCase() === targetUsername.toLowerCase())?.user;
 
     if (!targetUser) {
@@ -420,6 +420,21 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       setMessages(prev => [...prev, systemMessage]);
       return;
     }
+
+    // Prevent kicking admin users
+    if (targetUser.level >= 5) {
+      const errorMessage = {
+        id: `kick-error-${Date.now()}`,
+        content: `❌ Cannot kick admin users.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
+
 
     // Check if a kick vote is already active for this user
     if (activeKickVotes[targetUser.id]) {
@@ -762,17 +777,18 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                               <div className="flex items-center space-x-2">
                                 <span className={cn(
                                   "font-medium text-sm truncate",
-                                  // Only apply special colors in user-created rooms (not system rooms 1-4)
-                                  !['1', '2', '3', '4'].includes(roomId || '') && (
-                                    member.role === 'owner' ? "text-yellow-500" :
-                                    member.role === 'admin' ? "text-yellow-600" :
-                                    (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
-                                  )
+                                  // Apply special colors for admins (level 5+)
+                                  member.role === 'admin' || member.user.level >= 5 ? "text-orange-600" :
+                                  member.role === 'owner' ? "text-yellow-500" :
+                                  (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
                                 )}>
                                   {member.user.username}
                                 </span>
                                 {member.role === 'admin' && (
                                   <Crown className="w-3 h-3 text-yellow-500" />
+                                )}
+                                {member.user.level >= 5 && ( // Show shield for admins (level 5+)
+                                  <Shield className="w-3 h-3 text-red-600" />
                                 )}
                               </div>
                               <div className="flex items-center space-x-2">
@@ -807,7 +823,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                             <ContextMenuSeparator />
                             <ContextMenuGroup>
                               <ContextMenuItem
-                                onClick={() => handleKickUser(member.user.id, member.user.username)}
+                                onClick={() => handleKickUser(member.user.username)} // Pass username to handleKickUser
                                 className="text-red-600"
                               >
                                 <UserMinus className="w-4 h-4 mr-2" />
@@ -933,17 +949,18 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                         <div className="flex items-center space-x-2">
                                           <span className={cn(
                                             "font-medium text-sm truncate",
-                                            // Only apply special colors in user-created rooms (not system rooms 1-4)
-                                            !['1', '2', '3', '4'].includes(roomId || '') && (
-                                              member.role === 'owner' ? "text-yellow-500" :
-                                              member.role === 'admin' ? "text-yellow-600" :
-                                              (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
-                                            )
+                                            // Apply special colors for admins (level 5+)
+                                            member.role === 'admin' || member.user.level >= 5 ? "text-orange-600" :
+                                            member.role === 'owner' ? "text-yellow-500" :
+                                            (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
                                           )}>
                                             {member.user.username}
                                           </span>
                                           {member.role === 'admin' && (
                                             <Crown className="w-3 h-3 text-yellow-500" />
+                                          )}
+                                          {member.user.level >= 5 && ( // Show shield for admins (level 5+)
+                                            <Shield className="w-3 h-3 text-red-600" />
                                           )}
                                         </div>
                                         <Badge variant="outline" className="text-xs">
@@ -977,13 +994,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                             <AlertDialogHeader>
                                               <AlertDialogTitle>Kick User</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                Are you sure you want to kick {member.user.username} from {roomName}? 
+                                                Are you sure you want to kick {member.user.username} from {roomName}?
                                                 This action will immediately remove them from the room.
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                              <AlertDialogAction 
+                                              <AlertDialogAction
                                                 onClick={() => handleKickUser(member.user.id, member.user.username)}
                                                 className="bg-red-600 hover:bg-red-700"
                                               >

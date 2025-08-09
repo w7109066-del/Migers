@@ -344,6 +344,12 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ error: 'Insufficient permissions to kick users' });
       }
 
+      // Get user being kicked to check if they're admin
+      const targetUser = await storage.getUserById(userId);
+      if (targetUser && targetUser.level >= 5) {
+        return res.status(403).json({ error: 'Cannot kick admin users' });
+      }
+
       // Remove user from room
       if (['1', '2', '3', '4'].includes(roomId)) {
         // Handle mock rooms
@@ -991,6 +997,12 @@ export function registerRoutes(app: Express): Server {
       // Prevent admin from banning themselves
       if (userId === req.user?.id) {
         return res.status(400).json({ message: 'Cannot ban yourself' });
+      }
+
+      // Prevent banning admin users
+      const targetUser = await storage.getUserById(userId);
+      if (targetUser && targetUser.level >= 5) {
+        return res.status(403).json({ message: 'Cannot ban admin users' });
       }
 
       const updatedUser = await storage.banUser(userId);
