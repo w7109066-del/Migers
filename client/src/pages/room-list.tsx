@@ -273,9 +273,25 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       return;
     }
 
+    // Filter description to prevent "This room is managed by" text
+    const filteredDescription = newRoomDescription.trim()
+      .replace(/this room is managed by/gi, '')
+      .replace(/room is managed by/gi, '')
+      .replace(/managed by/gi, '')
+      .trim();
+
+    if (!filteredDescription) {
+      toast({
+        title: "Error",
+        description: "Please provide a valid room description",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createRoomMutation.mutate({
       name: newRoomName.trim(),
-      description: newRoomDescription.trim()
+      description: filteredDescription
     });
   };
 
@@ -508,7 +524,15 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
                     id="room-description"
                     placeholder="Enter room description..."
                     value={newRoomDescription}
-                    onChange={(e) => setNewRoomDescription(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Filter out forbidden text patterns in real-time
+                      const filteredValue = value
+                        .replace(/this room is managed by/gi, '')
+                        .replace(/room is managed by/gi, '')
+                        .replace(/managed by/gi, '');
+                      setNewRoomDescription(filteredValue);
+                    }}
                     maxLength={200}
                     rows={3}
                   />
