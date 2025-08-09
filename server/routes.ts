@@ -37,6 +37,21 @@ function requireRoomAccess(req: any, res: any, next: any) {
     return res.status(403).json({ message: "You are banned from accessing chat rooms" });
   }
 
+  // Check for temporary bans
+  const tempBans = global.tempBans || new Map();
+  const tempBan = tempBans.get(req.user.id);
+  if (tempBan) {
+    if (Date.now() < tempBan.expiration) {
+      const remainingTime = Math.ceil((tempBan.expiration - Date.now()) / 1000 / 60);
+      return res.status(403).json({ 
+        message: `You are temporarily banned from rooms for ${remainingTime} more minutes due to being kicked by admin ${tempBan.kickedBy}` 
+      });
+    } else {
+      // Ban expired, remove it
+      tempBans.delete(req.user.id);
+    }
+  }
+
   next();
 }
 
@@ -327,6 +342,9 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Track temporary bans (in production, use Redis or database)
+  const tempBans = global.tempBans || (global.tempBans = new Map());
+
   // Kick user from room endpoint
   app.post('/api/rooms/:roomId/kick', async (req, res) => {
     try {
@@ -349,6 +367,14 @@ export function registerRoutes(app: Express): Server {
       if (targetUser && targetUser.level >= 5) {
         return res.status(403).json({ error: 'Cannot kick admin users' });
       }
+
+      // Add temporary ban for 5 minutes
+      const banExpiration = Date.now() + (5 * 60 * 1000); // 5 minutes from now
+      tempBans.set(userId, {
+        expiration: banExpiration,
+        kickedBy: kickerUser.username,
+        roomId: roomId
+      });
 
       // Remove user from room
       if (['1', '2', '3', '4'].includes(roomId)) {
@@ -377,7 +403,7 @@ export function registerRoutes(app: Express): Server {
         // Send kick notification message visible to all users in room
         const kickNotificationMessage = {
           id: `kick-notification-${Date.now()}-${userId}`,
-          content: `${kickedUser.username} has been kicked by admin ${kickerUser.username}`,
+          content: `${kickedUser.username} has been kicked by admin ${kickerUser.username} and temporarily banned for 5 minutes`,
           senderId: 'system',
           roomId: roomId,
           recipientId: null,
@@ -405,7 +431,7 @@ export function registerRoutes(app: Express): Server {
               socket.leave(roomId);
               socket.emit('forcedLeaveRoom', {
                 roomId: roomId,
-                reason: `You have been kicked by admin ${kickerUser.username}`
+                reason: `You have been kicked by admin ${kickerUser.username} and temporarily banned for 5 minutes`
               });
             }
           }
@@ -1821,6 +1847,9 @@ export function registerRoutes(app: Express): Server {
   // Track user connections and their current rooms
   const userConnections = new Map<string, { socket: any; currentRoomId: string | null }>();
 
+  // Access temp bans from global scope
+  const tempBans = global.tempBans || new Map();
+
   io.on('connection', async (socket) => {
     console.log('New Socket.IO connection:', socket.id);
 
@@ -1881,6 +1910,21 @@ export function registerRoutes(app: Express): Server {
             message: 'You are banned from accessing chat rooms',
           });
           return;
+        }
+
+        // Check for temporary bans
+        const tempBan = tempBans.get(userId);
+        if (tempBan) {
+          if (Date.now() < tempBan.expiration) {
+            const remainingTime = Math.ceil((tempBan.expiration - Date.now()) / 1000 / 60);
+            socket.emit('error', {
+              message: `You are temporarily banned from rooms for ${remainingTime} more minutes due to being kicked by admin ${tempBan.kickedBy}`,
+            });
+            return;
+          } else {
+            // Ban expired, remove it
+            tempBans.delete(userId);
+          }
         }
 
         // Check if user is already active in this room
