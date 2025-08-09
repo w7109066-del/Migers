@@ -118,51 +118,55 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
 
   // Initialize room and messages
   useEffect(() => {
-    console.log('ChatRoom useEffect:', { isConnected, roomId, roomName, savedMessagesCount: savedMessages.length });
+    const initializeRoom = async () => {
+      console.log('ChatRoom useEffect:', { isConnected, roomId, roomName, savedMessagesCount: savedMessages.length });
 
-    if (roomId && roomName) {
-      console.log('Initializing chat room:', roomId);
+      if (roomId && roomName) {
+        console.log('Initializing chat room:', roomId);
 
-      // Check if we have saved messages for this room
-      if (savedMessages.length > 0) {
-        console.log('Restoring saved messages for room:', roomId, savedMessages.length);
-        setMessages(savedMessages);
-      } else {
-        // Set welcome messages for new room entry
-        const welcomeMessages = [
-          {
-            id: `welcome-${roomId}`,
-            content: `Welcome to ${roomName} official chat room.`,
-            senderId: 'system',
-            createdAt: new Date().toISOString(),
-            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-            messageType: 'system'
-          },
-          {
-            id: `room-managed-${roomId}`,
-            content: `This room is managed by ${roomName.toLowerCase()}`,
-            senderId: 'system',
-            createdAt: new Date().toISOString(),
-            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-            messageType: 'system'
-          }
-        ];
+        // Check if we have saved messages for this room
+        if (savedMessages.length > 0) {
+          console.log('Restoring saved messages for room:', roomId, savedMessages.length);
+          setMessages(savedMessages);
+        } else {
+          // Set welcome messages for new room entry
+          const welcomeMessages = [
+            {
+              id: `welcome-${roomId}`,
+              content: `Welcome to ${roomName} official chat room.`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            },
+            {
+              id: `room-managed-${roomId}`,
+              content: `This room is managed by ${roomName.toLowerCase()}`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            }
+          ];
 
-        setMessages(welcomeMessages);
-        console.log('Set welcome messages for room:', roomId);
-      }
-
-      // Check for temporary ban before joining room
-      if (isConnected) {
-        const canJoin = await checkTempBan(roomId);
-        if (canJoin) {
-          joinRoom(roomId);
-          console.log('Joined room:', roomId);
+          setMessages(welcomeMessages);
+          console.log('Set welcome messages for room:', roomId);
         }
+
+        // Check for temporary ban before joining room
+        if (isConnected) {
+          const canJoin = await checkTempBan(roomId);
+          if (canJoin) {
+            joinRoom(roomId);
+            console.log('Joined room:', roomId);
+          }
+        }
+      } else {
+        console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
       }
-    } else {
-      console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
-    }
+    };
+
+    initializeRoom();
 
     // Cleanup when roomId changes - save messages before cleanup
     return () => {
@@ -186,11 +190,14 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
     if (isConnected && roomId) {
       console.log('WebSocket connected, joining room:', roomId);
       // Add a small delay to prevent race conditions
-      const timer = setTimeout(async () => {
-        const canJoin = await checkTempBan(roomId);
-        if (canJoin) {
-          joinRoom(roomId);
-        }
+      const timer = setTimeout(() => {
+        const checkAndJoin = async () => {
+          const canJoin = await checkTempBan(roomId);
+          if (canJoin) {
+            joinRoom(roomId);
+          }
+        };
+        checkAndJoin();
       }, 100);
 
       return () => clearTimeout(timer);
