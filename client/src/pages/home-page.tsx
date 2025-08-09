@@ -1529,13 +1529,12 @@ function HomePageContent() {
   );
 }
 
-// Removed AuthProvider and NotificationsProvider as they are already handled by useAuth and useNotifications hooks at the top level
-// export default function HomePage() {
-//   return (
-//     <AuthProvider>
-//       <NotificationsProvider>
-//         <HomePageContent />
-//       </NotificationsProvider>
-//     </AuthProvider>
-//   );
-// }
+export default function HomePage() {
+  return (
+    <NotificationProvider>
+      <WebSocketProvider>
+        <HomePageContent />
+      </WebSocketProvider>
+    </NotificationProvider>
+  );
+}
