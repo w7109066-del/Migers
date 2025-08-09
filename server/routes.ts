@@ -301,6 +301,107 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin report endpoint
+  app.post("/api/admin/report", requireAdmin, async (req, res) => {
+    try {
+      const { reportedUserId, reportedUsername, reporterUserId, reporterUsername, roomId, roomName, message } = req.body;
+
+      if (!reportedUserId || !reporterUserId || !roomId || !message) {
+        return res.status(400).json({ error: "Missing required fields for report" });
+      }
+
+      // Send report message to admin room (room ID '1' - MeChat admin room)
+      const adminMessage = {
+        id: `admin-report-${Date.now()}`,
+        content: message,
+        senderId: 'system',
+        roomId: '1', // Admin room
+        recipientId: null,
+        messageType: 'admin_report',
+        metadata: {
+          reportedUserId,
+          reportedUsername: reportedUsername || 'Unknown',
+          reporterUserId,
+          reporterUsername: reporterUsername || 'Unknown',
+          originalRoomId: roomId,
+          originalRoomName: roomName || 'Unknown Room'
+        },
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: 'system',
+          username: 'Admin System',
+          level: 10,
+          isOnline: true
+        }
+      };
+
+      // Broadcast to admin room
+      io.to('1').emit('new_message', {
+        message: adminMessage,
+      });
+
+      res.json({ success: true, message: "Report submitted successfully" });
+    } catch (error) {
+      console.error("Error submitting admin report:", error);
+      res.status(500).json({ error: "Failed to submit report" });
+    }
+  });
+
+  // Get room info
+  app.get("/api/rooms/:roomId/info", requireRoomAccess, async (req, res) => {
+    const { roomId } = req.params;
+    const userId = req.user!.id; // Authenticated user ID
+
+    try {
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        // Mock room info
+        const roomNames: { [key: string]: string } = {
+          '1': 'MeChat',
+          '2': 'Indonesia', 
+          '3': 'MeChat',
+          '4': 'lowcard'
+        };
+        const roomDescriptions: { [key: string]: string } = {
+          '1': 'Official main chat room',
+          '2': 'Chat for Indonesian users',
+          '3': 'Your favorite chat room',
+          '4': 'Card game room'
+        };
+
+        res.json({
+          id: roomId,
+          name: roomNames[roomId as keyof typeof roomNames],
+          description: roomDescriptions[roomId as keyof typeof roomDescriptions],
+          createdBy: 'System',
+          createdAt: '2024-01-01T00:00:00Z', // Mock creation date
+          capacity: 25, // Default capacity
+          isPrivate: false // Default for mock rooms
+        });
+      } else {
+        // Real room info
+        const room = await storage.getChatRoom(roomId);
+        if (!room) {
+          return res.status(404).json({ message: "Room not found" });
+        }
+
+        // Ensure response matches expected structure
+        res.json({
+          id: room.id,
+          name: room.name,
+          description: room.description || "",
+          createdBy: room.creatorId, // Assuming creatorId is available and meaningful
+          createdAt: room.createdAt ? room.createdAt.toISOString() : new Date().toISOString(), // Use creation date if available
+          capacity: room.maxMembers || 25,
+          isPrivate: !room.isPublic
+        });
+      }
+    } catch (error) {
+      console.error("Error getting room info:", error);
+      res.status(500).json({ message: "Failed to get room info" });
+    }
+  });
+
+
   // Gift endpoints
   app.post("/api/gifts/send", requireAuth, async (req, res) => {
     try {
@@ -1724,7 +1825,7 @@ export function registerRoutes(app: Express): Server {
 
           // Join new room
           socket.join(data.roomId);
-          
+
           if (['1', '2', '3', '4'].includes(data.roomId)) {
             // Mock room handling
             if (!mockRoomMembers.has(data.roomId)) {

@@ -570,6 +570,15 @@ export class DatabaseStorage implements IStorage {
     return chatRoom;
   }
 
+  async getChatRoom(roomId: string): Promise<ChatRoom | null> {
+    const [room] = await this.db
+      .select()
+      .from(chatRooms)
+      .where(eq(chatRooms.id, roomId))
+      .limit(1);
+    return room || null;
+  }
+
   async joinRoom(roomId: string, userId: string): Promise<void> {
     await this.db
       .insert(roomMembers)

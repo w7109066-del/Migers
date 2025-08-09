@@ -25,7 +25,8 @@ import {
   Flag,
   User,
   Crown,
-  LogOut
+  LogOut,
+  EyeOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +65,9 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [voteKicks, setVoteKicks] = useState<Map<string, Set<string>>>(new Map()); // userId -> Set of voter IDs
+  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
+  const [roomInfo, setRoomInfo] = useState<any>(null);
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
   const { user } = useAuth();
 
@@ -150,6 +154,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     const handleNewMessage = (event: CustomEvent) => {
       const newMessage = event.detail;
       if (newMessage.roomId === roomId) {
+        // Don't show messages from blocked users
+        if (blockedUsers.has(newMessage.senderId)) {
+          return;
+        }
         setMessages(prev => [...prev, newMessage]);
       }
     };
@@ -307,10 +315,140 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     };
   }, [roomId, sendChatMessage]);
 
-  const handleReportUser = (user: any) => {
-    // Handle user reporting
-    console.log('Report user:', user.username);
-    // You can implement reporting functionality here
+  const handleVoteKick = async (targetUser: any) => {
+    if (!user?.id || !roomId) return;
+
+    try {
+      // Check if user already voted
+      const currentVotes = voteKicks.get(targetUser.id) || new Set();
+      if (currentVotes.has(user.id)) {
+        // Remove vote
+        currentVotes.delete(user.id);
+        const kickMessage = {
+          id: `vote-removed-${Date.now()}`,
+          content: `${user.username} removed their kick vote for ${targetUser.username}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, kickMessage]);
+      } else {
+        // Add vote
+        currentVotes.add(user.id);
+        const kickMessage = {
+          id: `vote-kick-${Date.now()}`,
+          content: `${user.username} voted to kick ${targetUser.username} (${currentVotes.size}/${Math.ceil((roomMembers?.length || 1) / 2)} votes needed)`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, kickMessage]);
+      }
+
+      // Update vote state
+      const newVoteKicks = new Map(voteKicks);
+      newVoteKicks.set(targetUser.id, currentVotes);
+      setVoteKicks(newVoteKicks);
+
+      // Check if enough votes to kick (majority)
+      const requiredVotes = Math.ceil((roomMembers?.length || 1) / 2);
+      if (currentVotes.size >= requiredVotes) {
+        // Execute kick
+        await handleKickUser(targetUser.id, targetUser.username);
+        newVoteKicks.delete(targetUser.id);
+        setVoteKicks(newVoteKicks);
+      }
+
+    } catch (error) {
+      console.error('Failed to vote kick:', error);
+    }
+  };
+
+  const handleBlockUser = (targetUser: any) => {
+    const newBlockedUsers = new Set(blockedUsers);
+    if (newBlockedUsers.has(targetUser.id)) {
+      newBlockedUsers.delete(targetUser.id);
+      const blockMessage = {
+        id: `unblock-${Date.now()}`,
+        content: `You have unblocked ${targetUser.username}`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, blockMessage]);
+    } else {
+      newBlockedUsers.add(targetUser.id);
+      const blockMessage = {
+        id: `block-${Date.now()}`,
+        content: `You have blocked ${targetUser.username}. You will no longer see their messages.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, blockMessage]);
+    }
+    setBlockedUsers(newBlockedUsers);
+  };
+
+  const handleReportUser = async (targetUser: any) => {
+    try {
+      const reportMessage = `🚨 REPORT: User ${user?.username} reported ${targetUser.username} in room ${roomName} (${roomId}). Please investigate.`;
+      
+      // Send report to admin chat (assuming admin room ID is 'admin' or '1')
+      const response = await fetch('/api/admin/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportedUserId: targetUser.id,
+          reportedUsername: targetUser.username,
+          reporterUserId: user?.id,
+          reporterUsername: user?.username,
+          roomId: roomId,
+          roomName: roomName,
+          message: reportMessage
+        })
+      });
+
+      if (response.ok) {
+        const confirmMessage = {
+          id: `report-${Date.now()}`,
+          content: `Report sent to administrators for ${targetUser.username}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, confirmMessage]);
+      }
+    } catch (error) {
+      console.error('Failed to report user:', error);
+    }
+  };
+
+  const handleRoomInfo = async () => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/info`);
+      if (response.ok) {
+        const roomData = await response.json();
+        setRoomInfo(roomData);
+        
+        const infoMessage = {
+          id: `room-info-${Date.now()}`,
+          content: `🏠 Room: ${roomData.name} | 👤 Creator: ${roomData.createdBy || 'System'} | 📅 Created: ${new Date(roomData.createdAt).toLocaleDateString()} | 👥 Members: ${roomMembers?.length || 0}/${roomData.capacity || 25}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, infoMessage]);
+      }
+    } catch (error) {
+      console.error('Failed to get room info:', error);
+    }
   };
 
   const handleKickUser = async (userId: string, username: string) => {
@@ -490,10 +628,24 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                             User Info
                           </ContextMenuItem>
                         </ContextMenuGroup>
-                        {isAdmin && member.user.id !== user?.id && (
+                        {member.user.id !== user?.id && (
                           <>
                             <ContextMenuSeparator />
                             <ContextMenuGroup>
+                              <ContextMenuItem 
+                                onClick={() => handleVoteKick(member.user)}
+                                className="text-orange-600"
+                              >
+                                <UserMinus className="w-4 h-4 mr-2" />
+                                Vote Kick
+                              </ContextMenuItem>
+                              <ContextMenuItem 
+                                onClick={() => handleBlockUser(member.user)}
+                                className="text-red-600"
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                Block User
+                              </ContextMenuItem>
                               <ContextMenuItem 
                                 onClick={() => handleReportUser(member.user)}
                                 className="text-yellow-600"
@@ -501,16 +653,16 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                 <Flag className="w-4 h-4 mr-2" />
                                 Report User
                               </ContextMenuItem>
-                              <ContextMenuItem 
-                                onClick={() => handleKickUser(member.user.id, member.user.username)}
-                                className="text-red-600"
-                              >
-                                <UserMinus className="w-4 h-4 mr-2" />
-                                Kick User
-                              </ContextMenuItem>
                             </ContextMenuGroup>
                           </>
                         )}
+                        <ContextMenuSeparator />
+                        <ContextMenuGroup>
+                          <ContextMenuItem onClick={() => handleRoomInfo()}>
+                            <Info className="w-4 h-4 mr-2" />
+                            Room Info
+                          </ContextMenuItem>
+                        </ContextMenuGroup>
                       </ContextMenuContent>
                     </ContextMenu>
                   ))
