@@ -781,14 +781,14 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                   member.role === 'admin' || member.user.level >= 5 ? "text-orange-700" :
                                   // Owner and moderator colors only in managed rooms (not system rooms 1-4)
                                   !['1', '2', '3', '4'].includes(roomId || '') ? (
-                                    member.role === 'owner' ? "text-yellow-500" :
+                                    (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
                                     (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
                                   ) : ""
                                 )}>
                                   {member.user.username}
                                 </span>
                                 {/* Crown only for owner in managed rooms */}
-                                {member.role === 'owner' && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                {(member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
                                   <Crown className="w-3 h-3 text-yellow-500" />
                                 )}
                                 {(member.role === 'admin' || member.user.level >= 5) && (
@@ -959,14 +959,14 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                             member.role === 'admin' || member.user.level >= 5 ? "text-orange-700" :
                                             // Owner and moderator colors only in managed rooms (not system rooms 1-4)
                                             !['1', '2', '3', '4'].includes(roomId || '') ? (
-                                              member.role === 'owner' ? "text-yellow-500" :
+                                              (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
                                               (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
                                             ) : ""
                                           )}>
                                             {member.user.username}
                                           </span>
                                           {/* Crown only for owner in managed rooms */}
-                                          {member.role === 'owner' && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                          {(member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
                                             <Crown className="w-3 h-3 text-yellow-500" />
                                           )}
                                           {(member.role === 'admin' || member.user.level >= 5) && (
