@@ -760,7 +760,11 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-2">
-                                <span className="font-medium text-sm truncate">
+                                <span className={cn(
+                                  "font-medium text-sm truncate",
+                                  member.role === 'admin' && "text-yellow-600",
+                                  (member.user.level >= 3 && member.user.level < 5) && "text-amber-600"
+                                )}>
                                   {member.user.username}
                                 </span>
                                 {member.role === 'admin' && (
@@ -923,7 +927,11 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                       />
                                       <div>
                                         <div className="flex items-center space-x-2">
-                                          <span className="font-medium text-sm">
+                                          <span className={cn(
+                                            "font-medium text-sm truncate",
+                                            member.role === 'admin' && "text-yellow-600",
+                                            (member.user.level >= 3 && member.user.level < 5) && "text-amber-600"
+                                          )}>
                                             {member.user.username}
                                           </span>
                                           {member.role === 'admin' && (

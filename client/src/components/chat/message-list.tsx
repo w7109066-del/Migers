@@ -737,8 +737,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                       <div className="flex items-baseline space-x-1">
                         <span 
                           className={cn(
-                            "font-semibold text-sm",
-                            message.senderId === user?.id ? "text-[#2f7853]" : "text-[#3f94d9]"
+                            "text-sm font-medium cursor-pointer hover:underline",
+                            (message.sender.level >= 5) && "text-yellow-600", // Admin
+                            (message.sender.level >= 3 && message.sender.level < 5) && "text-amber-600" // Moderator
                           )}
                           onClick={() => {
                             if (message.senderId !== 'system' && onUserClick) {
