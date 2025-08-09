@@ -1990,6 +1990,196 @@ export function registerRoutes(app: Express): Server {
             return;
           }
 
+          // Check if message is an add mod command
+          const addModCommandRegex = /^\/add\s+mod\s+(.+)$/i;
+          const addModMatch = data.content.match(addModCommandRegex);
+
+          if (addModMatch) {
+            const [, targetUsername] = addModMatch;
+            const senderUser = await storage.getUser(userId);
+
+            if (!senderUser) {
+              return;
+            }
+
+            // Check if sender is admin (level 5+) or room owner for user-created rooms
+            let isOwner = false;
+            
+            if (['1', '2', '3', '4'].includes(data.roomId)) {
+              // For system rooms, only admins can add moderators
+              isOwner = (senderUser.level || 0) >= 5;
+            } else {
+              // For user-created rooms, check if user is the room creator
+              const room = await storage.getChatRoom(data.roomId);
+              isOwner = room && room.createdBy === userId;
+              
+              // Also allow if user is admin
+              if (!isOwner) {
+                isOwner = (senderUser.level || 0) >= 5;
+              }
+            }
+
+            if (!isOwner) {
+              const errorMessage = {
+                id: `addmod-error-${Date.now()}`,
+                content: `❌ Only room owners can add moderators.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: errorMessage,
+              });
+              return;
+            }
+
+            // Find target user in room
+            let targetUser = null;
+
+            if (['1', '2', '3', '4'].includes(data.roomId)) {
+              // Search in mock room members
+              const roomMembers = mockRoomMembers.get(data.roomId);
+              if (roomMembers) {
+                for (const [memberId, memberData] of roomMembers) {
+                  if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
+                    targetUser = memberData;
+                    break;
+                  }
+                }
+              }
+            } else {
+              // Search in real room members
+              const roomMembers = await storage.getRoomMembers(data.roomId);
+              targetUser = roomMembers?.find(member => 
+                member.user.username.toLowerCase() === targetUsername.toLowerCase()
+              )?.user;
+            }
+
+            if (!targetUser) {
+              const notFoundMessage = {
+                id: `addmod-error-${Date.now()}`,
+                content: `❌ User '${targetUsername}' not found in this room.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: notFoundMessage,
+              });
+              return;
+            }
+
+            // Check if user is already a moderator (level 3+)
+            if ((targetUser.level || 0) >= 3) {
+              const alreadyModMessage = {
+                id: `addmod-error-${Date.now()}`,
+                content: `❌ ${targetUsername} is already a moderator or higher.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: notFoundMessage,
+              });
+              return;
+            }
+
+            try {
+              // Update user level to moderator (level 3)
+              await storage.updateUserLevel(targetUser.id, 3);
+
+              // Update in mock room members if applicable
+              if (['1', '2', '3', '4'].includes(data.roomId)) {
+                const roomMembers = mockRoomMembers.get(data.roomId);
+                if (roomMembers && roomMembers.has(targetUser.id)) {
+                  const memberData = roomMembers.get(targetUser.id);
+                  if (memberData) {
+                    memberData.level = 3;
+                    roomMembers.set(targetUser.id, memberData);
+                  }
+                }
+              }
+
+              // Broadcast success message to all room members
+              const successMessage = {
+                id: `addmod-success-${Date.now()}`,
+                content: `✅ ${targetUsername} has been promoted to moderator by ${senderUser.username}`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              // Broadcast to all room members
+              io.to(data.roomId).emit('new_message', {
+                message: successMessage,
+              });
+
+              // Force refresh member list
+              io.to(data.roomId).emit('forceMemberRefresh', {
+                roomId: data.roomId
+              });
+
+            } catch (error) {
+              console.error('Error promoting user to moderator:', error);
+              
+              const errorMessage = {
+                id: `addmod-error-${Date.now()}`,
+                content: `❌ Failed to promote ${targetUsername} to moderator.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: errorMessage,
+              });
+            }
+            return;
+          }
+
           // Check if message is a whois command
           const whoisCommandRegex = /^\/whois\s+(.+)$/i;
           const whoisMatch = data.content.match(whoisCommandRegex);

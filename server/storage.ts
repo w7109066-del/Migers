@@ -55,6 +55,7 @@ export interface IStorage {
   suspendUser(userId: string): Promise<User | undefined>;
   unsuspendUser(userId: string): Promise<User | undefined>;
   updateUserPassword(userId: string, newPassword: string): Promise<User | undefined>;
+  updateUserLevel(userId: string, level: number): Promise<User | undefined>;
 
 
   // Friends management
@@ -1415,7 +1416,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserPassword(userId: string, newPassword: string) {
+  async updateUserPassword(userId: string, newPassword: string): Promise<User | null> {
     try {
       // In production, hash the password before storing
       const result = await this.db.update(users)
@@ -1427,6 +1428,21 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Failed to update user password:', error);
       return null;
+    }
+  }
+
+  async updateUserLevel(userId: string, level: number): Promise<User | undefined> {
+    try {
+      const [updatedUser] = await this.db
+        .update(users)
+        .set({ level })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user level:', error);
+      return undefined;
     }
   }
 
