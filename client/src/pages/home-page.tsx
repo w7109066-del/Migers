@@ -716,7 +716,7 @@ function HomePageContent() {
                         }}
                       />
                       <Button
-                        type="type="button"
+                        type="button"
                         size="sm"
                         className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
                         onClick={handleCreatePost}
