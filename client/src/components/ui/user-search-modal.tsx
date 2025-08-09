@@ -22,7 +22,7 @@ interface UserSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUserSelect: (user: User) => void;
-  onMessageClick: (user: User) => void;
+  onMessageClick?: (user: User) => void;
 }
 
 export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick }: UserSearchModalProps) {
@@ -93,10 +93,12 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
   };
 
   const handleMessageClick = (user: User) => {
-    onMessageClick({
-      ...user,
-      country: user.country || "ID"
-    });
+    if (onMessageClick && typeof onMessageClick === 'function') {
+      onMessageClick({
+        ...user,
+        country: user.country || "ID"
+      });
+    }
     onClose();
   };
 
