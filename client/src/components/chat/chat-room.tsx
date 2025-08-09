@@ -396,6 +396,11 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
         level: user.level,
         status: "Available for chat",
         isOnline: user.isOnline,
+        profilePhotoUrl: user.profilePhotoUrl,
+        country: user.country || 'ID',
+        bio: user.bio || '',
+        // Add flag to indicate this should open direct message
+        openDirectMessage: true
       });
     }
   };

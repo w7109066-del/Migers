@@ -104,7 +104,7 @@ function HomePageContent() {
   const [showCredits, setShowCredits] = useState(false);
   const [showMentor, setShowMentor] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState('home'); // Changed default to 'home'
   const [userStatus, setUserStatus] = useState(user?.status || 'online');
   const [postContent, setPostContent] = useState('');
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
@@ -122,6 +122,8 @@ function HomePageContent() {
   const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState<{url: string, type: string} | null>(null);
   const [pin, setPin] = useState<string>(""); // Added for PIN functionality
+  const [currentRoom, setCurrentRoom] = useState<any>(null); // State to track current room
+  const [roomName, setRoomName] = useState<string>(''); // State to track current room name
 
 
   // Update local status when user data changes
@@ -367,7 +369,7 @@ function HomePageContent() {
 
   // Refresh feed when switching to feed tab
   React.useEffect(() => {
-    if (user && activeTab === 2) {
+    if (user && activeTab === 'feed') {
       // Always load when switching to feed tab, but don't block if already loading
       if (!isLoadingFeed && feedPosts.length === 0) {
         loadFeedPosts();
@@ -562,6 +564,8 @@ function HomePageContent() {
     console.log('Room selected:', room);
     setSelectedRoom(room);
     setSelectedDirectMessage(null); // Clear DM when entering room
+    setCurrentRoom(room); // Set current room
+    setRoomName(room.name); // Set current room name
   };
 
   const tabs = [
@@ -1380,6 +1384,25 @@ function HomePageContent() {
 
   ];
 
+  // Modified handleUserClick function
+  const handleUserClick = (profile: any) => {
+    console.log('User clicked:', profile);
+    if (profile.showMiniProfile) {
+      setSelectedProfile(profile);
+      setShowMiniProfile(true);
+    } else if (profile.openDirectMessage) {
+      // Switch to messages tab and open direct message
+      setSelectedProfile(profile);
+      setActiveTab('dm'); // Change to 'dm' tab
+      // Close the room to go back to messages view
+      setCurrentRoom(null);
+      setRoomName('');
+    } else {
+      setSelectedProfile(profile);
+      setActiveTab('dm'); // Default to 'dm' tab if not showing mini profile or directly opening DM
+    }
+  };
+
   return (
     <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>
       {/* Conditional Content Rendering */}
@@ -1389,12 +1412,15 @@ function HomePageContent() {
         <MentorPage onBack={() => setShowMentor(false)} />
       ) : showCredits ? (
         <CreditsPage onBack={() => setShowCredits(false)} />
-      ) : selectedRoom ? (
+      ) : currentRoom ? ( // Check if currentRoom is set
         <ChatRoom
-          roomId={selectedRoom.id}
-          roomName={selectedRoom.name}
-          onUserClick={handleUserProfileClick}
-          onLeaveRoom={() => setSelectedRoom(null)}
+          roomId={currentRoom.id}
+          roomName={currentRoom.name}
+          onUserClick={handleUserClick} // Pass the modified handler
+          onLeaveRoom={() => {
+            setCurrentRoom(null); // Clear current room
+            setRoomName('');
+          }}
         />
       ) : selectedDirectMessage ? (
         <DirectMessageChat
