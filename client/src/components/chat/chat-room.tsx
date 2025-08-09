@@ -70,6 +70,10 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
   const { user } = useAuth();
 
+  // State for active kick votes and their timers
+  const [activeKickVotes, setActiveKickVotes] = useState<{ [key: string]: { voters: Set<string>; remainingTime: number; targetUser: any } }>({});
+  const kickVoteDuration = 60; // seconds
+
   // Room members data
   const { data: roomMembers, refetch: refetchMembers, isLoading: isLoadingMembers } = useQuery<RoomMember[]>({
     queryKey: ["/api/rooms", roomId, "members"],
@@ -145,6 +149,49 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       return () => clearTimeout(timer);
     }
   }, [isConnected, roomId, joinRoom]);
+
+  // Timer effect for kick votes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveKickVotes(prevVotes => {
+        const updatedVotes = { ...prevVotes };
+        let changed = false;
+        for (const userId in updatedVotes) {
+          updatedVotes[userId].remainingTime--;
+          if (updatedVotes[userId].remainingTime <= 0) {
+            // Vote expired
+            const kickMessage = {
+              id: `kick-fail-${Date.now()}-${updatedVotes[userId].targetUser.username}`,
+              content: `A kick vote for ${updatedVotes[userId].targetUser.username} has failed (timed out).`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            };
+            setMessages(prev => [...prev, kickMessage]);
+            delete updatedVotes[userId];
+            changed = true;
+          } else {
+            // Update remaining time text
+            if (updatedVotes[userId].remainingTime === 20 || updatedVotes[userId].remainingTime === 10 || updatedVotes[userId].remainingTime === 5) {
+              const timerMessage = {
+                id: `kick-timer-${Date.now()}-${userId}`,
+                content: `${updatedVotes[userId].remainingTime}s remaining`,
+                senderId: 'system',
+                createdAt: new Date().toISOString(),
+                sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+                messageType: 'system'
+              };
+              setMessages(prev => [...prev, timerMessage]);
+            }
+          }
+        }
+        return changed ? updatedVotes : prevVotes;
+      });
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [setMessages]); // Include setMessages in dependency array
 
   // Note: Removed the "Currently in the room" message to avoid chat spam when users join
 
@@ -258,7 +305,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       window.removeEventListener('userKicked', handleUserKicked as EventListener);
       window.removeEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
     };
-  }, [roomId, refetchMembers]);
+  }, [roomId, refetchMembers, messages, blockedUsers]); // Added messages and blockedUsers to dependencies
 
   const handleSendMessage = (content: string) => {
     if (roomId) {
@@ -344,50 +391,119 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
     };
   }, [roomId, sendChatMessage]);
 
-  const handleVoteKick = async (targetUser: any) => {
+  // Kick command handler
+  const handleKickCommand = (targetUsername: string) => {
+    const targetUser = roomMembers?.find(member => member.user.username.toLowerCase() === targetUsername.toLowerCase())?.user;
+
+    if (!targetUser) {
+      const systemMessage = {
+        id: `kick-error-${Date.now()}`,
+        content: `User "${targetUsername}" not found in this room.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, systemMessage]);
+      return;
+    }
+
+    if (targetUser.id === user?.id) {
+      const systemMessage = {
+        id: `kick-error-${Date.now()}`,
+        content: `You cannot kick yourself.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, systemMessage]);
+      return;
+    }
+
+    // Check if a kick vote is already active for this user
+    if (activeKickVotes[targetUser.id]) {
+      const systemMessage = {
+        id: `kick-info-${Date.now()}`,
+        content: `A kick vote for ${targetUsername} is already in progress.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, systemMessage]);
+      return;
+    }
+
+    // Start a new kick vote
+    const newKickVote = {
+      voters: new Set<string>([user!.id]),
+      remainingTime: kickVoteDuration,
+      targetUser: targetUser,
+    };
+
+    setActiveKickVotes(prev => ({
+      ...prev,
+      [targetUser.id]: newKickVote,
+    }));
+
+    const voteStartMessage = {
+      id: `kick-start-${Date.now()}-${targetUser.id}`,
+      content: `A vote to kick ${targetUsername} has been started by ${user!.username}. ${Math.ceil((roomMembers?.length || 1) / 2)} more votes needed. ${kickVoteDuration}s remaining`,
+      senderId: 'system',
+      createdAt: new Date().toISOString(),
+      sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+      messageType: 'system'
+    };
+    setMessages(prev => [...prev, voteStartMessage]);
+  };
+
+
+  const handleVoteKick = async (targetUserId: string) => {
     if (!user?.id || !roomId) return;
 
     try {
-      // Check if user already voted
-      const currentVotes = voteKicks.get(targetUser.id) || new Set();
-      if (currentVotes.has(user.id)) {
+      const activeVote = activeKickVotes[targetUserId];
+      if (!activeVote) return; // No active vote
+
+      if (activeVote.voters.has(user.id)) {
         // Remove vote
-        currentVotes.delete(user.id);
-        const kickMessage = {
+        activeVote.voters.delete(user.id);
+        const voteRemovedMessage = {
           id: `vote-removed-${Date.now()}`,
-          content: `${user.username} removed their kick vote for ${targetUser.username}`,
+          content: `${user.username} removed their kick vote for ${activeVote.targetUser.username}`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
           messageType: 'system'
         };
-        setMessages(prev => [...prev, kickMessage]);
+        setMessages(prev => [...prev, voteRemovedMessage]);
       } else {
         // Add vote
-        currentVotes.add(user.id);
-        const kickMessage = {
+        activeVote.voters.add(user.id);
+        const voteAddedMessage = {
           id: `vote-kick-${Date.now()}`,
-          content: `${user.username} voted to kick ${targetUser.username} (${currentVotes.size}/${Math.ceil((roomMembers?.length || 1) / 2)} votes needed)`,
+          content: `${user.username} voted to kick ${activeVote.targetUser.username} (${activeVote.voters.size}/${Math.ceil((roomMembers?.length || 1) / 2)} votes needed)`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
           messageType: 'system'
         };
-        setMessages(prev => [...prev, kickMessage]);
+        setMessages(prev => [...prev, voteAddedMessage]);
       }
 
       // Update vote state
-      const newVoteKicks = new Map(voteKicks);
-      newVoteKicks.set(targetUser.id, currentVotes);
-      setVoteKicks(newVoteKicks);
+      const newActiveKickVotes = { ...activeKickVotes, [targetUserId]: activeVote };
+      setActiveKickVotes(newActiveKickVotes);
 
       // Check if enough votes to kick (majority)
       const requiredVotes = Math.ceil((roomMembers?.length || 1) / 2);
-      if (currentVotes.size >= requiredVotes) {
+      if (activeVote.voters.size >= requiredVotes) {
         // Execute kick
-        await handleKickUser(targetUser.id, targetUser.username);
-        newVoteKicks.delete(targetUser.id);
-        setVoteKicks(newVoteKicks);
+        await handleKickUser(activeVote.targetUser.id, activeVote.targetUser.username);
+        // Clean up the active vote
+        const { [targetUserId]: _, ...rest } = newActiveKickVotes;
+        setActiveKickVotes(rest);
       }
 
     } catch (error) {
@@ -501,9 +617,30 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
           messageType: 'system'
         };
         setMessages(prev => [...prev, kickMessage]);
+        setTimeout(() => refetchMembers(), 100); // Refresh members after kick
+      } else {
+        const errorMessage = await response.json();
+        const kickFailMessage = {
+          id: `kick-fail-${Date.now()}`,
+          content: `Failed to kick ${username}: ${errorMessage.message || 'Unknown error'}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, kickFailMessage]);
       }
     } catch (error) {
       console.error('Failed to kick user:', error);
+      const kickFailMessage = {
+        id: `kick-fail-${Date.now()}`,
+        content: `An error occurred while trying to kick ${username}.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, kickFailMessage]);
     }
   };
 
@@ -669,7 +806,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                 Kick User
                               </ContextMenuItem>
                               <ContextMenuItem
-                                onClick={() => handleVoteKick(member.user)}
+                                onClick={() => handleVoteKick(member.user.id)}
                                 className="text-orange-600"
                               >
                                 <UserMinus className="w-4 h-4 mr-2" />

@@ -1980,6 +1980,16 @@ export function registerRoutes(app: Express): Server {
         }
 
         if (data.roomId) {
+          // Check if message is a kick command
+          const kickCommandRegex = /^\/kick\s+(.+)$/i;
+          const kickMatch = data.content.match(kickCommandRegex);
+
+          if (kickMatch) {
+            // Let the client handle kick command logic
+            // This is just processed on client-side for now
+            return;
+          }
+
           // Check if message is a whois command
           const whoisCommandRegex = /^\/whois\s+(.+)$/i;
           const whoisMatch = data.content.match(whoisCommandRegex);
