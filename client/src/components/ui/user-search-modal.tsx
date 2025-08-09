@@ -9,6 +9,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
+// Define a UserStatus component to display online/offline status
+const UserStatus = ({ isOnline }: { isOnline: boolean }) => (
+  <div className={`text-xs ${isOnline ? 'text-green-600' : 'text-gray-500'}`}>
+    {isOnline ? 'Online' : 'Offline'}
+  </div>
+);
+
 interface User {
   id: string;
   username: string;
@@ -16,6 +23,7 @@ interface User {
   isOnline: boolean;
   status?: string;
   country?: string;
+  isAdmin?: boolean; // Added isAdmin property
 }
 
 interface UserSearchModalProps {
@@ -148,15 +156,20 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
                           size="md"
                           isOnline={user.isOnline}
                         />
-                        <div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {user.username}
+                          </p>
                           <div className="flex items-center space-x-2">
-                            <span className="font-semibold">{user.username}</span>
                             <Badge variant="secondary" className="bg-warning text-white text-xs">
                               {user.level}
                             </Badge>
-                          </div>
-                          <div className={`text-xs ${user.isOnline ? 'text-green-600' : 'text-gray-500'}`}>
-                            {user.isOnline ? 'Online' : 'Offline'}
+                            {user.isAdmin && (
+                              <Badge variant="destructive" className="bg-red-600 text-white text-xs font-semibold">
+                                Admin
+                              </Badge>
+                            )}
+                            <UserStatus isOnline={user.isOnline} />
                           </div>
                         </div>
                       </div>

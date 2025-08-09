@@ -10,6 +10,8 @@ import { RefreshCw, Search, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { NotificationDropdown } from "../ui/notification-dropdown";
+import { Badge } from "@/components/ui/badge";
+import { UserStatus } from "../ui/user-status";
 
 interface Friend extends User {
   friendshipStatus: string;
