@@ -79,6 +79,8 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomDescription, setNewRoomDescription] = useState("");
+  // Persistent message storage for each room
+  const [roomMessages, setRoomMessages] = useState<Record<string, any[]>>({});
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -248,6 +250,19 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     console.log('Back to room list clicked - staying connected to room');
     // Just hide the room view without leaving the room
     setSelectedRoom(null);
+  };
+
+  // Handler to save messages when leaving room view
+  const handleSaveRoomMessages = (roomId: string, messages: any[]) => {
+    setRoomMessages(prev => ({
+      ...prev,
+      [roomId]: [...messages]
+    }));
+  };
+
+  // Handler to get saved messages for a room
+  const getSavedRoomMessages = (roomId: string) => {
+    return roomMessages[roomId] || [];
   };
 
   const handleCreateRoom = () => {
@@ -421,6 +436,8 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
             roomName={selectedRoom.name}
             onUserClick={onUserClick || (() => {})}
             onLeaveRoom={handleBackToRoomList}
+            savedMessages={getSavedRoomMessages(selectedRoom.id)}
+            onSaveMessages={(messages) => handleSaveRoomMessages(selectedRoom.id, messages)}
           />
         </div>
       </div>

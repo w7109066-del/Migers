@@ -35,6 +35,8 @@ interface ChatRoomProps {
   roomName?: string;
   onUserClick: (profile: any) => void;
   onLeaveRoom?: () => void;
+  savedMessages?: any[];
+  onSaveMessages?: (messages: any[]) => void;
 }
 
 interface Message {
@@ -61,7 +63,7 @@ interface RoomMember {
   role?: string;
 }
 
-export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoomProps) {
+export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMessages = [], onSaveMessages }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isUserListOpen, setIsUserListOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -86,36 +88,39 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
   // Initialize room and messages
   useEffect(() => {
-    console.log('ChatRoom useEffect:', { isConnected, roomId, roomName });
+    console.log('ChatRoom useEffect:', { isConnected, roomId, roomName, savedMessagesCount: savedMessages.length });
 
     if (roomId && roomName) {
       console.log('Initializing chat room:', roomId);
 
-      // Clear previous messages first
-      setMessages([]);
+      // Check if we have saved messages for this room
+      if (savedMessages.length > 0) {
+        console.log('Restoring saved messages for room:', roomId, savedMessages.length);
+        setMessages(savedMessages);
+      } else {
+        // Set welcome messages for new room entry
+        const welcomeMessages = [
+          {
+            id: `welcome-${roomId}`,
+            content: `Welcome to ${roomName} official chat room.`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          },
+          {
+            id: `room-managed-${roomId}`,
+            content: `This room is managed by ${roomName.toLowerCase()}`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          }
+        ];
 
-      // Set welcome messages immediately
-      const welcomeMessages = [
-        {
-          id: `welcome-${roomId}`,
-          content: `Welcome to ${roomName} official chat room.`,
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        },
-        {
-          id: `room-managed-${roomId}`,
-          content: `This room is managed by ${roomName.toLowerCase()}`,
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        }
-      ];
-
-      setMessages(welcomeMessages);
-      console.log('Set welcome messages for room:', roomId);
+        setMessages(welcomeMessages);
+        console.log('Set welcome messages for room:', roomId);
+      }
 
       // Join room if connected, or wait for connection
       if (isConnected) {
@@ -126,16 +131,22 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
     }
 
-    // Cleanup when roomId changes - but don't leave room on back navigation
+    // Cleanup when roomId changes - save messages before cleanup
     return () => {
       console.log('Cleaning up chat room:', roomId);
-      setMessages([]);
+      
+      // Save current messages before cleanup
+      if (onSaveMessages && roomId && messages.length > 0) {
+        console.log('Saving messages for room:', roomId, messages.length);
+        onSaveMessages(messages);
+      }
+      
       setIsUserListOpen(false);
 
       // Don't automatically leave room when component unmounts
       // Users should explicitly leave via the Leave Room option
     };
-  }, [roomId, roomName, joinRoom]);
+  }, [roomId, roomName, joinRoom, savedMessages.length]);
 
   // Separate effect for joining room when connection is established
   useEffect(() => {
@@ -673,6 +684,12 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   };
 
   const handleBackToRoomList = () => {
+    // Save current messages before navigating back
+    if (onSaveMessages && roomId && messages.length > 0) {
+      console.log('Saving messages before navigating back:', roomId, messages.length);
+      onSaveMessages(messages);
+    }
+    
     // Navigate back to room list without leaving room or disconnecting
     if (onLeaveRoom) {
       onLeaveRoom();
