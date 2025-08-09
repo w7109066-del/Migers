@@ -214,7 +214,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-2 sm:space-y-3">
             {/* Read-only Username */}
             <div className="space-y-1 sm:space-y-2">
               <Label htmlFor="username" className="text-sm font-medium">Username</Label>
