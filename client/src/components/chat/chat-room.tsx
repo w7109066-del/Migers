@@ -891,6 +891,107 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                     Back to Room List
                   </Button>
 
+                  {/* Kick User Menu - Only for level 3+ users */}
+                  {(user?.level || 0) >= 3 && (
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-orange-600 hover:text-orange-700">
+                          <UserMinus className="w-4 h-4 mr-2" />
+                          Kick User
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="right" className="w-80">
+                        <SheetHeader>
+                          <SheetTitle>Kick User from Room</SheetTitle>
+                        </SheetHeader>
+                        <div className="mt-4 space-y-2">
+                          {isLoadingMembers ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                            </div>
+                          ) : roomMembers && roomMembers.length > 0 ? (
+                            roomMembers
+                              .filter(member => member.user.id !== user?.id) // Don't show current user
+                              .map((member) => (
+                                <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <UserAvatar
+                                        username={member.user.username}
+                                        size="sm"
+                                        isOnline={member.user.isOnline}
+                                      />
+                                      <div>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="font-medium text-sm">
+                                            {member.user.username}
+                                          </span>
+                                          {member.role === 'admin' && (
+                                            <Crown className="w-3 h-3 text-yellow-500" />
+                                          )}
+                                        </div>
+                                        <Badge variant="outline" className="text-xs">
+                                          Level {member.user.level}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      {/* Vote Kick Button */}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs text-orange-600 hover:bg-orange-50"
+                                        onClick={() => handleVoteKick(member.user.id)}
+                                      >
+                                        Vote Kick
+                                      </Button>
+                                      {/* Direct Kick Button - Only for admins (level 5+) */}
+                                      {(user?.level || 0) >= 5 && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="destructive"
+                                              className="text-xs"
+                                            >
+                                              Kick
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Kick User</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Are you sure you want to kick {member.user.username} from {roomName}? 
+                                                This action will immediately remove them from the room.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction 
+                                                onClick={() => handleKickUser(member.user.id, member.user.username)}
+                                                className="bg-red-600 hover:bg-red-700"
+                                              >
+                                                Kick User
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
+                                    </div>
+                                  </div>
+                                </Card>
+                              ))
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">
+                              <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                              <p>No other members found</p>
+                            </div>
+                          )}
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  )}
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
