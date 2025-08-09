@@ -374,18 +374,40 @@ export function registerRoutes(app: Express): Server {
           kickedBy: kickerUser.username
         });
 
-        // Force the kicked user to leave the room
-        const userSockets = await io.in(roomId).fetchSockets();
-        for (const socket of userSockets) {
-          // Ensure we only target the correct user's socket within the room
-          if (socket.data.userId === userId) {
-            socket.leave(roomId);
-            socket.emit('forcedLeaveRoom', {
-              roomId: roomId,
-              reason: `You have been kicked by ${kickerUser.username}`
-            });
+        // Send kick notification message to the kicked user first
+        broadcastToUser(userId, {
+          type: 'new_message',
+          message: {
+            id: `kick-notification-${Date.now()}-${userId}`,
+            content: `You have been kicked by ${kickerUser.username}`,
+            senderId: 'system',
+            roomId: roomId,
+            recipientId: null,
+            messageType: 'system',
+            createdAt: new Date().toISOString(),
+            sender: {
+              id: 'system',
+              username: 'System',
+              level: 0,
+              isOnline: true,
+            }
           }
-        }
+        });
+
+        // Force the kicked user to leave the room after a short delay
+        setTimeout(async () => {
+          const userSockets = await io.in(roomId).fetchSockets();
+          for (const socket of userSockets) {
+            // Ensure we only target the correct user's socket within the room
+            if (socket.data.userId === userId) {
+              socket.leave(roomId);
+              socket.emit('forcedLeaveRoom', {
+                roomId: roomId,
+                reason: `You have been kicked by ${kickerUser.username}`
+              });
+            }
+          }
+        }, 2000); // 2 second delay to allow user to see the kick message
       }
 
       res.json({ success: true, message: 'User kicked successfully' });
