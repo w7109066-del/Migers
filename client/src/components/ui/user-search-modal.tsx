@@ -151,11 +151,26 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
                         className="flex items-center space-x-3 cursor-pointer flex-1"
                         onClick={() => handleUserClick(user)}
                       >
-                        <UserAvatar
-                          username={user.username}
-                          size="md"
-                          isOnline={user.isOnline}
-                        />
+                        <div className="relative">
+                          {user.profilePhotoUrl ? (
+                            <div className="w-12 h-12 rounded-full overflow-hidden relative">
+                              <img
+                                src={user.profilePhotoUrl}
+                                alt={user.username}
+                                className="w-full h-full object-cover"
+                              />
+                              {user.isOnline && (
+                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                              )}
+                            </div>
+                          ) : (
+                            <UserAvatar
+                              username={user.username}
+                              size="md"
+                              isOnline={user.isOnline}
+                            />
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">
                             {user.username}

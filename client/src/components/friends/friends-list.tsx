@@ -236,11 +236,26 @@ export function FriendsList({ onUserClick, onMessageClick, showRefreshButton = f
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <UserAvatar
-                    username={friend.username}
-                    size="md"
-                    isOnline={friend.isOnline || false}
-                  />
+                  <div className="relative">
+                    {friend.profilePhotoUrl ? (
+                      <div className="w-12 h-12 rounded-full overflow-hidden relative">
+                        <img
+                          src={friend.profilePhotoUrl}
+                          alt={friend.username}
+                          className="w-full h-full object-cover"
+                        />
+                        {friend.isOnline && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        )}
+                      </div>
+                    ) : (
+                      <UserAvatar
+                        username={friend.username}
+                        size="md"
+                        isOnline={friend.isOnline || false}
+                      />
+                    )}
+                  </div>
                   <div>
                     <div className="font-semibold text-gray-800">{friend.username}</div>
                     <div className="text-sm text-gray-500">
