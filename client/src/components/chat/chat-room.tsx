@@ -12,11 +12,10 @@ import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, Con
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { 
-  Users, 
-  Settings, 
+import {
+  Users,
+  Settings,
   Hash,
-  Info,
   UserMinus,
   X,
   Shield,
@@ -67,7 +66,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [voteKicks, setVoteKicks] = useState<Map<string, Set<string>>>(new Map()); // userId -> Set of voter IDs
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
-  const [roomInfo, setRoomInfo] = useState<any>(null);
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
   const { user } = useAuth();
 
@@ -166,8 +164,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       const { username, roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId && username && username !== 'undefined') {
         // Check if we already have a recent join message for this user to prevent duplicates
-        const recentJoinMessages = messages.filter(msg => 
-          msg.content.includes(`${username} has entered`) && 
+        const recentJoinMessages = messages.filter(msg =>
+          msg.content.includes(`${username} has entered`) &&
           Date.now() - new Date(msg.createdAt).getTime() < 3000 // within 3 seconds
         );
 
@@ -190,8 +188,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       const { username, roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId && username && username !== 'undefined') {
         // Check if we already have a recent leave message for this user to prevent duplicates
-        const recentLeaveMessages = messages.filter(msg => 
-          msg.content.includes(`${username} has left`) && 
+        const recentLeaveMessages = messages.filter(msg =>
+          msg.content.includes(`${username} has left`) &&
           Date.now() - new Date(msg.createdAt).getTime() < 5000 // within 5 seconds
         );
 
@@ -427,7 +425,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   const handleReportUser = async (targetUser: any) => {
     try {
       const reportMessage = `🚨 REPORT: User ${user?.username} reported ${targetUser.username} in room ${roomName} (${roomId}). Please investigate.`;
-      
+
       // Send report to admin chat (assuming admin room ID is 'admin' or '1')
       const response = await fetch('/api/admin/report', {
         method: 'POST',
@@ -464,8 +462,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       const response = await fetch(`/api/rooms/${roomId}/info`);
       if (response.ok) {
         const roomData = await response.json();
-        setRoomInfo(roomData);
-        
+        // setRoomInfo(roomData); // Removed as roomInfo state is removed
+
         const infoMessage = {
           id: `room-info-${Date.now()}`,
           content: `🏠 Room: ${roomData.name} | 👤 Creator: ${roomData.createdBy || 'System'} | 📅 Created: ${new Date(roomData.createdAt).toLocaleDateString()} | 👥 Members: ${roomMembers?.length || 0}/${roomData.capacity || 25}`,
@@ -581,7 +579,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <UserAvatar 
+          <UserAvatar
             username={roomName}
             size="sm"
             isOnline={true}
@@ -593,7 +591,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {/* Member List Button */}
           <Sheet open={isUserListOpen} onOpenChange={setIsUserListOpen}>
@@ -617,7 +615,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                       <ContextMenuTrigger>
                         <Card className="p-3 hover:bg-gray-50 cursor-pointer transition-colors">
                           <div className="flex items-center space-x-3">
-                            <UserAvatar 
+                            <UserAvatar
                               username={member.user.username}
                               size="sm"
                               isOnline={member.user.isOnline}
@@ -662,21 +660,21 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                           <>
                             <ContextMenuSeparator />
                             <ContextMenuGroup>
-                              <ContextMenuItem 
+                              <ContextMenuItem
                                 onClick={() => handleKickUser(member.user.id, member.user.username)}
                                 className="text-red-600"
                               >
                                 <UserMinus className="w-4 h-4 mr-2" />
                                 Kick User
                               </ContextMenuItem>
-                              <ContextMenuItem 
+                              <ContextMenuItem
                                 onClick={() => handleVoteKick(member.user)}
                                 className="text-orange-600"
                               >
                                 <UserMinus className="w-4 h-4 mr-2" />
                                 Vote Kick
                               </ContextMenuItem>
-                              <ContextMenuItem 
+                              <ContextMenuItem
                                 onClick={() => handleBlockUser(member.user)}
                                 className="text-red-600"
                               >
@@ -692,7 +690,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                   </>
                                 )}
                               </ContextMenuItem>
-                              <ContextMenuItem 
+                              <ContextMenuItem
                                 onClick={() => handleReportUser(member.user)}
                                 className="text-yellow-600"
                               >
@@ -744,17 +742,17 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                     {roomName}
                   </Badge>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full justify-start"
                     onClick={handleBackToRoomList}
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Back to Room List
                   </Button>
-                  
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
@@ -811,9 +809,9 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
-        <MessageList 
-          messages={messages} 
-          onUserClick={handleChatUser} 
+        <MessageList
+          messages={messages}
+          onUserClick={handleChatUser}
           roomName={roomName}
           isAdmin={isAdmin}
           currentUserId={user?.id}
