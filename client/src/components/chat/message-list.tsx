@@ -738,8 +738,18 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         <span 
                           className={cn(
                             "text-sm font-medium cursor-pointer hover:underline",
-                            (message.sender.level >= 5) && "text-yellow-600", // Admin
-                            (message.sender.level >= 3 && message.sender.level < 5) && "text-amber-600" // Moderator
+                            // Get room ID from URL for styling logic
+                            (() => {
+                              const currentRoomId = window.location.pathname.split('/').pop();
+                              // Only apply special colors in user-created rooms (not system rooms 1-4)
+                              if (!['1', '2', '3', '4'].includes(currentRoomId || '')) {
+                                // Check if user is room owner (this would need to be passed as prop)
+                                // For now, using level-based styling
+                                if (message.sender.level >= 5) return "text-yellow-600"; // Admin
+                                if (message.sender.level >= 3 && message.sender.level < 5) return "text-amber-600"; // Moderator
+                              }
+                              return "";
+                            })()
                           )}
                           onClick={() => {
                             if (message.senderId !== 'system' && onUserClick) {

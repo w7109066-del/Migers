@@ -762,8 +762,12 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                               <div className="flex items-center space-x-2">
                                 <span className={cn(
                                   "font-medium text-sm truncate",
-                                  member.role === 'admin' && "text-yellow-600",
-                                  (member.user.level >= 3 && member.user.level < 5) && "text-amber-600"
+                                  // Only apply special colors in user-created rooms (not system rooms 1-4)
+                                  !['1', '2', '3', '4'].includes(roomId || '') && (
+                                    member.role === 'owner' ? "text-yellow-500" :
+                                    member.role === 'admin' ? "text-yellow-600" :
+                                    (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
+                                  )
                                 )}>
                                   {member.user.username}
                                 </span>
@@ -929,8 +933,12 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                         <div className="flex items-center space-x-2">
                                           <span className={cn(
                                             "font-medium text-sm truncate",
-                                            member.role === 'admin' && "text-yellow-600",
-                                            (member.user.level >= 3 && member.user.level < 5) && "text-amber-600"
+                                            // Only apply special colors in user-created rooms (not system rooms 1-4)
+                                            !['1', '2', '3', '4'].includes(roomId || '') && (
+                                              member.role === 'owner' ? "text-yellow-500" :
+                                              member.role === 'admin' ? "text-yellow-600" :
+                                              (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
+                                            )
                                           )}>
                                             {member.user.username}
                                           </span>
