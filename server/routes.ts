@@ -431,7 +431,7 @@ export function registerRoutes(app: Express): Server {
               socket.leave(roomId);
               socket.emit('forcedLeaveRoom', {
                 roomId: roomId,
-                reason: `You have been kicked by admin ${kickerUser.username} and temporarily banned for 5 minutes`
+                reason: `You have been kicked by admin ${kickerUser.username} and temporarily cannot rejoin for 5 minutes`
               });
             }
           }
@@ -2084,7 +2084,7 @@ export function registerRoutes(app: Express): Server {
 
             // Check if sender is admin (level 1+) or room owner for user-created rooms
             let isOwner = false;
-            
+
             if (['1', '2', '3', '4'].includes(data.roomId)) {
               // For system rooms, only admins can add moderators
               isOwner = (senderUser.level || 0) >= 1;
@@ -2092,7 +2092,7 @@ export function registerRoutes(app: Express): Server {
               // For user-created rooms, check if user is the room creator
               const room = await storage.getChatRoom(data.roomId);
               isOwner = room && room.createdBy === userId;
-              
+
               // Also allow if user is admin
               if (!isOwner) {
                 isOwner = (senderUser.level || 0) >= 1;
@@ -2236,7 +2236,7 @@ export function registerRoutes(app: Express): Server {
 
             } catch (error) {
               console.error('Error promoting user to moderator:', error);
-              
+
               const errorMessage = {
                 id: `addmod-error-${Date.now()}`,
                 content: `❌ Failed to promote ${targetUsername} to moderator.`,
@@ -2360,7 +2360,7 @@ export function registerRoutes(app: Express): Server {
               `* ${senderUser.username || 'User'} ${actionText.trim()}` : 
               `* ${senderUser.username || 'User'}`;
 
-            // For mock rooms (1-4), create a mock message
+            // For mock rooms
             if (['1', '2', '3', '4'].includes(data.roomId)) {
               const meMessage = {
                 id: `me-${Date.now()}`,

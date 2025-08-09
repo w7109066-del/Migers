@@ -86,6 +86,36 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
     refetchOnWindowFocus: false
   });
 
+  // Check for temporary ban when trying to access room
+  const checkTempBan = async (roomId: string) => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/check-access`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.message && errorData.message.includes('temporarily banned')) {
+          // Extract remaining time
+          const timeMatch = errorData.message.match(/for (\d+) more minutes?/);
+          const remainingMinutes = timeMatch ? parseInt(timeMatch[1]) : 0;
+          
+          // Show popup with remaining time
+          const banPopupMessage = `🚫 ACCESS DENIED\n\nYou are temporarily banned from all chat rooms.\n\nReason: Kicked by admin\nRemaining time: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nYou will be able to join rooms again when the ban expires.`;
+          
+          alert(banPopupMessage);
+          
+          // Navigate away from room
+          if (onLeaveRoom) {
+            onLeaveRoom();
+          }
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error('Error checking room access:', error);
+      return true; // Allow access if check fails
+    }
+  };
+
   // Initialize room and messages
   useEffect(() => {
     console.log('ChatRoom useEffect:', { isConnected, roomId, roomName, savedMessagesCount: savedMessages.length });
@@ -122,10 +152,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
         console.log('Set welcome messages for room:', roomId);
       }
 
-      // Join room if connected, or wait for connection
+      // Check for temporary ban before joining room
       if (isConnected) {
-        joinRoom(roomId);
-        console.log('Joined room:', roomId);
+        const canJoin = await checkTempBan(roomId);
+        if (canJoin) {
+          joinRoom(roomId);
+          console.log('Joined room:', roomId);
+        }
       }
     } else {
       console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
@@ -153,8 +186,11 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
     if (isConnected && roomId) {
       console.log('WebSocket connected, joining room:', roomId);
       // Add a small delay to prevent race conditions
-      const timer = setTimeout(() => {
-        joinRoom(roomId);
+      const timer = setTimeout(async () => {
+        const canJoin = await checkTempBan(roomId);
+        if (canJoin) {
+          joinRoom(roomId);
+        }
       }, 100);
 
       return () => clearTimeout(timer);

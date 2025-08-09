@@ -122,11 +122,34 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     socket.current.on('error', (data) => {
-      toast({
-        title: "Connection Error",
-        description: data.message,
-        variant: "destructive",
-      });
+      // Check if it's a temporary ban error
+      if (data.message && data.message.includes('temporarily banned from rooms')) {
+        // Extract remaining time from message
+        const timeMatch = data.message.match(/for (\d+) more minutes?/);
+        const remainingMinutes = timeMatch ? parseInt(timeMatch[1]) : 0;
+        
+        // Show temporary ban popup
+        const banMessage = data.message.includes('kicked by admin') 
+          ? `You have been temporarily banned from all chat rooms.\n\nReason: Kicked by admin\nRemaining time: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nPlease wait before trying to join any room again.`
+          : data.message;
+        
+        // Use browser alert for immediate visibility
+        alert(banMessage);
+        
+        // Also show toast notification
+        toast({
+          title: "Access Denied - Temporary Ban",
+          description: `Banned for ${remainingMinutes} more minute${remainingMinutes !== 1 ? 's' : ''}`,
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Connection Error",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
     });
 
           socket.current.on('friend_request_received', (data) => {
