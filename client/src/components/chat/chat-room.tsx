@@ -410,7 +410,206 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center space-x-3">
+          <UserAvatar 
+            username={roomName}
+            size="sm"
+            isOnline={true}
+          />
+          <div>
+            <h2 className="font-semibold text-gray-800">{roomName}</h2>
+            <p className="text-xs text-gray-500">
+              {roomMembers?.length || 0} member{(roomMembers?.length || 0) !== 1 ? 's' : ''} online
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {/* Member List Button */}
+          <Sheet open={isUserListOpen} onOpenChange={setIsUserListOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-2">
+                <Users className="w-5 h-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80">
+              <SheetHeader>
+                <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-2">
+                {isLoadingMembers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  </div>
+                ) : roomMembers && roomMembers.length > 0 ? (
+                  roomMembers.map((member) => (
+                    <ContextMenu key={member.user.id}>
+                      <ContextMenuTrigger>
+                        <Card className="p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <UserAvatar 
+                              username={member.user.username}
+                              size="sm"
+                              isOnline={member.user.isOnline}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium text-sm truncate">
+                                  {member.user.username}
+                                </span>
+                                {member.role === 'admin' && (
+                                  <Crown className="w-3 h-3 text-yellow-500" />
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="outline" className="text-xs">
+                                  Level {member.user.level}
+                                </Badge>
+                                {member.user.isOnline && (
+                                  <span className="text-xs text-green-600">Online</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuGroup>
+                          <ContextMenuItem onClick={() => handleViewProfile(member.user)}>
+                            <User className="w-4 h-4 mr-2" />
+                            View Profile
+                          </ContextMenuItem>
+                          <ContextMenuItem onClick={() => handleChatUser(member.user)}>
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Send Message
+                          </ContextMenuItem>
+                          <ContextMenuItem onClick={() => handleUserInfo(member.user.username)}>
+                            <Info className="w-4 h-4 mr-2" />
+                            User Info
+                          </ContextMenuItem>
+                        </ContextMenuGroup>
+                        {isAdmin && member.user.id !== user?.id && (
+                          <>
+                            <ContextMenuSeparator />
+                            <ContextMenuGroup>
+                              <ContextMenuItem 
+                                onClick={() => handleReportUser(member.user)}
+                                className="text-yellow-600"
+                              >
+                                <Flag className="w-4 h-4 mr-2" />
+                                Report User
+                              </ContextMenuItem>
+                              <ContextMenuItem 
+                                onClick={() => handleKickUser(member.user.id, member.user.username)}
+                                className="text-red-600"
+                              >
+                                <UserMinus className="w-4 h-4 mr-2" />
+                                Kick User
+                              </ContextMenuItem>
+                            </ContextMenuGroup>
+                          </>
+                        )}
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No members found</p>
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Settings Button */}
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-2">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Room Settings</DialogTitle>
+                <DialogDescription>
+                  Manage room settings and preferences
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span>Room Information</span>
+                  <Badge variant="outline">
+                    <Hash className="w-3 h-3 mr-1" />
+                    {roomName}
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={handleBackToRoomList}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Back to Room List
+                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Leave Room
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Leave Room</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to leave {roomName}? You will need to rejoin to continue chatting.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleLeaveRoom} className="bg-red-600 hover:bg-red-700">
+                          Leave Room
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  {isAdmin && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full justify-start">
+                          <X className="w-4 h-4 mr-2" />
+                          Close Room
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Close Room</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to close {roomName}? This action cannot be undone and will remove all members.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleCloseRoom} className="bg-red-600 hover:bg-red-700">
+                            Close Room
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
@@ -427,8 +626,6 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       <div className="flex-shrink-0">
         <MessageInput onSendMessage={handleSendMessage} roomId={roomId} />
       </div>
-
-
     </div>
   );
 }
