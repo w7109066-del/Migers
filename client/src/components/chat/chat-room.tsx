@@ -87,18 +87,25 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
   });
 
   // Check for temporary ban when trying to access room
-  const checkTempBan = async (roomId: string) => {
+  const checkTempBan = async (roomId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/rooms/${roomId}/check-access`);
+      const response = await fetch(`/api/rooms/${roomId}/check-access`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
         const errorData = await response.json();
-        if (errorData.message && errorData.message.includes('temporarily banned')) {
-          // Extract remaining time
-          const timeMatch = errorData.message.match(/for (\d+) more minutes?/);
+        if (errorData.message && errorData.message.includes('kicked')) {
+          // Extract remaining time from the message
+          const timeMatch = errorData.message.match(/(\d+) more minutes?/);
           const remainingMinutes = timeMatch ? parseInt(timeMatch[1]) : 0;
           
           // Show popup with remaining time
-          const banPopupMessage = `🚫 ACCESS DENIED\n\nYou are temporarily banned from all chat rooms.\n\nReason: Kicked by admin\nRemaining time: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nYou will be able to join rooms again when the ban expires.`;
+          const banPopupMessage = `🚫 YOU HAVE BEEN KICKED!\n\nYou cannot enter any chat rooms right now.\n\nReason: Kicked by admin\nTime remaining: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nPlease wait until the restriction is lifted.`;
           
           alert(banPopupMessage);
           
@@ -155,10 +162,16 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
 
         // Check for temporary ban before joining room
         if (isConnected) {
-          const canJoin = await checkTempBan(roomId);
-          if (canJoin) {
+          try {
+            const canJoin = await checkTempBan(roomId);
+            if (canJoin) {
+              joinRoom(roomId);
+              console.log('Joined room:', roomId);
+            }
+          } catch (error) {
+            console.error('Error checking temp ban:', error);
+            // Still try to join if check fails
             joinRoom(roomId);
-            console.log('Joined room:', roomId);
           }
         }
       } else {
@@ -166,7 +179,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
       }
     };
 
-    initializeRoom();
+    initializeRoom().catch(console.error);
 
     // Cleanup when roomId changes - save messages before cleanup
     return () => {
@@ -192,12 +205,18 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
       // Add a small delay to prevent race conditions
       const timer = setTimeout(() => {
         const checkAndJoin = async () => {
-          const canJoin = await checkTempBan(roomId);
-          if (canJoin) {
+          try {
+            const canJoin = await checkTempBan(roomId);
+            if (canJoin) {
+              joinRoom(roomId);
+            }
+          } catch (error) {
+            console.error('Error in checkAndJoin:', error);
+            // Still try to join if check fails
             joinRoom(roomId);
           }
         };
-        checkAndJoin();
+        checkAndJoin().catch(console.error);
       }, 100);
 
       return () => clearTimeout(timer);
@@ -323,7 +342,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
       if (eventRoomId === roomId) {
         const kickMessage = {
           id: `kick-${Date.now()}-${username}`,
-          content: `${username} was kicked from the room by ${kickedBy}`,
+          content: `${username} has been kicked by admin ${kickedBy}`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
