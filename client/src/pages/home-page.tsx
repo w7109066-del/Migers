@@ -685,7 +685,7 @@ function HomePageContent() {
         <div className={cn("h-full overflow-y-auto", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
           <div className="p-4 space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className={cn("text-lg font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>Activity Feed</h3>
+              <h3 className={cn("text-lg font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>Moment</h3>
             </div>
 
             {/* Create Post Card */}
@@ -1377,20 +1377,7 @@ function HomePageContent() {
         </div>
       ),
     },
-    {
-      id: "friends",
-      label: "Friends",
-      icon: <Users className="w-5 h-5" />,
-      content: (
-        <div className="h-full">
-          <FriendsList
-            onUserClick={handleUserProfileClick}
-            onMessageClick={handleDirectMessageClick}
-            showRefreshButton={true}
-          />
-        </div>
-      ),
-    },
+    
   ];
 
   return (
