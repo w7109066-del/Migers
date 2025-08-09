@@ -374,24 +374,26 @@ export function registerRoutes(app: Express): Server {
           kickedBy: kickerUser.username
         });
 
-        // Send kick notification message to the kicked user first
-        broadcastToUser(userId, {
-          type: 'new_message',
-          message: {
-            id: `kick-notification-${Date.now()}-${userId}`,
-            content: `You have been kicked by ${kickerUser.username}`,
-            senderId: 'system',
-            roomId: roomId,
-            recipientId: null,
-            messageType: 'system',
-            createdAt: new Date().toISOString(),
-            sender: {
-              id: 'system',
-              username: 'System',
-              level: 0,
-              isOnline: true,
-            }
+        // Send kick notification message visible to all users in room
+        const kickNotificationMessage = {
+          id: `kick-notification-${Date.now()}-${userId}`,
+          content: `${kickedUser.username} has been kicked by admin ${kickerUser.username}`,
+          senderId: 'system',
+          roomId: roomId,
+          recipientId: null,
+          messageType: 'system',
+          createdAt: new Date().toISOString(),
+          sender: {
+            id: 'system',
+            username: 'System',
+            level: 0,
+            isOnline: true,
           }
+        };
+
+        // Broadcast kick message to all users in the room
+        io.to(roomId).emit('new_message', {
+          message: kickNotificationMessage
         });
 
         // Force the kicked user to leave the room after a short delay
@@ -403,7 +405,7 @@ export function registerRoutes(app: Express): Server {
               socket.leave(roomId);
               socket.emit('forcedLeaveRoom', {
                 roomId: roomId,
-                reason: `You have been kicked by ${kickerUser.username}`
+                reason: `You have been kicked by admin ${kickerUser.username}`
               });
             }
           }
