@@ -738,6 +738,8 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         <span 
                           className={cn(
                             "text-sm font-medium cursor-pointer hover:underline",
+                            // Check if this is own message first
+                            isOwnMessage ? "text-green-700" : // Own message color (dark green)
                             // Admin color (orange tua) visible in all rooms
                             (() => {
                               const currentRoomId = window.location.pathname.split('/').pop();
