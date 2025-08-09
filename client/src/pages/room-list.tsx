@@ -41,7 +41,7 @@ const mockRoomsFallback: Room[] = [
     isPrivate: false
   },
   {
-    id: "2", 
+    id: "2",
     name: "Indonesia",
     description: "Chat for Indonesian users",
     memberCount: 0,
@@ -57,7 +57,7 @@ const mockRoomsFallback: Room[] = [
     memberCount: 0,
     capacity: 25,
     isOfficial: true,
-    category: "favorite", 
+    category: "favorite",
     isPrivate: false
   },
   {
@@ -208,11 +208,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
   // Show actual data or fallback, but log what we're using
   const displayRooms = rooms && rooms.length > 0 ? rooms : mockRoomsFallback;
-  console.log('Using rooms data:', { 
-    hasRoomsData: !!rooms, 
-    roomsLength: rooms?.length, 
+  console.log('Using rooms data:', {
+    hasRoomsData: !!rooms,
+    roomsLength: rooms?.length,
     usingFallback: !rooms || rooms.length === 0,
-    error: error?.message 
+    error: error?.message
   });
 
   const filteredRooms = displayRooms.filter((room: Room) =>
@@ -245,13 +245,9 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   };
 
   const handleBackToRoomList = () => {
-    console.log('Returning to room list...');
-    // Reset selected room immediately
+    console.log('Back to room list clicked - staying connected to room');
+    // Just hide the room view without leaving the room
     setSelectedRoom(null);
-
-    // Refresh room data manually (no auto-refresh)
-    console.log('Manually refreshing room data...');
-    queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
   };
 
   const handleCreateRoom = () => {
@@ -266,7 +262,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
     if (!newRoomDescription.trim()) {
       toast({
-        title: "Error", 
+        title: "Error",
         description: "Room description is required",
         variant: "destructive",
       });
@@ -302,14 +298,14 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
     game: filteredRooms.filter((room: Room) => room.category === "game")
   };
 
-  const CategorySection = ({ 
-    title, 
-    icon, 
-    rooms, 
-    color = "text-gray-600" 
-  }: { 
-    title: string; 
-    icon: React.ReactNode; 
+  const CategorySection = ({
+    title,
+    icon,
+    rooms,
+    color = "text-gray-600"
+  }: {
+    title: string;
+    icon: React.ReactNode;
     rooms: Room[];
     color?: string;
   }) => {
@@ -323,8 +319,8 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
         </div>
         <div className="space-y-2">
           {rooms.map((room) => (
-            <Card 
-              key={room.id} 
+            <Card
+              key={room.id}
               className="cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
               onClick={() => handleRoomClick(room)}
             >
@@ -332,7 +328,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="relative">
-                      <UserAvatar 
+                      <UserAvatar
                         username={room.name}
                         size="md"
                         isOnline={true}
@@ -379,11 +375,11 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
   // Show chat room if selected
   if (selectedRoom) {
     console.log('RoomList: Rendering chat room for:', selectedRoom);
-    console.log('RoomList: Selected room details:', { 
-      id: selectedRoom.id, 
-      name: selectedRoom.name, 
-      hasId: !!selectedRoom.id, 
-      hasName: !!selectedRoom.name 
+    console.log('RoomList: Selected room details:', {
+      id: selectedRoom.id,
+      name: selectedRoom.name,
+      hasId: !!selectedRoom.id,
+      hasName: !!selectedRoom.name
     });
 
     // Validate selected room before rendering
@@ -399,16 +395,16 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
       <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">
         {/* Chat room header */}
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-center relative flex-shrink-0">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleBackToRoomList}
             className="text-gray-600 dark:text-gray-300 absolute left-4 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             ← Back
           </Button>
           <div className="flex items-center space-x-2">
-            <UserAvatar 
+            <UserAvatar
               username={selectedRoom.name}
               size="sm"
               isOnline={true}
@@ -419,7 +415,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
 
         {/* Chat room content */}
         <div className="flex-1 overflow-hidden">
-          <ChatRoom 
+          <ChatRoom
             key={selectedRoom.id}
             roomId={selectedRoom.id}
             roomName={selectedRoom.name}
@@ -453,7 +449,7 @@ export default function RoomListPage({ onUserClick }: RoomListPageProps = {}) {
           <div className="text-center p-4">
             <div className="text-red-500 dark:text-red-400 mb-2">⚠️ Error Loading Rooms</div>
             <p className="text-red-600 dark:text-red-400 text-sm mb-4">{error.message}</p>
-            <Button 
+            <Button
               onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/rooms"] })}
               variant="outline"
               size="sm"

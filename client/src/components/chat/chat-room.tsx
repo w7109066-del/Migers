@@ -673,7 +673,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
   };
 
   const handleBackToRoomList = () => {
-    // Just navigate back without disconnecting from room
+    // Navigate back to room list without leaving room or disconnecting
     if (onLeaveRoom) {
       onLeaveRoom();
     }
