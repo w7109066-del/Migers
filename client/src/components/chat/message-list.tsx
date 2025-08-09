@@ -749,7 +749,8 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                                 if (message.sender.username.toLowerCase() === roomName?.toLowerCase()) return "text-yellow-500"; // Owner
                                 if (message.sender.level >= 3 && message.sender.level < 5) return "text-amber-600"; // Moderator
                               }
-                              return "";
+                              // Default user role color (blue)
+                              return "text-blue-600";
                             })()
                           )}
                           onClick={() => {
