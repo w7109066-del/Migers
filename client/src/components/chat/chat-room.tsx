@@ -782,8 +782,8 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                   // Owner and moderator colors only in managed rooms (not system rooms 1-4)
                                   !['1', '2', '3', '4'].includes(roomId || '') ? (
                                     (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
-                                    (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : "text-green-700"
-                                  ) : "text-green-700"
+                                    (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : "text-blue-600"
+                                  ) : "text-blue-600"
                                 )}>
                                   {member.user.username}
                                 </span>
