@@ -218,16 +218,46 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
       }
     };
 
+    const handleUserKicked = (event: CustomEvent) => {
+      const { username, roomId: eventRoomId, kickedBy } = event.detail;
+      if (eventRoomId === roomId) {
+        const kickMessage = {
+          id: `kick-${Date.now()}-${username}`,
+          content: `${username} was kicked from the room by ${kickedBy}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, kickMessage]);
+        setTimeout(() => refetchMembers(), 100);
+      }
+    };
+
+    const handleForcedLeave = (event: CustomEvent) => {
+      const { roomId: eventRoomId, reason } = event.detail;
+      if (eventRoomId === roomId) {
+        alert(reason);
+        if (onLeaveRoom) {
+          onLeaveRoom();
+        }
+      }
+    };
+
     window.addEventListener('newMessage', handleNewMessage as EventListener);
     window.addEventListener('userJoined', handleUserJoin as EventListener);
     window.addEventListener('userLeft', handleUserLeave as EventListener);
     window.addEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
+    window.addEventListener('userKicked', handleUserKicked as EventListener);
+    window.addEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
 
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
       window.removeEventListener('userJoined', handleUserJoin as EventListener);
       window.removeEventListener('userLeft', handleUserLeave as EventListener);
       window.removeEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
+      window.removeEventListener('userKicked', handleUserKicked as EventListener);
+      window.removeEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
     };
   }, [roomId, refetchMembers]);
 
@@ -633,6 +663,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                             <ContextMenuSeparator />
                             <ContextMenuGroup>
                               <ContextMenuItem 
+                                onClick={() => handleKickUser(member.user.id, member.user.username)}
+                                className="text-red-600"
+                              >
+                                <UserMinus className="w-4 h-4 mr-2" />
+                                Kick User
+                              </ContextMenuItem>
+                              <ContextMenuItem 
                                 onClick={() => handleVoteKick(member.user)}
                                 className="text-orange-600"
                               >
@@ -643,8 +680,17 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom }: ChatRoo
                                 onClick={() => handleBlockUser(member.user)}
                                 className="text-red-600"
                               >
-                                <Eye className="w-4 h-4 mr-2" />
-                                Block User
+                                {blockedUsers.has(member.user.id) ? (
+                                  <>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Unblock User
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff className="w-4 h-4 mr-2" />
+                                    Block User
+                                  </>
+                                )}
                               </ContextMenuItem>
                               <ContextMenuItem 
                                 onClick={() => handleReportUser(member.user)}

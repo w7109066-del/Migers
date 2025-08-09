@@ -27,7 +27,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   const connect = () => {
     if (!user) return;
-    
+
     // Prevent multiple connections
     if (socket.current && socket.current.connected) {
       console.log('Socket.IO already connected, skipping...');
@@ -49,7 +49,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     socket.current.on('connect', () => {
       console.log('Socket.IO connected');
       setIsConnected(true);
-      
+
       // Reset reconnection attempts on successful connection
       global.reconnectAttempts = 0;
 
@@ -275,7 +275,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
+
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }

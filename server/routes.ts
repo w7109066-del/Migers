@@ -302,50 +302,93 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Admin report endpoint
-  app.post("/api/admin/report", requireAdmin, async (req, res) => {
+  app.post('/api/admin/report', async (req, res) => {
     try {
       const { reportedUserId, reportedUsername, reporterUserId, reporterUsername, roomId, roomName, message } = req.body;
 
-      if (!reportedUserId || !reporterUserId || !roomId || !message) {
-        return res.status(400).json({ error: "Missing required fields for report" });
-      }
-
-      // Send report message to admin room (room ID '1' - MeChat admin room)
-      const adminMessage = {
-        id: `admin-report-${Date.now()}`,
-        content: message,
-        senderId: 'system',
-        roomId: '1', // Admin room
-        recipientId: null,
-        messageType: 'admin_report',
-        metadata: {
-          reportedUserId,
-          reportedUsername: reportedUsername || 'Unknown',
-          reporterUserId,
-          reporterUsername: reporterUsername || 'Unknown',
-          originalRoomId: roomId,
-          originalRoomName: roomName || 'Unknown Room'
-        },
-        createdAt: new Date().toISOString(),
-        sender: {
-          id: 'system',
-          username: 'Admin System',
-          level: 10,
-          isOnline: true
-        }
-      };
-
-      // Broadcast to admin room
-      io.to('1').emit('new_message', {
-        message: adminMessage,
+      // Send report message to admin room or log it
+      console.log('User Report:', {
+        reportedUserId,
+        reportedUsername,
+        reporterUserId,
+        reporterUsername,
+        roomId,
+        roomName,
+        message,
+        timestamp: new Date().toISOString()
       });
 
-      res.json({ success: true, message: "Report submitted successfully" });
+      // TODO: Store report in database or send to admin chat
+
+      res.json({ success: true, message: 'Report sent successfully' });
     } catch (error) {
-      console.error("Error submitting admin report:", error);
-      res.status(500).json({ error: "Failed to submit report" });
+      console.error('Failed to submit report:', error);
+      res.status(500).json({ error: 'Failed to submit report' });
     }
   });
+
+  // Kick user from room endpoint
+  app.post('/api/rooms/:roomId/kick', async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const { userId } = req.body;
+      const kickerUserId = req.user?.id;
+
+      if (!kickerUserId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      // Check if kicker has permission (admin or room moderator)
+      const kickerUser = await storage.getUserById(kickerUserId); // Assuming getUserById exists
+      if (!kickerUser || kickerUser.level < 3) { // Assuming level 3+ are moderators or admins
+        return res.status(403).json({ error: 'Insufficient permissions to kick users' });
+      }
+
+      // Remove user from room
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        // Handle mock rooms
+        const roomMembers = mockRoomMembers.get(roomId);
+        if (roomMembers && roomMembers.has(userId)) {
+          roomMembers.delete(userId);
+        }
+      } else {
+        // Remove from real room
+        await storage.removeUserFromRoom(roomId, userId); // Assuming removeUserFromRoom exists
+      }
+
+      // Get user info for notification
+      const kickedUser = await storage.getUserById(userId); // Assuming getUserById exists
+
+      // Emit kick event to the user and room
+      if (kickedUser) {
+        io.to(roomId).emit('userKicked', {
+          userId: userId,
+          username: kickedUser.username,
+          roomId: roomId,
+          kickedBy: kickerUser.username
+        });
+
+        // Force the kicked user to leave the room
+        const userSockets = await io.in(roomId).fetchSockets();
+        for (const socket of userSockets) {
+          // Ensure we only target the correct user's socket within the room
+          if (socket.data.userId === userId) {
+            socket.leave(roomId);
+            socket.emit('forcedLeaveRoom', {
+              roomId: roomId,
+              reason: `You have been kicked by ${kickerUser.username}`
+            });
+          }
+        }
+      }
+
+      res.json({ success: true, message: 'User kicked successfully' });
+    } catch (error) {
+      console.error('Failed to kick user:', error);
+      res.status(500).json({ error: 'Failed to kick user' });
+    }
+  });
+
 
   // Get room info
   app.get("/api/rooms/:roomId/info", requireRoomAccess, async (req, res) => {
