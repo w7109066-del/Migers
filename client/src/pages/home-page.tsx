@@ -716,7 +716,7 @@ function HomePageContent() {
                         }}
                       />
                       <Button
-                        type="button"
+                        type="type="button"
                         size="sm"
                         className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
                         onClick={handleCreatePost}
@@ -1402,6 +1402,30 @@ function HomePageContent() {
       setActiveTab('dm'); // Default to 'dm' tab if not showing mini profile or directly opening DM
     }
   };
+
+  // Listen for direct message open events from chat room
+  useEffect(() => {
+    const handleOpenDirectMessage = (event: CustomEvent) => {
+      const profile = event.detail;
+      console.log('Opening direct message from chat room:', profile);
+
+      // Switch to DM tab
+      setActiveTab('dm');
+
+      // Set the selected direct message user
+      setSelectedDirectMessage(profile);
+
+      // Clear current room to go back to messages view
+      setCurrentRoom(null);
+      setRoomName('');
+    };
+
+    window.addEventListener('openDirectMessage', handleOpenDirectMessage as EventListener);
+
+    return () => {
+      window.removeEventListener('openDirectMessage', handleOpenDirectMessage as EventListener);
+    };
+  }, []);
 
   return (
     <div className={cn("h-full w-full flex flex-col", isDarkMode && "dark")}>

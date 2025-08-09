@@ -388,21 +388,22 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
 
   const handleChatUser = (user: any) => {
     console.log('Opening private chat with:', user.username);
-    // Open DM chat without disconnecting from room
-    if (onUserClick) {
-      onUserClick({
-        id: user.id,
-        username: user.username,
-        level: user.level,
-        status: "Available for chat",
-        isOnline: user.isOnline,
-        profilePhotoUrl: user.profilePhotoUrl,
-        country: user.country || 'ID',
-        bio: user.bio || '',
-        // Add flag to indicate this should open direct message
-        openDirectMessage: true
-      });
-    }
+    // Create a custom event to switch to DM tab and open chat
+    const dmProfile = {
+      id: user.id,
+      username: user.username,
+      level: user.level,
+      status: user.status || "Available for chat",
+      isOnline: user.isOnline,
+      profilePhotoUrl: user.profilePhotoUrl,
+      country: user.country || 'ID',
+      bio: user.bio || '',
+    };
+    
+    // Dispatch custom event to handle DM opening
+    window.dispatchEvent(new CustomEvent('openDirectMessage', {
+      detail: dmProfile
+    }));
   };
 
   const handleViewProfile = (user: any) => {
