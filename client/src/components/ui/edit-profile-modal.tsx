@@ -9,7 +9,7 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { X, Camera, Save, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+
 import { cn } from "@/lib/utils"; // Assuming cn is available for conditional styling
 
 interface EditProfileModalProps {
@@ -263,34 +263,14 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             {/* Country Input */}
             <div className="space-y-2">
               <Label htmlFor="country">Country</Label>
-              <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
-                <SelectTrigger className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}>
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ID">🇮🇩 Indonesia</SelectItem>
-                  <SelectItem value="US">🇺🇸 United States</SelectItem>
-                  <SelectItem value="MY">🇲🇾 Malaysia</SelectItem>
-                  <SelectItem value="SG">🇸🇬 Singapore</SelectItem>
-                  <SelectItem value="TH">🇹🇭 Thailand</SelectItem>
-                  <SelectItem value="PH">🇵🇭 Philippines</SelectItem>
-                  <SelectItem value="VN">🇻🇳 Vietnam</SelectItem>
-                  <SelectItem value="JP">🇯🇵 Japan</SelectItem>
-                  <SelectItem value="KR">🇰🇷 South Korea</SelectItem>
-                  <SelectItem value="CN">🇨🇳 China</SelectItem>
-                  <SelectItem value="IN">🇮🇳 India</SelectItem>
-                  <SelectItem value="AU">🇦🇺 Australia</SelectItem>
-                  <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
-                  <SelectItem value="DE">🇩🇪 Germany</SelectItem>
-                  <SelectItem value="FR">🇫🇷 France</SelectItem>
-                  <SelectItem value="IT">🇮🇹 Italy</SelectItem>
-                  <SelectItem value="ES">🇪🇸 Spain</SelectItem>
-                  <SelectItem value="BR">🇧🇷 Brazil</SelectItem>
-                  <SelectItem value="MX">🇲🇽 Mexico</SelectItem>
-                  <SelectItem value="CA">🇨🇦 Canada</SelectItem>
-                  <SelectItem value="OTHER">🌍 Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="country"
+                type="text"
+                value={formData.country}
+                onChange={(e) => handleInputChange('country', e.target.value)}
+                placeholder="Enter your country"
+                className={cn("", isDarkMode ? "bg-gray-800 border-gray-600" : "")}
+              />
             </div>
           </div>
 
