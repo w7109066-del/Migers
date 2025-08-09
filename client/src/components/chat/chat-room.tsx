@@ -96,19 +96,19 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         if (errorData.message && errorData.message.includes('kicked')) {
           // Extract remaining time from the message
           const timeMatch = errorData.message.match(/(\d+) more minutes?/);
           const remainingMinutes = timeMatch ? parseInt(timeMatch[1]) : 0;
-          
+
           // Show popup with remaining time
           const banPopupMessage = `🚫 YOU HAVE BEEN KICKED!\n\nYou cannot enter any chat rooms right now.\n\nReason: Kicked by admin\nTime remaining: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nPlease wait until the restriction is lifted.`;
-          
+
           alert(banPopupMessage);
-          
+
           // Navigate away from room
           if (onLeaveRoom) {
             onLeaveRoom();
@@ -184,13 +184,13 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
     // Cleanup when roomId changes - save messages before cleanup
     return () => {
       console.log('Cleaning up chat room:', roomId);
-      
+
       // Save current messages before cleanup
       if (onSaveMessages && roomId && messages.length > 0) {
         console.log('Saving messages for room:', roomId, messages.length);
         onSaveMessages(messages);
       }
-      
+
       setIsUserListOpen(false);
 
       // Don't automatically leave room when component unmounts
@@ -403,19 +403,25 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
   const handleViewProfile = (user: any) => {
     // Open mini profile modal
     console.log('Opening mini profile for:', user.username);
-    if (onUserClick) {
-      onUserClick({
-        id: user.id,
-        username: user.username,
-        level: user.level,
-        status: "Available for chat",
-        isOnline: user.isOnline,
-        profilePhotoUrl: user.profilePhotoUrl,
-        country: user.country,
-        bio: user.bio,
-        showMiniProfile: true // Flag to show mini profile instead of chat
-      });
-    }
+    const profileData = {
+      id: user.id,
+      username: user.username,
+      level: user.level || 1,
+      status: user.status || '',
+      bio: user.bio || '',
+      isOnline: user.isOnline || false,
+      country: user.country || 'ID',
+      profilePhotoUrl: user.profilePhotoUrl,
+      fansCount: user.fansCount || 0,
+      followingCount: user.followingCount || 0,
+      isFriend: false, // You might want to check actual friend status
+      isAdmin: user.isAdmin || user.level >= 5 || false,
+    };
+
+    // Trigger the view profile event that the parent component can listen to
+    window.dispatchEvent(new CustomEvent('showMiniProfile', {
+      detail: profileData
+    }));
   };
 
   const handleUserInfo = (username: string) => {
@@ -751,7 +757,7 @@ export function ChatRoom({ roomId, roomName, onUserClick, onLeaveRoom, savedMess
       console.log('Saving messages before navigating back:', roomId, messages.length);
       onSaveMessages(messages);
     }
-    
+
     // Navigate back to room list without leaving room or disconnecting
     if (onLeaveRoom) {
       onLeaveRoom();

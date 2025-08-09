@@ -1377,7 +1377,7 @@ function HomePageContent() {
         </div>
       ),
     },
-    
+
   ];
 
   return (
