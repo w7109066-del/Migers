@@ -1424,7 +1424,8 @@ function HomePageContent() {
         <MiniProfileModal
           profile={selectedProfile}
           isOpen={!!selectedProfile}
-          onClose={() => setSelectedProfile(null)}
+          onClose={closeMiniProfile}
+          onMessageClick={handleDirectMessageClick}
         />
       )}
 
@@ -1526,15 +1527,5 @@ function HomePageContent() {
         </div>
       )}
     </div>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <NotificationProvider>
-      <WebSocketProvider>
-        <HomePageContent />
-      </WebSocketProvider>
-    </NotificationProvider>
   );
 }

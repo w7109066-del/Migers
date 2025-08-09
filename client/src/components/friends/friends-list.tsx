@@ -50,7 +50,7 @@ export function FriendsList({ onUserClick, onMessageClick, showRefreshButton = f
           method: 'POST',
           credentials: 'include',
         });
-        
+
         if (response.ok) {
           const refreshedFriends = await response.json();
           console.log('Force refresh API returned:', refreshedFriends.length, 'friends');
@@ -78,7 +78,7 @@ export function FriendsList({ onUserClick, onMessageClick, showRefreshButton = f
       // More aggressive cache clearing
       queryClient.removeQueries({ queryKey: ["/api/friends"] });
       queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
-      
+
       // Also clear any related queries that might cache friend data
       queryClient.removeQueries({ queryKey: ["friends"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
@@ -215,10 +215,21 @@ export function FriendsList({ onUserClick, onMessageClick, showRefreshButton = f
           <Card
             key={friend.id}
             className="cursor-pointer hover:shadow-md transition-shadow mb-3"
-            onClick={() => handleUserClick({
-              ...friend,
-              country: friend.country || "ID"
-            })}
+            onClick={() => onUserClick({
+            id: friend.id,
+            username: friend.username,
+            level: friend.level || 1,
+            status: friend.status || '',
+            bio: friend.bio,
+            isOnline: friend.isOnline,
+            country: friend.country,
+            profilePhotoUrl: friend.profilePhotoUrl,
+            fansCount: friend.fansCount,
+            followingCount: friend.followingCount,
+            isFriend: true,
+            isAdmin: friend.isAdmin || false,
+            onMessageClick: onMessageClick, // Pass the onMessageClick prop
+          })}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
