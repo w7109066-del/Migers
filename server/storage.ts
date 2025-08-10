@@ -1028,7 +1028,7 @@ export class DatabaseStorage implements IStorage {
         .values({
           roomId: room.id,
           userId: createdBy,
-          role: 'admin',
+          role: 'owner',
         });
 
       return room;

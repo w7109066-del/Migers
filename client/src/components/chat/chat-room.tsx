@@ -201,6 +201,7 @@ export function ChatRoom({
             const response = await fetch(`/api/rooms/${roomId}/info`);
             if (response.ok) {
               const roomData = await response.json();
+              console.log('Room data received:', roomData); // Debug log
               const creatorName = roomData.createdBy || 'Unknown';
               welcomeMessages.push({
                 id: `room-managed-${roomId}`,

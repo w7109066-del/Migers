@@ -570,9 +570,9 @@ export function registerRoutes(app: Express): Server {
 
         // Get creator username
         let createdBy = 'Unknown';
-        if (room.creatorId) {
+        if (room.createdBy) {
           try {
-            const creator = await storage.getUser(room.creatorId);
+            const creator = await storage.getUser(room.createdBy);
             createdBy = creator?.username || 'Unknown';
           } catch (error) {
             console.error('Failed to get creator info:', error);
