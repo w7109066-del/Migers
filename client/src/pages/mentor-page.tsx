@@ -20,10 +20,11 @@ interface Mentor {
 }
 
 interface MentorPageProps {
-  onBack: () => void;
+  open: boolean;
+  onClose: () => void;
 }
 
-export function MentorPage({ onBack }: MentorPageProps) {
+export function MentorPage({ open, onClose }: MentorPageProps) {
   const { user, isDarkMode } = useAuth();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,16 +84,18 @@ export function MentorPage({ onBack }: MentorPageProps) {
     }
   };
 
+  if (!open) return null;
+
   return (
     <div className={cn("fixed inset-0 z-50 flex flex-col", isDarkMode ? "bg-gray-900" : "bg-white")}>
-      {/* Header */}
+      {/* Header */>
       <div className="flex-shrink-0 border-b border-red-200 bg-gradient-to-r from-red-600 to-red-500 text-white">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
               size="sm"
-              onClick={onBack}
+              onClick={onClose}
               className="text-white hover:bg-red-700 p-2"
             >
               <ArrowLeft className="w-5 h-5" />

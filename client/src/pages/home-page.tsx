@@ -1516,7 +1516,7 @@ function HomePageContent() {
                   </button>
 
                   <button
-                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "text-red-600 hover:bg-red-700" : "text-red-600 hover:bg-red-50")}
                     onClick={() => {
                       setShowMentorPage(true);
                       console.log("Opening Mentor Page");
@@ -1677,9 +1677,7 @@ function HomePageContent() {
         )}
 
         {/* Mentor Page */}
-        {showMentor && (
-          <MentorPage open={showMentor} onClose={() => setShowMentorPage(false)} />
-        )}
+        <MentorPage open={showMentor} onClose={() => setShowMentorPage(false)} />
 
         {/* Credits Page */}
         {showCredits && (
