@@ -88,7 +88,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
 
   return (
     <div className={cn("fixed inset-0 z-50 flex flex-col", isDarkMode ? "bg-gray-900" : "bg-white")}>
-      {/* Header */>
+      {/* Header */}
       <div className="flex-shrink-0 border-b border-red-200 bg-gradient-to-r from-red-600 to-red-500 text-white">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
