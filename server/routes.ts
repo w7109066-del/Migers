@@ -1131,6 +1131,48 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin-specific user search endpoint with complete data
+  app.get("/api/admin/users/search", requireAdmin, async (req, res) => {
+    try {
+      const { q } = req.query;
+
+      if (!q || typeof q !== 'string' || q.trim().length < 2) {
+        return res.json([]);
+      }
+
+      const searchQuery = `%${q.trim().toLowerCase()}%`;
+
+      const searchResults = await db.select()
+        .from(users)
+        .where(
+          or(
+            sql`LOWER(${users.username}) LIKE ${searchQuery}`,
+            sql`LOWER(${users.email}) LIKE ${searchQuery}`
+          )
+        )
+        .limit(50);
+
+      // Return complete user data for admin
+      res.json(searchResults.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        level: user.level || 1,
+        isOnline: user.isOnline || false,
+        isMentor: user.isMentor || false,
+        isAdmin: user.isAdmin || false,
+        isBanned: user.isBanned || false,
+        isSuspended: user.isSuspended || false,
+        profilePhotoUrl: user.profilePhotoUrl,
+        createdAt: user.createdAt || new Date().toISOString(),
+        country: user.country || "ID"
+      })));
+    } catch (error) {
+      console.error('Error searching users:', error);
+      res.status(500).json({ message: 'Failed to search users' });
+    }
+  });
+
   app.post('/api/admin/ban', requireAdmin, async (req, res) => {
     try {
       const { userId } = req.body;
