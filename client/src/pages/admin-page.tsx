@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user/user-avatar';
 import { AddGiftModal } from '@/components/ui/add-gift-modal';
-import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2 } from 'lucide-react';
+import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -56,6 +56,12 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [gifts, setGifts] = useState<any[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [showAddRoomModal, setShowAddRoomModal] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomDescription, setNewRoomDescription] = useState('');
+  const [newRoomCapacity, setNewRoomCapacity] = useState(25);
+  const [newRoomCreator, setNewRoomCreator] = useState('');
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -135,6 +141,45 @@ export function AdminPage({ onBack }: AdminPageProps) {
       }
     } catch (error) {
       console.error('Error deleting gift:', error);
+    }
+  };
+
+  const createRoom = async () => {
+    if (!newRoomName.trim() || !newRoomDescription.trim() || !newRoomCreator.trim()) {
+      return;
+    }
+
+    setIsCreatingRoom(true);
+    try {
+      const response = await fetch('/api/admin/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: newRoomName.trim(),
+          description: newRoomDescription.trim(),
+          maxMembers: newRoomCapacity,
+          creatorUsername: newRoomCreator.trim(),
+          isPublic: true
+        }),
+      });
+
+      if (response.ok) {
+        loadRooms();
+        setShowAddRoomModal(false);
+        setNewRoomName('');
+        setNewRoomDescription('');
+        setNewRoomCapacity(25);
+        setNewRoomCreator('');
+      } else {
+        console.error('Failed to create room');
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
+    } finally {
+      setIsCreatingRoom(false);
     }
   };
 
@@ -473,9 +518,19 @@ export function AdminPage({ onBack }: AdminPageProps) {
         {/* Room Management */}
         <Card>
           <CardHeader>
-            <CardTitle className={cn("flex items-center space-x-2", isDarkMode ? "text-white" : "text-gray-900")}>
-              <MessageSquare className="w-5 h-5" />
-              <span>Chat Room Management</span>
+            <CardTitle className={cn("flex items-center justify-between", isDarkMode ? "text-white" : "text-gray-900")}>
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5" />
+                <span>Chat Room Management</span>
+              </div>
+              <Button
+                onClick={() => setShowAddRoomModal(true)}
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Room</span>
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -785,6 +840,117 @@ export function AdminPage({ onBack }: AdminPageProps) {
         onClose={() => setShowAddGiftModal(false)}
         onGiftAdded={loadGifts}
       />
+
+      {/* Add Room Modal */}
+      {showAddRoomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowAddRoomModal(false)} />
+          <div className={cn(
+            "relative z-50 w-full max-w-md p-6 rounded-lg shadow-lg",
+            isDarkMode ? "bg-gray-800" : "bg-white"
+          )}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={cn("text-lg font-semibold", isDarkMode ? "text-white" : "text-gray-900")}>
+                Add New Room
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddRoomModal(false)}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={cn("block text-sm font-medium mb-2", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                  Room Name
+                </label>
+                <Input
+                  value={newRoomName}
+                  onChange={(e) => setNewRoomName(e.target.value)}
+                  placeholder="Enter room name"
+                  maxLength={50}
+                  className={cn("", isDarkMode ? "bg-gray-700 border-gray-600" : "")}
+                />
+              </div>
+
+              <div>
+                <label className={cn("block text-sm font-medium mb-2", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                  Description
+                </label>
+                <textarea
+                  value={newRoomDescription}
+                  onChange={(e) => setNewRoomDescription(e.target.value)}
+                  placeholder="Enter room description"
+                  maxLength={200}
+                  rows={3}
+                  className={cn(
+                    "w-full px-3 py-2 border rounded-md resize-none",
+                    isDarkMode 
+                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
+                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                  )}
+                />
+              </div>
+
+              <div>
+                <label className={cn("block text-sm font-medium mb-2", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                  Room Capacity
+                </label>
+                <Input
+                  type="number"
+                  value={newRoomCapacity}
+                  onChange={(e) => setNewRoomCapacity(parseInt(e.target.value) || 25)}
+                  min={5}
+                  max={100}
+                  className={cn("", isDarkMode ? "bg-gray-700 border-gray-600" : "")}
+                />
+              </div>
+
+              <div>
+                <label className={cn("block text-sm font-medium mb-2", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                  Created By
+                </label>
+                <Input
+                  value={newRoomCreator}
+                  onChange={(e) => setNewRoomCreator(e.target.value)}
+                  placeholder="Enter creator username"
+                  className={cn("", isDarkMode ? "bg-gray-700 border-gray-600" : "")}
+                />
+              </div>
+
+              <div className={cn("p-3 rounded-md border", isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200")}>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className={cn("text-sm font-medium", isDarkMode ? "text-gray-300" : "text-gray-700")}>
+                    Managed by: Global Admin
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddRoomModal(false)}
+                disabled={isCreatingRoom}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={createRoom}
+                disabled={isCreatingRoom || !newRoomName.trim() || !newRoomDescription.trim() || !newRoomCreator.trim()}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {isCreatingRoom ? "Creating..." : "Create Room"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

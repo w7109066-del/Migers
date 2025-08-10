@@ -1287,6 +1287,46 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Create room via admin panel
+  app.post('/api/admin/rooms', requireAdmin, async (req, res) => {
+    try {
+      const { name, description, maxMembers = 25, creatorUsername, isPublic = true } = req.body;
+
+      if (!name || !description || !creatorUsername) {
+        return res.status(400).json({ message: 'Name, description, and creator username are required' });
+      }
+
+      // Find the creator user by username
+      const creator = await storage.getUserByUsername(creatorUsername);
+      if (!creator) {
+        return res.status(404).json({ message: 'Creator user not found' });
+      }
+
+      // Validate room name length
+      if (name.length > 50) {
+        return res.status(400).json({ message: 'Room name must be 50 characters or less' });
+      }
+
+      // Validate description length
+      if (description.length > 200) {
+        return res.status(400).json({ message: 'Description must be 200 characters or less' });
+      }
+
+      const roomData = insertChatRoomSchema.parse({
+        name: name.trim(),
+        description: description.trim(),
+        isPublic,
+        maxMembers
+      });
+
+      const newRoom = await storage.createRoom(roomData, creator.id);
+      res.status(201).json(newRoom);
+    } catch (error) {
+      console.error('Failed to create room via admin:', error);
+      res.status(500).json({ message: 'Failed to create room' });
+    }
+  });
+
   // Delete chat room
   app.delete('/api/admin/rooms/:roomId', requireAdmin, async (req, res) => {
     try {
