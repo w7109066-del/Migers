@@ -568,13 +568,24 @@ export function registerRoutes(app: Express): Server {
           return res.status(404).json({ message: "Room not found" });
         }
 
+        // Get creator username
+        let createdBy = 'Unknown';
+        if (room.creatorId) {
+          try {
+            const creator = await storage.getUser(room.creatorId);
+            createdBy = creator?.username || 'Unknown';
+          } catch (error) {
+            console.error('Failed to get creator info:', error);
+          }
+        }
+
         // Ensure response matches expected structure
         res.json({
           id: room.id,
           name: room.name,
           description: room.description || "",
-          createdBy: room.creatorId, // Assuming creatorId is available and meaningful
-          createdAt: room.createdAt ? room.createdAt.toISOString() : new Date().toISOString(), // Use creation date if available
+          createdBy: createdBy,
+          createdAt: room.createdAt ? room.createdAt.toISOString() : new Date().toISOString(),
           capacity: room.maxMembers || 25,
           isPrivate: !room.isPublic
         });

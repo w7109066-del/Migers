@@ -192,16 +192,48 @@ export function ChatRoom({
             createdAt: new Date().toISOString(),
             sender: { id: 'system', username: 'System', level: 0, isOnline: true },
             messageType: 'system'
-          },
-          {
+          }
+        ];
+
+        // For non-system rooms (not rooms 1-4), fetch room info to show creator
+        if (!['1', '2', '3', '4'].includes(roomId)) {
+          try {
+            const response = await fetch(`/api/rooms/${roomId}/info`);
+            if (response.ok) {
+              const roomData = await response.json();
+              const creatorName = roomData.createdBy || 'Unknown';
+              welcomeMessages.push({
+                id: `room-managed-${roomId}`,
+                content: `This room is managed by ${creatorName}`,
+                senderId: 'system',
+                createdAt: new Date().toISOString(),
+                sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+                messageType: 'system'
+              });
+            }
+          } catch (error) {
+            console.error('Failed to fetch room creator info:', error);
+            // Fallback message if API call fails
+            welcomeMessages.push({
+              id: `room-managed-${roomId}`,
+              content: `This room is managed by room creator`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            });
+          }
+        } else {
+          // For system rooms, show system as manager
+          welcomeMessages.push({
             id: `room-managed-${roomId}`,
-            content: `This room is managed by ${roomName.toLowerCase()}`,
+            content: `This room is managed by System`,
             senderId: 'system',
             createdAt: new Date().toISOString(),
             sender: { id: 'system', username: 'System', level: 0, isOnline: true },
             messageType: 'system'
-          }
-        ];
+          });
+        }
 
         setMessages(welcomeMessages);
         // Save welcome messages to localStorage
@@ -753,7 +785,7 @@ export function ChatRoom({
 
         const infoMessage = {
           id: `room-info-${Date.now()}`,
-          content: `🏠 Room: ${roomData.name} | 👤 Creator: ${roomData.createdBy || 'System'} | 📅 Created: ${new Date(roomData.createdAt).toLocaleDateString()} | 👥 Members: ${roomMembers?.length || 0}/${roomData.capacity || 25}`,
+          content: `🏠 Room: ${roomData.name} | 👤 Managed by: ${roomData.createdBy || 'System'} | 📅 Created: ${new Date(roomData.createdAt).toLocaleDateString()} | 👥 Members: ${roomMembers?.length || 0}/${roomData.capacity || 25}`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
