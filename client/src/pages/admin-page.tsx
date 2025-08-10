@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user/user-avatar';
 import { AddGiftModal } from '@/components/ui/add-gift-modal';
-import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins } from 'lucide-react';
+import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -32,6 +32,16 @@ interface AdminStats {
   suspendedUsers: number;
 }
 
+interface Room {
+  id: string;
+  name: string;
+  description: string;
+  isPublic: boolean;
+  maxMembers: number;
+  createdBy: string;
+  createdAt: string;
+}
+
 interface AdminPageProps {
   onBack: () => void;
 }
@@ -45,12 +55,14 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [gifts, setGifts] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
 
   useEffect(() => {
     if (user?.isAdmin) {
       loadUsers();
       loadStats();
       loadGifts();
+      loadRooms();
     }
   }, [user?.isAdmin]);
 
@@ -123,6 +135,49 @@ export function AdminPage({ onBack }: AdminPageProps) {
       }
     } catch (error) {
       console.error('Error deleting gift:', error);
+    }
+  };
+
+  const loadRooms = async () => {
+    try {
+      const response = await fetch('/api/admin/rooms', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const roomsData = await response.json();
+        setRooms(roomsData);
+      } else {
+        console.error('Failed to load rooms');
+      }
+    } catch (error) {
+      console.error('Error loading rooms:', error);
+    }
+  };
+
+  const deleteRoom = async (roomId: string) => {
+    if (!confirm('Are you sure you want to delete this room? This action cannot be undone and will remove all messages and members.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/rooms/${roomId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(result.message);
+        loadRooms(); // Refresh rooms list
+      } else {
+        const error = await response.json();
+        console.error('Failed to delete room:', error.message);
+        alert(`Failed to delete room: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      alert('Error deleting room. Please try again.');
     }
   };
 
@@ -414,6 +469,69 @@ export function AdminPage({ onBack }: AdminPageProps) {
             </>
           )}
         </div>
+
+        {/* Room Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className={cn("flex items-center space-x-2", isDarkMode ? "text-white" : "text-gray-900")}>
+              <MessageSquare className="w-5 h-5" />
+              <span>Chat Room Management</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {rooms.map((room) => (
+                <div
+                  key={room.id}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-lg border",
+                    isDarkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                  )}
+                >
+                  <div className="flex items-center space-x-3">
+                    <MessageSquare className="w-5 h-5 text-blue-500" />
+                    <div>
+                      <div className={cn("font-medium", isDarkMode ? "text-white" : "text-gray-900")}>
+                        {room.name}
+                      </div>
+                      <div className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                        {room.description} • Max: {room.maxMembers} members
+                      </div>
+                      <div className={cn("text-xs", isDarkMode ? "text-gray-500" : "text-gray-500")}>
+                        Created: {new Date(room.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Badge variant={room.isPublic ? "default" : "secondary"} className="text-xs">
+                        {room.isPublic ? "Public" : "Private"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={() => deleteRoom(room.id)}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              {rooms.length === 0 && (
+                <div className="text-center py-8">
+                  <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    No user-created rooms found.
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Gift Management */}
         <Card>

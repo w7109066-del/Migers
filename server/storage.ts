@@ -27,7 +27,7 @@ import {
   notifications
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, exists, count, inArray, sql, asc, isNull } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, isNull, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -88,6 +88,7 @@ export interface IStorage {
   getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]>;
   kickMember(roomId: string, userId: string): Promise<void>;
   closeRoom(roomId: string): Promise<void>;
+  deleteRoom(roomId: string): Promise<void>;
 
   // Messages
   getRoomMessages(roomId: string, limit?: number): Promise<(Message & { sender: User })[]>;
@@ -622,6 +623,30 @@ export class DatabaseStorage implements IStorage {
     await db.delete(chatRooms).where(eq(chatRooms.id, roomId));
   }
 
+  async deleteRoom(roomId: string): Promise<void> {
+    try {
+      // Delete room members first (CASCADE should handle this, but being explicit)
+      await this.db
+        .delete(roomMembers)
+        .where(eq(roomMembers.roomId, roomId));
+
+      // Delete room messages
+      await this.db
+        .delete(messages)
+        .where(eq(messages.roomId, roomId));
+
+      // Finally delete the room
+      await this.db
+        .delete(chatRooms)
+        .where(eq(chatRooms.id, roomId));
+
+      console.log(`Room ${roomId} deleted successfully`);
+    } catch (error) {
+      console.error('Storage: Error deleting room:', error);
+      throw error;
+    }
+  }
+
   async getRoomMessages(roomId: string, limit: number = 50): Promise<(Message & { sender: User })[]> {
     const result = await this.db
       .select({
@@ -807,7 +832,7 @@ export class DatabaseStorage implements IStorage {
   async createUserSession(userId: string, socketId: string): Promise<UserSession> {
     try {
       console.log('Creating user session:', { userId, socketId });
-      
+
       // First, deactivate any existing sessions for this user
       await this.db
         .update(userSessions)
@@ -846,18 +871,18 @@ export class DatabaseStorage implements IStorage {
             )
           )
           .returning();
-        
+
         if (updatedSession) {
           console.log('Updated existing session:', updatedSession.id);
           return updatedSession;
         }
       }
-        
+
       console.log('User session created successfully:', session.id);
       return session;
     } catch (error) {
       console.error('Error creating user session:', error);
-      
+
       // Try to find existing session if insert failed
       try {
         const existingSession = await this.db
@@ -878,7 +903,7 @@ export class DatabaseStorage implements IStorage {
       } catch (fallbackError) {
         console.error('Fallback session lookup failed:', fallbackError);
       }
-      
+
       throw new Error(`Failed to create user session: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -1015,9 +1040,6 @@ export class DatabaseStorage implements IStorage {
 
   async getAllRooms() {
     try {
-      console.log('=== STORAGE: getAllRooms ===');
-      
-      // Use simpler query without relations to avoid potential issues
       const rooms = await this.db
         .select({
           id: chatRooms.id,
@@ -1026,17 +1048,15 @@ export class DatabaseStorage implements IStorage {
           isPublic: chatRooms.isPublic,
           maxMembers: chatRooms.maxMembers,
           createdBy: chatRooms.createdBy,
-          createdAt: chatRooms.createdAt
+          createdAt: chatRooms.createdAt,
         })
         .from(chatRooms)
         .orderBy(desc(chatRooms.createdAt));
 
-      console.log('Found rooms in database:', rooms.length);
       return rooms;
     } catch (error) {
-      console.error('Failed to get rooms from database:', error);
-      console.error('Error details:', error.message);
-      return [];
+      console.error('Storage: Error fetching all rooms:', error);
+      throw error;
     }
   }
 
@@ -1509,7 +1529,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  
+
 
   // Notification methods
   async createNotification(notificationData: {

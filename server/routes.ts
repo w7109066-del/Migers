@@ -1276,6 +1276,56 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get all chat rooms for admin
+  app.get('/api/admin/rooms', requireAdmin, async (req, res) => {
+    try {
+      const rooms = await storage.getAllRooms();
+      res.json(rooms || []);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+      res.status(500).json({ message: 'Failed to fetch rooms' });
+    }
+  });
+
+  // Delete chat room
+  app.delete('/api/admin/rooms/:roomId', requireAdmin, async (req, res) => {
+    try {
+      const { roomId } = req.params;
+
+      if (!roomId) {
+        return res.status(400).json({ message: 'Room ID is required' });
+      }
+
+      // Prevent deletion of system rooms
+      if (['1', '2', '3', '4'].includes(roomId)) {
+        return res.status(403).json({ message: 'Cannot delete system rooms' });
+      }
+
+      // Get room info before deletion
+      const room = await storage.getChatRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ message: 'Room not found' });
+      }
+
+      // Delete the room and all associated data
+      await storage.deleteRoom(roomId);
+
+      // Broadcast room deletion to all connected users
+      io.emit('room_deleted', {
+        roomId: roomId,
+        roomName: room.name
+      });
+
+      res.json({ 
+        success: true, 
+        message: `Room "${room.name}" has been deleted successfully` 
+      });
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      res.status(500).json({ message: 'Failed to delete room' });
+    }
+  });
+
   // Friend request endpoints
   app.post('/api/friends/request', requireAuth, async (req, res) => {
     try {
