@@ -105,13 +105,18 @@ function HomePageContent() {
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [showPrivacySecurity, setShowPrivacySecurity] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false); // Added state for Help Support modal
+  const [showAdmin, setShowAdmin] = useState(false); // Added state for Admin Panel
+  const [showMentor, setShowMentorPage] = useState(false); // Added state for Mentor Page
+  const [showCredits, setShowCredits] = useState(false); // Added state for Credits Page
+  const [showSettings, setShowSettings] = useState(false); // Added state for Settings
+  const [showProfile, setShowProfile] = useState(false); // Added state for Profile section
 
   const [currentRoom, setCurrentRoom] = useState<{ id: string; name: string } | null>(null);
   const [roomName, setRoomName] = useState<string>('');
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [showMentor, setShowMentor] = useState(false);
-  const [showCredits, setShowCredits] = useState(false);
+  // const [showAdmin, setShowAdmin] = useState(false); // Removed duplicate state
+  // const [showMentor, setShowMentor] = useState(false); // Removed duplicate state
+  // const [showCredits, setShowCredits] = useState(false); // Removed duplicate state
   const [activeTab, setActiveTab] = useState<'friends' | 'chatroom' | 'feed' | 'settings' | 'dm'>('friends');
   const [showMobileMenu, setShowMobileMenu] = useState(false); // State to control mobile menu visibility
 
@@ -548,14 +553,22 @@ function HomePageContent() {
     }
   };
 
-  const handleUserProfileClick = (user: MiniProfileData) => {
-    setSelectedProfile(user);
-    setShowMiniProfile(true);
-  };
-
-  const handleShowMiniProfile = (profile: MiniProfileData) => {
-    setSelectedProfile(profile);
-    setShowMiniProfile(true);
+  const handleUserProfileClick = (profile: any) => {
+    console.log('User clicked:', profile);
+    if (profile.showMiniProfile) {
+      setSelectedProfile(profile);
+      setShowMiniProfile(true);
+    } else if (profile.openDirectMessage) {
+      // Switch to messages tab and open direct message
+      setActiveTab('dm'); // Change to 'dm' tab
+      // Close the room to go back to messages view
+      setCurrentRoom(null);
+      setRoomName('');
+      setSelectedDirectMessage(profile); // Set the selected user for DM
+    } else {
+      setSelectedProfile(profile);
+      setActiveTab('dm'); // Default to 'dm' tab if not showing mini profile or directly opening DM
+    }
   };
 
   const handleReply = (commentId: string) => {
@@ -1504,7 +1517,10 @@ function HomePageContent() {
 
                   <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
-                    onClick={() => setShowMentor(true)}
+                    onClick={() => {
+                      setShowMentorPage(true);
+                      console.log("Opening Mentor Page");
+                    }}
                   >
                     <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -1528,23 +1544,12 @@ function HomePageContent() {
                     <button
                       className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
                       onClick={() => {
-                        console.log('Admin button clicked, setting showAdmin to true');
-                        setShowAdmin(true);
-                        setShowMobileMenu(false);
+                        console.log('Admin button clicked from settings');
+                        handleAdminClick();
                       }}
                     >
-                      <Shield className="h-5 w-5 text-purple-600" />
-                      <div className="flex items-center justify-between flex-1">
-                        <span className={cn("font-medium text-purple-600")}>
-                          Admin Panel
-                        </span>
-                        <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/20">
-                          <svg className="w-3 h-3 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                          </svg>
-                          <span className="text-xs font-medium text-purple-600">Admin</span>
-                        </div>
-                      </div>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Panel
                     </button>
                   )}
 
@@ -1566,6 +1571,17 @@ function HomePageContent() {
     },
 
   ];
+
+  const handleAdminClick = () => {
+    console.log('Admin button clicked, setting showAdmin to true');
+    // Close any other open modals/panels first
+    setShowSettings(false);
+    setShowProfile(false);
+    setShowCredits(false);
+    setShowMentorPage(false);
+    // Then open admin panel
+    setShowAdmin(true);
+  };
 
   // Update active tab based on currentRoom changes
   useEffect(() => {
@@ -1651,6 +1667,61 @@ function HomePageContent() {
             {tab.id === activeTab && tab.content}
           </div>
         ))}
+
+        {/* Admin Page */}
+        {showAdmin && user?.isAdmin && (
+          <AdminPage onBack={() => {
+            setShowAdmin(false);
+            console.log('Admin panel closed');
+          }} />
+        )}
+
+        {/* Mentor Page */}
+        {showMentor && (
+          <MentorPage open={showMentor} onClose={() => setShowMentorPage(false)} />
+        )}
+
+        {/* Credits Page */}
+        {showCredits && (
+          <CreditsPage open={showCredits} onClose={() => setShowCredits(false)} />
+        )}
+
+        {/* Edit Profile Modal */}
+        {showEditProfile && (
+          <EditProfileModal
+            isOpen={showEditProfile}
+            onClose={() => setShowEditProfile(false)}
+          />
+        )}
+
+        {/* User Search Modal */}
+        {showUserSearch && (
+          <UserSearchModal
+            isOpen={showUserSearch}
+            onClose={() => setShowUserSearch(false)}
+            onUserSelect={handleUserProfileClick}
+            onMessageClick={handleDirectMessageClick}
+          />
+        )}
+
+        {/* Status Update Modal */}
+        <StatusUpdateModal
+          isOpen={showStatusUpdate}
+          onClose={() => setShowStatusUpdate(false)}
+        />
+
+        {/* Privacy & Security Modal */}
+        <PrivacySecurityModal
+          isOpen={showPrivacySecurity}
+          onClose={() => setShowPrivacySecurity(false)}
+        />
+
+        {/* Help Support Modal */}
+        <HelpSupportModal
+          open={showHelpSupport}
+          onOpenChange={setShowHelpSupport}
+        />
+
       </div>
 
       {/* Bottom Navigation - Hidden when in fullscreen mode and active tab is 'chatroom' */}
@@ -1695,42 +1766,6 @@ function HomePageContent() {
           onMessageClick={handleMessageClick}
         />
       )}
-
-      {/* Edit Profile Modal */}
-      {showEditProfile && (
-        <EditProfileModal
-          isOpen={showEditProfile}
-          onClose={() => setShowEditProfile(false)}
-        />
-      )}
-
-      {/* User Search Modal */}
-      {showUserSearch && (
-        <UserSearchModal
-          isOpen={showUserSearch}
-          onClose={() => setShowUserSearch(false)}
-          onUserSelect={handleUserProfileClick}
-          onMessageClick={handleDirectMessageClick}
-        />
-      )}
-
-      {/* Status Update Modal */}
-      <StatusUpdateModal
-        isOpen={showStatusUpdate}
-        onClose={() => setShowStatusUpdate(false)}
-      />
-
-      {/* Privacy & Security Modal */}
-      <PrivacySecurityModal
-        isOpen={showPrivacySecurity}
-        onClose={() => setShowPrivacySecurity(false)}
-      />
-
-      {/* Help Support Modal */}
-      <HelpSupportModal
-        open={showHelpSupport}
-        onOpenChange={setShowHelpSupport}
-      />
 
       {/* Share Modal */}
       {showShareModal && (
