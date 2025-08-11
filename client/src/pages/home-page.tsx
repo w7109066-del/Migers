@@ -1072,8 +1072,8 @@ function HomePageContent() {
                         <div className="flex items-center space-x-2 mb-2">
                           <span className={cn(
                             "font-semibold",
-                            post.author?.isAdmin || (post.author?.level && post.author.level >= 5)
-                              ? "text-orange-800"
+                            post.author?.isAdmin || (post.author?.username === 'bob_al') || (post.author?.level && post.author.level >= 5)
+                              ? "text-orange-600"
                               : (isDarkMode ? "text-gray-200" : "text-gray-800")
                           )}>
                             {post.author?.username || 'Unknown'}
@@ -1095,7 +1095,7 @@ function HomePageContent() {
                               </Badge>
                             </div>
                           )}
-                          {(post.author?.isAdmin || (post.author?.level && post.author.level >= 5)) && (
+                          {(post.author?.isAdmin || (post.author?.username === 'bob_al') || (post.author?.level && post.author.level >= 5)) && (
                             <Badge variant="destructive" className="bg-red-600 text-white text-xs font-semibold">
                               Admin
                             </Badge>
@@ -1148,7 +1148,9 @@ function HomePageContent() {
                             onClick={() => toggleComments(post.id)}
                           >
                             <MessageCircle className="w-4 h-4 text-gray-500" />
-                            <span className="text-xs text-gray-500">{post.commentsCount || 0} Comments</span>
+                            <span className="text-xs text-gray-500">
+                              {(postComments[post.id]?.length || post.commentsCount || 0)} Comments
+                            </span>
                           </button>
                           <button
                             className="flex items-center space-x-1 hover:text-green-600"
