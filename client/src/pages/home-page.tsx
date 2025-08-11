@@ -106,7 +106,7 @@ function HomePageContent() {
   const [showPrivacySecurity, setShowPrivacySecurity] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false); // Added state for Help Support modal
   const [showAdmin, setShowAdmin] = useState(false); // Added state for Admin Panel
-  const [showMentor, setShowMentorPage] = useState(false); // Added state for Mentor Page
+  const [showMentorPage, setShowMentorPage] = useState(false); // Added state for Mentor Page
   const [showCredits, setShowCredits] = useState(false); // Added state for Credits Page
   const [showSettings, setShowSettings] = useState(false); // Added state for Settings
   const [showProfile, setShowProfile] = useState(false); // Added state for Profile section
@@ -588,19 +588,19 @@ function HomePageContent() {
       if (response.ok) {
         const newPost = await response.json();
         console.log('Post created successfully:', newPost.id);
-        
+
         // Update feed posts safely
         setFeedPosts(prev => {
           const updatedPosts = [newPost, ...prev];
           console.log('Updated feed with new post, total posts:', updatedPosts.length);
           return updatedPosts;
         });
-        
+
         // Clear form
         setPostContent('');
         setSelectedMedia(null);
         setMediaPreview(null);
-        
+
         console.log('Post form cleared');
       } else {
         let errorMessage = 'Failed to create post';
@@ -616,7 +616,7 @@ function HomePageContent() {
       }
     } catch (error) {
       console.error('Error creating post:', error);
-      
+
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           console.log('Post creation aborted due to timeout');
@@ -1847,14 +1847,25 @@ function HomePageContent() {
               <button
                 key={tab.id}
                 onClick={() => {
-                  setActiveTab(tab.id as any); // Use tab.id for activeTab state
-                  // If we are switching from a fullscreen chat room to another tab, disable fullscreen mode
-                  if (isFullscreenMode && tab.id !== 'chatroom') {
-                    setIsFullscreenMode(false);
-                  }
-                  // If switching to the chatroom tab and there are no open rooms, ensure fullscreen is off
-                  if (tab.id === 'chatroom' && openRooms.length === 0) {
-                    setIsFullscreenMode(false);
+                  console.log('Tab clicked:', tab.id);
+                  setActiveTab(tab.id as any);
+
+                  // Handle specific tab transitions
+                  if (tab.id === 'chatroom') {
+                    // If switching to chatroom and there are no open rooms, ensure fullscreen is off
+                    if (openRooms.length === 0) {
+                      setIsFullscreenMode(false);
+                    }
+                  } else {
+                    // If switching away from chatroom, disable fullscreen mode
+                    if (isFullscreenMode) {
+                      setIsFullscreenMode(false);
+                    }
+
+                    // Clear selected DM when switching away from DM tab
+                    if (tab.id !== 'dm' && selectedDirectMessage) {
+                      setSelectedDirectMessage(null);
+                    }
                   }
                 }}
                 className={cn(
