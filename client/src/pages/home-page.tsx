@@ -523,26 +523,32 @@ function HomePageContent() {
 
   const handleCreatePost = async () => {
     // Prevent multiple simultaneous submissions
-    if (isSubmittingPost) return;
+    if (isSubmittingPost) {
+      console.log('Post submission already in progress');
+      return;
+    }
 
     // Check if user is authenticated
     if (!user) {
       console.error('User not authenticated');
+      alert('Please log in to create a post');
       return;
     }
 
     // Check if there's content or media
-    if (!postContent.trim() && !selectedMedia) {
+    const trimmedContent = postContent?.trim() || '';
+    if (!trimmedContent && !selectedMedia) {
       console.error('No content or media to post');
+      alert('Please add some content or media to your post');
       return;
     }
 
-    // Set loading state
+    // Set loading state immediately
     setIsSubmittingPost(true);
 
     try {
       // Validate content length
-      if (postContent.trim().length > 2000) {
+      if (trimmedContent.length > 2000) {
         alert('Post content is too long. Maximum 2000 characters allowed.');
         return;
       }
@@ -555,17 +561,20 @@ function HomePageContent() {
 
       const formData = new FormData();
 
-      // Always append content, even if empty string for media-only posts
-      formData.append('content', postContent.trim() || '');
+      // Always append content
+      formData.append('content', trimmedContent);
 
       if (selectedMedia) {
         formData.append('media', selectedMedia);
       }
 
-      console.log('Sending post with content:', postContent.trim());
+      console.log('Sending post with content length:', trimmedContent.length);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => {
+        console.log('Request timeout triggered');
+        controller.abort();
+      }, 30000); // 30 second timeout
 
       const response = await fetch('/api/feed', {
         method: 'POST',
@@ -578,35 +587,55 @@ function HomePageContent() {
 
       if (response.ok) {
         const newPost = await response.json();
-        setFeedPosts(prev => [newPost, ...prev]);
+        console.log('Post created successfully:', newPost.id);
+        
+        // Update feed posts safely
+        setFeedPosts(prev => {
+          const updatedPosts = [newPost, ...prev];
+          console.log('Updated feed with new post, total posts:', updatedPosts.length);
+          return updatedPosts;
+        });
+        
+        // Clear form
         setPostContent('');
         setSelectedMedia(null);
         setMediaPreview(null);
-        console.log('Post created successfully');
+        
+        console.log('Post form cleared');
       } else {
         let errorMessage = 'Failed to create post';
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          errorMessage = `Server error: ${response.status}`;
+          errorMessage = errorData.message || `Server error: ${response.status}`;
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
         console.error('Failed to create post:', errorMessage);
         alert(errorMessage);
       }
     } catch (error) {
       console.error('Error creating post:', error);
+      
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
+          console.log('Post creation aborted due to timeout');
           alert('Post creation timed out. Please try again.');
-        } else {
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          console.log('Network error during post creation');
           alert('Network error. Please check your connection and try again.');
+        } else {
+          console.log('Unknown error during post creation:', error.message);
+          alert(`Error: ${error.message}`);
         }
       } else {
+        console.log('Unknown error type:', error);
         alert('An unexpected error occurred. Please try again.');
       }
     } finally {
+      // Always reset loading state
       setIsSubmittingPost(false);
+      console.log('Post submission completed, loading state reset');
     }
   };
 
@@ -956,13 +985,14 @@ function HomePageContent() {
                     <div className="relative">
                       <Input
                         placeholder="What's on your mind?"
-                        value={postContent}
+                        value={postContent || ''}
                         onChange={(e) => setPostContent(e.target.value)}
                         className={cn("pr-20 border-0 focus:ring-2 focus:ring-primary", isDarkMode ? "focus:bg-gray-700 bg-gray-900" : "focus:bg-white bg-gray-100")}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            if ((postContent.trim() || selectedMedia) && !isSubmittingPost) {
+                            e.stopPropagation();
+                            if ((postContent?.trim() || selectedMedia) && !isSubmittingPost && user) {
                               handleCreatePost();
                             }
                           }
@@ -972,8 +1002,14 @@ function HomePageContent() {
                         type="button"
                         size="sm"
                         className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
-                        onClick={handleCreatePost}
-                        disabled={(!postContent.trim() && !selectedMedia) || !user || isSubmittingPost}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!isSubmittingPost) {
+                            handleCreatePost();
+                          }
+                        }}
+                        disabled={(!postContent?.trim() && !selectedMedia) || !user || isSubmittingPost}
                       >
                         {isSubmittingPost ? (
                           <div className="flex items-center space-x-1">
