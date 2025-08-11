@@ -960,8 +960,8 @@ export function ChatRoom({
                               <div className="flex items-center space-x-2">
                                 <span className={cn(
                                   "font-medium text-sm truncate",
-                                  // Apply special colors - Admin visible in all rooms
-                                  member.role === 'admin' || member.user.level >= 5 ? "text-orange-700" :
+                                  // Apply special colors - Admin visible in all rooms - Dark orange
+                                  member.role === 'admin' || member.user.level >= 5 ? "text-orange-800" :
                                   // Owner and moderator colors only in managed rooms (not system rooms 1-4)
                                   !['1', '2', '3', '4'].includes(roomId || '') ? (
                                     (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
@@ -1133,8 +1133,8 @@ export function ChatRoom({
                                         <div className="flex items-center space-x-2">
                                           <span className={cn(
                                             "font-medium text-sm truncate",
-                                            // Apply special colors - Admin visible in all rooms
-                                            member.role === 'admin' || member.user.level >= 5 ? "text-orange-700" :
+                                            // Apply special colors - Admin visible in all rooms - Dark orange
+                                            member.role === 'admin' || member.user.level >= 5 ? "text-orange-800" :
                                             // Owner and moderator colors only in managed rooms (not system rooms 1-4)
                                             !['1', '2', '3', '4'].includes(roomId || '') ? (
                                               (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :

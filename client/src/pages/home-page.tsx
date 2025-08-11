@@ -1091,7 +1091,7 @@ function HomePageContent() {
                             </div>
                           )}
                           {post.author?.isAdmin && (
-                            <Badge variant="default" className="bg-red-600 text-white text-xs font-semibold ml-1">
+                            <Badge variant="default" className="bg-orange-800 text-white text-xs font-semibold ml-1">
                               Admin
                             </Badge>
                           )}
