@@ -10,7 +10,7 @@ import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
 import { eq, desc, and, or, sql, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
-import { directMessages, users, messages, friendships, notifications, gifts, posts, postLikes, postComments } from "@shared/schema";
+import { directMessages, users, messages, friendships, notifications, gifts, posts, postLikes, postComments, customEmojis } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
@@ -2251,10 +2251,125 @@ export function registerRoutes(app: Express): Server {
     const { filename } = req.params;
     const filePath = path.join('uploads/gifts', filename);
 
-    if (fs.existsSync(filePath)) {
+    if (fs.existsExists(filePath)) {
       res.sendFile(path.resolve(filePath));
     } else {
       res.status(404).json({ message: 'Image not found' });
+    }
+  });
+
+  // Custom Emoji endpoints
+  app.get('/api/emojis/custom', async (req, res) => {
+    try {
+      const emojis = await storage.getActiveCustomEmojis();
+      res.json(emojis);
+    } catch (error) {
+      console.error('Error fetching custom emojis:', error);
+      res.status(500).json({ error: 'Failed to fetch custom emojis' });
+    }
+  });
+
+  // Admin: Get all custom emojis
+  app.get('/api/admin/emojis', requireAdmin, async (req, res) => {
+    try {
+      const emojis = await storage.getAllCustomEmojis();
+      res.json(emojis);
+    } catch (error) {
+      console.error('Error fetching custom emojis:', error);
+      res.status(500).json({ error: 'Failed to fetch custom emojis' });
+    }
+  });
+
+  // Admin: Add new custom emoji
+  app.post('/api/admin/emojis/add', requireAdmin, upload.single('emojiFile'), async (req, res) => {
+    try {
+      const { name, emojiCode, category = 'custom' } = req.body;
+      const file = req.file;
+
+      if (!name || !emojiCode || !file) {
+        return res.status(400).json({ error: 'Name, emoji code, and file are required' });
+      }
+
+      // Validate emoji code format (should be like :custom_emoji:)
+      const emojiCodeRegex = /^:[a-z0-9_]+:$/;
+      if (!emojiCodeRegex.test(emojiCode)) {
+        return res.status(400).json({ error: 'Emoji code must be in format :emoji_name:' });
+      }
+
+      // Check if emoji code already exists
+      const existingEmoji = await db.select()
+        .from(customEmojis)
+        .where(eq(customEmojis.emojiCode, emojiCode))
+        .limit(1);
+
+      if (existingEmoji.length > 0) {
+        return res.status(400).json({ error: 'Emoji code already exists' });
+      }
+
+      const fileUrl = `/uploads/${file.filename}`;
+      const fileType = file.mimetype.split('/')[1]; // get extension from mimetype
+
+      const emojiData = {
+        name,
+        emojiCode,
+        fileUrl,
+        fileType,
+        category,
+        createdBy: req.user!.id,
+      };
+
+      const newEmoji = await storage.createCustomEmoji(emojiData);
+      res.json(newEmoji);
+    } catch (error) {
+      console.error('Error adding custom emoji:', error);
+      res.status(500).json({ error: 'Failed to add custom emoji' });
+    }
+  });
+
+  // Admin: Toggle emoji active status
+  app.patch('/api/admin/emojis/:id/toggle', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+
+      const updatedEmoji = await storage.updateCustomEmoji(id, { isActive });
+      if (updatedEmoji) {
+        res.json(updatedEmoji);
+      } else {
+        res.status(404).json({ error: 'Emoji not found' });
+      }
+    } catch (error) {
+      console.error('Error toggling emoji status:', error);
+      res.status(500).json({ error: 'Failed to toggle emoji status' });
+    }
+  });
+
+  // Admin: Delete custom emoji
+  app.delete('/api/admin/emojis/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Get emoji to delete file
+      const emoji = await db.select()
+        .from(customEmojis)
+        .where(eq(customEmojis.id, id))
+        .limit(1);
+
+      if (emoji.length === 0) {
+        return res.status(404).json({ error: 'Emoji not found' });
+      }
+
+      // Delete file from uploads
+      const filePath = path.join('uploads', path.basename(emoji[0].fileUrl));
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+
+      await storage.deleteCustomEmoji(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting custom emoji:', error);
+      res.status(500).json({ error: 'Failed to delete custom emoji' });
     }
   });
 

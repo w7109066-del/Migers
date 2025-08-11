@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user/user-avatar';
 import { AddGiftModal } from '@/components/ui/add-gift-modal';
-import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2, X } from 'lucide-react';
+import { AddCustomEmojiModal } from '@/components/ui/add-custom-emoji-modal';
+import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2, X, Smile } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -56,6 +57,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [gifts, setGifts] = useState<any[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [showAddEmojiModal, setShowAddEmojiModal] = useState(false);
+  const [customEmojis, setCustomEmojis] = useState<any[]>([]);
   const [showAddRoomModal, setShowAddRoomModal] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomDescription, setNewRoomDescription] = useState('');
@@ -69,6 +72,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
       loadStats();
       loadGifts();
       loadRooms();
+      loadCustomEmojis();
     }
   }, [user?.isAdmin]);
 
@@ -223,6 +227,65 @@ export function AdminPage({ onBack }: AdminPageProps) {
     } catch (error) {
       console.error('Error deleting room:', error);
       alert('Error deleting room. Please try again.');
+    }
+  };
+
+  const loadCustomEmojis = async () => {
+    try {
+      const response = await fetch('/api/admin/emojis', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const emojisData = await response.json();
+        setCustomEmojis(emojisData);
+      } else {
+        console.error('Failed to load custom emojis');
+      }
+    } catch (error) {
+      console.error('Error loading custom emojis:', error);
+    }
+  };
+
+  const toggleEmojiStatus = async (emojiId: string, isActive: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/emojis/${emojiId}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ isActive }),
+      });
+
+      if (response.ok) {
+        loadCustomEmojis();
+      } else {
+        console.error('Failed to toggle emoji status');
+      }
+    } catch (error) {
+      console.error('Error toggling emoji status:', error);
+    }
+  };
+
+  const deleteCustomEmoji = async (emojiId: string) => {
+    if (!confirm('Are you sure you want to delete this emoji? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/emojis/${emojiId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        loadCustomEmojis();
+      } else {
+        console.error('Failed to delete custom emoji');
+      }
+    } catch (error) {
+      console.error('Error deleting custom emoji:', error);
     }
   };
 
@@ -588,6 +651,92 @@ export function AdminPage({ onBack }: AdminPageProps) {
           </CardContent>
         </Card>
 
+        {/* Custom Emoji Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className={cn("flex items-center justify-between", isDarkMode ? "text-white" : "text-gray-900")}>
+              <div className="flex items-center space-x-2">
+                <Smile className="w-5 h-5" />
+                <span>Custom Emoji Management</span>
+              </div>
+              <Button
+                onClick={() => setShowAddEmojiModal(true)}
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Emoji</span>
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-64 overflow-y-auto">
+              {customEmojis.map((emoji) => (
+                <div
+                  key={emoji.id}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-lg border",
+                    isDarkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                  )}
+                >
+                  <div className="flex items-center space-x-3">
+                    <img 
+                      src={emoji.fileUrl} 
+                      alt={emoji.name}
+                      className="w-8 h-8 object-contain"
+                    />
+                    <div>
+                      <div className={cn("font-medium text-sm", isDarkMode ? "text-white" : "text-gray-900")}>
+                        {emoji.name}
+                      </div>
+                      <div className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                        {emoji.emojiCode}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge 
+                          variant={emoji.isActive ? "default" : "secondary"} 
+                          className="text-xs"
+                        >
+                          {emoji.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {emoji.category}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={() => toggleEmojiStatus(emoji.id, !emoji.isActive)}
+                    >
+                      {emoji.isActive ? "Disable" : "Enable"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={() => deleteCustomEmoji(emoji.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              {customEmojis.length === 0 && (
+                <div className="col-span-full text-center py-8">
+                  <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    No custom emojis found. Add some emojis to get started.
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Gift Management */}
         <Card>
           <CardHeader>
@@ -839,6 +988,13 @@ export function AdminPage({ onBack }: AdminPageProps) {
         isOpen={showAddGiftModal}
         onClose={() => setShowAddGiftModal(false)}
         onGiftAdded={loadGifts}
+      />
+
+      {/* Add Custom Emoji Modal */}
+      <AddCustomEmojiModal
+        isOpen={showAddEmojiModal}
+        onClose={() => setShowAddEmojiModal(false)}
+        onEmojiAdded={loadCustomEmojis}
       />
 
       {/* Add Room Modal */}

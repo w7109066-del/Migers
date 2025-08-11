@@ -165,6 +165,19 @@ export const gifts = pgTable('gifts', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// New table for custom emojis
+export const customEmojis = pgTable('custom_emojis', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 100 }).notNull(),
+  emojiCode: varchar('emoji_code', { length: 50 }).notNull().unique(),
+  fileUrl: text('file_url').notNull(),
+  fileType: varchar('file_type', { length: 20 }).notNull(), // 'png', 'gif', 'webp'
+  category: varchar('category', { length: 50 }).default('custom'),
+  isActive: boolean('is_active').default(true),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   friendships: many(friendships, { relationName: "userFriendships" }),
@@ -326,6 +339,14 @@ export const giftsRelations = relations(gifts, ({ one }) => ({
   // Add relations if needed in the future
 }));
 
+// Relation for the custom emojis table
+export const customEmojisRelations = relations(customEmojis, ({ one }) => ({
+  creator: one(users, {
+    fields: [customEmojis.createdBy],
+    references: [users.id],
+  }),
+}));
+
 
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -430,6 +451,16 @@ export const insertGiftSchema = createInsertSchema(gifts).pick({
   fileType: true,
 });
 
+// Schema for custom emojis
+export const insertCustomEmojiSchema = createInsertSchema(customEmojis).pick({
+  name: true,
+  emojiCode: true,
+  fileUrl: true,
+  fileType: true,
+  category: true,
+  createdBy: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -458,3 +489,5 @@ export type Friend = typeof friends.$inferSelect;
 export type InsertFriend = z.infer<typeof insertFriendSchema>;
 export type Gift = typeof gifts.$inferSelect;
 export type InsertGift = z.infer<typeof insertGiftSchema>;
+export type CustomEmoji = typeof customEmojis.$inferSelect;
+export type InsertCustomEmoji = z.infer<typeof insertCustomEmojiSchema>;

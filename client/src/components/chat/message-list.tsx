@@ -37,18 +37,40 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hiddenGiftMessages, setHiddenGiftMessages] = useState<Set<string>>(new Set());
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [customEmojis, setCustomEmojis] = useState<any[]>([]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    loadCustomEmojis();
+  }, []);
+
+  const loadCustomEmojis = async () => {
+    try {
+      const response = await fetch('/api/emojis/custom', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const emojisData = await response.json();
+        setCustomEmojis(emojisData);
+      } else {
+        console.error('Failed to load custom emojis');
+      }
+    } catch (error) {
+      console.error('Error loading custom emojis:', error);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   // Auto-hide gift messages after 3 seconds
   useEffect(() => {
-    const newGiftMessages = messages.filter(msg => 
+    const newGiftMessages = messages.filter(msg =>
       isGiftMessage(msg.content) && !hiddenGiftMessages.has(msg.id)
     );
 
@@ -594,6 +616,45 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
     return message.content;
   };
 
+  const renderGift = (giftData: any) => {
+    // Check if this is a built-in emoji animation first
+    const animatedEmoji = animatedEmoticons.find(emoji => emoji.emoji === giftData.emoji);
+
+    if (animatedEmoji) {
+      return (
+        <div className="inline-flex items-center space-x-2">
+          <div className="w-8 h-8">
+            <Lottie
+              loop={true}
+              animationData={animatedEmoji.lottie}
+              play={true}
+              style={{ width: 32, height: 32 }}
+            />
+          </div>
+          <span className="text-xs font-medium text-gray-700">{giftData.name}</span>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderMessageWithCustomEmojis = (content: string) => {
+    if (!content) return content;
+
+    // Replace custom emoji codes with images
+    let processedContent = content;
+    customEmojis.forEach(emoji => {
+      const regex = new RegExp(emoji.emojiCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+      processedContent = processedContent.replace(
+        regex,
+        `<img src="${emoji.fileUrl}" alt="${emoji.name}" class="inline-block w-6 h-6 object-contain" title="${emoji.name}" />`
+      );
+    });
+
+    return processedContent;
+  };
+
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
@@ -607,8 +668,8 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isHidden = hiddenGiftMessages.has(message.id);
 
           return (
-            <div 
-              key={message.id} 
+            <div
+              key={message.id}
               className={cn(
                 "flex justify-center mb-4 transition-all duration-1000",
                 isHidden ? "opacity-0 transform scale-95 pointer-events-none" : "opacity-100 animate-pulse"
@@ -726,7 +787,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                 // Normal message rendering
                 <>
                   <div className="flex items-start space-x-2">
-                    <UserAvatar 
+                    <UserAvatar
                       username={message.sender.username}
                       size="sm"
                       isOnline={message.sender.isOnline}
@@ -735,7 +796,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     />
                     <div className="flex-1">
                       <div className="flex items-baseline space-x-1">
-                        <span 
+                        <span
                           className={cn(
                             "text-sm font-medium cursor-pointer hover:underline",
                             // Check if this is own message first
@@ -770,9 +831,12 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         >
                           {message.sender.username}:
                         </span>
-                        <span className="text-gray-700 dark:text-gray-300 break-words">
-                          {renderMessageContent(message)}
-                        </span>
+                        <div
+                          className="text-sm break-words"
+                          dangerouslySetInnerHTML={{
+                            __html: renderMessageWithCustomEmojis(message.content)
+                          }}
+                        />
                         <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                           {formatTime(message.createdAt)}
                         </span>

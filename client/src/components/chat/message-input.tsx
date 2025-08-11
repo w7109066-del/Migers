@@ -214,7 +214,7 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [showEmojis, setShowEmojis] = useState(false);
   const [showGifts, setShowGifts] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customEmojis, setCustomEmojis] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { isConnected } = useWebSocket();
   const [typingTimer, setTypingTimer] = useState<NodeJS.Timeout | null>(null);
@@ -224,6 +224,23 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
   const [currentRoomId, setCurrentRoomId] = useState<string | undefined>(roomId);
 
   useEffect(() => {
+    // Fetch custom emojis when the component mounts or when roomId changes
+    const fetchCustomEmojis = async () => {
+      try {
+        // Replace with your actual API endpoint for fetching custom emojis
+        const response = await fetch('/api/custom-emojis');
+        if (!response.ok) {
+          throw new Error('Failed to fetch custom emojis');
+        }
+        const data = await response.json();
+        setCustomEmojis(data);
+      } catch (error) {
+        console.error('Error fetching custom emojis:', error);
+      }
+    };
+
+    fetchCustomEmojis();
+
     // Only update if roomId actually changed
     if (currentRoomId !== roomId) {
       // Save current message to previous room's storage before switching
@@ -374,6 +391,29 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
         <div className="px-4 pb-2">
           <Card>
             <CardContent className="p-3 max-h-40 overflow-y-auto">
+              {/* Custom Emojis Section */}
+              {customEmojis.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="text-xs font-semibold text-gray-600 mb-2">Custom Emojis</h4>
+                  <div className="grid grid-cols-8 gap-1">
+                    {customEmojis.map((item, index) => (
+                      <Button
+                        key={`custom-${index}`}
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-8 flex flex-col items-center"
+                        onClick={() => {
+                          setMessage(prev => prev + item.emojiUrl); // Assuming emojiUrl contains the emoji character or a placeholder
+                          setShowEmojis(false);
+                        }}
+                      >
+                        <img src={item.imageUrl} alt={item.name} className="w-6 h-6" />
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Animated Emoticons Section */}
               <div className="mb-3">
                 <h4 className="text-xs font-semibold text-gray-600 mb-2">Animated Emoticons</h4>

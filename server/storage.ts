@@ -24,7 +24,10 @@ import {
   type Follower,
   type CreditTransaction,
   type InsertCreditTransaction,
-  notifications
+  notifications,
+  customEmojis,
+  type CustomEmoji,
+  type InsertCustomEmoji
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, asc, isNull, inArray } from "drizzle-orm";
@@ -102,6 +105,13 @@ export interface IStorage {
   getNotifications(userId: string): Promise<any[]>;
   markNotificationAsRead(notificationId: string): Promise<void>;
   deleteNotification(notificationId: string): Promise<void>;
+
+  // Custom Emoji methods
+  getAllCustomEmojis(): Promise<CustomEmoji[]>;
+  getActiveCustomEmojis(): Promise<CustomEmoji[]>;
+  createCustomEmoji(emojiData: InsertCustomEmoji): Promise<CustomEmoji>;
+  updateCustomEmoji(emojiId: string, updates: Partial<CustomEmoji>): Promise<CustomEmoji | undefined>;
+  deleteCustomEmoji(emojiId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1610,6 +1620,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNotification(notificationId: string): Promise<void> {
     await this.db.delete(notifications).where(eq(notifications.id, notificationId));
+  }
+
+  // Custom Emoji methods
+  async getAllCustomEmojis(): Promise<CustomEmoji[]> {
+    return await this.db.select().from(customEmojis);
+  }
+
+  async getActiveCustomEmojis(): Promise<CustomEmoji[]> {
+    return await this.db.select().from(customEmojis).where(eq(customEmojis.isActive, true));
+  }
+
+  async createCustomEmoji(emojiData: InsertCustomEmoji): Promise<CustomEmoji> {
+    const [newEmoji] = await this.db
+      .insert(customEmojis)
+      .values(emojiData)
+      .returning();
+    return newEmoji;
+  }
+
+  async updateCustomEmoji(emojiId: string, updates: Partial<CustomEmoji>): Promise<CustomEmoji | undefined> {
+    const [updatedEmoji] = await this.db
+      .update(customEmojis)
+      .set(updates)
+      .where(eq(customEmojis.id, emojiId))
+      .returning();
+    return updatedEmoji;
+  }
+
+  async deleteCustomEmoji(emojiId: string): Promise<void> {
+    await this.db.delete(customEmojis).where(eq(customEmojis.id, emojiId));
   }
 }
 
