@@ -1652,34 +1652,7 @@ export class DatabaseStorage implements IStorage {
     await this.db.delete(customEmojis).where(eq(customEmojis.id, emojiId));
   }
 
-  async getActiveCustomEmojis(): Promise<CustomEmoji[]> {
-    const emojis = await this.db
-      .select()
-      .from(customEmojis)
-      .where(eq(customEmojis.isActive, true))
-      .orderBy(customEmojis.createdAt);
-    return emojis;
-  }
-
-  async getAllCustomEmojis(): Promise<CustomEmoji[]> {
-    const emojis = await this.db
-      .select()
-      .from(customEmojis)
-      .orderBy(customEmojis.createdAt);
-    return emojis;
-  }
-
-  async createCustomEmoji(emojiData: Omit<CustomEmoji, 'id' | 'createdAt'>): Promise<CustomEmoji> {
-    const [newEmoji] = await this.db
-      .insert(customEmojis)
-      .values({
-        ...emojiData,
-        id: sql`gen_random_uuid()`,
-        createdAt: new Date()
-      })
-      .returning();
-    return newEmoji;
-  }
+  
 }
 
 export const storage = new DatabaseStorage();

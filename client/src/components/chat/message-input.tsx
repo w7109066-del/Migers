@@ -232,15 +232,18 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
   useEffect(() => {
     const fetchCustomEmojis = async () => {
       try {
-        // Replace with your actual API endpoint for fetching custom emojis
-        const response = await fetch('/api/custom-emojis');
+        const response = await fetch('/api/emojis/custom', {
+          credentials: 'include'
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch custom emojis');
         }
         const data = await response.json();
+        console.log('Fetched custom emojis:', data);
         setCustomEmojis(data);
       } catch (error) {
         console.error('Error fetching custom emojis:', error);
+        setCustomEmojis([]);
       }
     };
 
@@ -403,18 +406,27 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
                 <div className="mb-3">
                   <h4 className="text-xs font-semibold text-gray-600 mb-2">Custom Emojis</h4>
                   <div className="grid grid-cols-8 gap-1">
-                    {customEmojis.map((item) => ( // Removed index from map key
+                    {customEmojis.map((item) => (
                       <Button
-                        key={item.id} // Use item.id as key
+                        key={item.id}
                         variant="ghost"
                         size="sm"
                         className="p-1 h-8 flex flex-col items-center"
                         onClick={() => {
-                          insertEmoji(item.emojiCode); // Use insertEmoji to append
+                          insertEmoji(item.emojiCode);
                           setShowEmojis(false);
                         }}
+                        title={item.name}
                       >
-                        <img src={item.fileUrl} alt={item.name} className="w-6 h-6" />
+                        <img 
+                          src={item.fileUrl} 
+                          alt={item.name} 
+                          className="w-6 h-6 object-contain"
+                          onError={(e) => {
+                            console.error('Failed to load emoji image:', item.fileUrl);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       </Button>
                     ))}
                   </div>

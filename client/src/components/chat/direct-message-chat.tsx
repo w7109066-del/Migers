@@ -105,23 +105,29 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
     }
   };
 
-  const loadCustomEmojis = async () => {
+  // Function to fetch custom emojis
+  const fetchCustomEmojis = async () => {
     try {
-      const response = await fetch('/api/emojis/custom', {
-        credentials: 'include'
+      const response = await fetch('/api/emojis/custom', { 
+        credentials: 'include' 
       });
       if (response.ok) {
-        const emojis = await response.json();
-        setCustomEmojis(emojis);
+        const data = await response.json();
+        console.log('DM: Fetched custom emojis:', data);
+        setCustomEmojis(data);
+      } else {
+        console.error('Failed to fetch custom emojis:', response.status);
+        setCustomEmojis([]);
       }
     } catch (error) {
-      console.error('Failed to load custom emojis:', error);
+      console.error('Error fetching custom emojis:', error);
+      setCustomEmojis([]);
     }
   };
 
   useEffect(() => {
     loadMessages();
-    loadCustomEmojis();
+    fetchCustomEmojis();
   }, [recipient?.id, user?.id]);
 
   useEffect(() => {
