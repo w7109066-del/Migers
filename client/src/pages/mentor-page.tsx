@@ -30,8 +30,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
   const { user, isDarkMode } = useAuth();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [specialty, setSpecialty] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
+  
   const [isRegisteringMerchant, setIsRegisteringMerchant] = useState(false);
   const [merchantCount, setMerchantCount] = useState(0);
   const [merchantUsername, setMerchantUsername] = useState('');
@@ -95,37 +94,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
     }
   };
 
-  const handleRegisterAsMentor = async () => {
-    if (!specialty.trim()) {
-      alert('Please enter your specialty');
-      return;
-    }
-
-    setIsRegistering(true);
-    try {
-      const response = await fetch('/api/mentor/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ specialty: specialty.trim() }),
-      });
-
-      if (response.ok) {
-        alert('Successfully registered as mentor!');
-        await loadMentors();
-        setSpecialty('');
-      } else {
-        alert('Failed to register as mentor');
-      }
-    } catch (error) {
-      console.error('Failed to register as mentor:', error);
-      alert('Failed to register as mentor');
-    } finally {
-      setIsRegistering(false);
-    }
-  };
+  
 
   const handleRegisterAsMerchant = async () => {
     setIsRegisteringMerchant(true);
@@ -361,26 +330,18 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                   <BookOpen className="w-8 h-8 text-red-600 dark:text-red-400" />
                 </div>
                 <h2 className="text-xl font-bold text-red-800 dark:text-red-200 mb-2">
-                  Mentor Registration Required
+                  Mentor Access Required
                 </h2>
-                <p className="text-red-600 dark:text-red-300 mb-6">
-                  You need to register as a mentor to access this feature. Share your expertise and help others grow!
+                <p className="text-red-600 dark:text-red-300 mb-4">
+                  You need to be registered as a mentor by an administrator to access this feature.
                 </p>
-
-                <div className="max-w-md mx-auto space-y-4">
-                  <Input
-                    placeholder="Enter your specialty (e.g., Programming, Design, Business)"
-                    value={specialty}
-                    onChange={(e) => setSpecialty(e.target.value)}
-                    className="border-red-300 focus:border-red-500"
-                  />
-                  <Button
-                    onClick={handleRegisterAsMentor}
-                    disabled={isRegistering || !specialty.trim()}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    {isRegistering ? 'Registering...' : 'Register as Mentor'}
-                  </Button>
+                <p className="text-sm text-red-500 dark:text-red-400 mb-6">
+                  Please contact an administrator to request mentor status. Only approved mentors can access the mentor dashboard and merchant management features.
+                </p>
+                <div className="p-4 bg-red-100 dark:bg-red-800/30 rounded-lg border border-red-200 dark:border-red-700">
+                  <p className="text-xs text-red-600 dark:text-red-300">
+                    <strong>Note:</strong> Mentor registration is now handled exclusively through the admin panel to ensure quality and proper verification of mentor credentials.
+                  </p>
                 </div>
               </div>
             </CardContent>

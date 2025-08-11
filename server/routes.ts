@@ -1116,20 +1116,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/mentor/register', async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    try {
-      const { specialty } = req.body;
-      const updatedUser = await storage.updateUserMentorStatus(req.user.id, true, specialty);
-      res.json(updatedUser);
-    } catch (error) {
-      console.error('Error registering as mentor:', error);
-      res.status(500).json({ message: 'Failed to register as mentor' });
-    }
-  });
+  
 
   app.post('/api/merchant/register', async (req, res) => {
     if (!req.isAuthenticated()) {
