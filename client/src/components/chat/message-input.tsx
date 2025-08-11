@@ -214,7 +214,7 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [showEmojis, setShowEmojis] = useState(false);
   const [showGifts, setShowGifts] = useState(false);
-  const [customEmojis, setCustomEmojis] = useState<any[]>([]);
+  const [customEmojis, setCustomEmojis] = useState<any[]>([]); // Changed to any[] as per original
   const inputRef = useRef<HTMLInputElement>(null);
   const { isConnected } = useWebSocket();
   const [typingTimer, setTypingTimer] = useState<NodeJS.Timeout | null>(null);
@@ -223,8 +223,13 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
   const [roomInputs, setRoomInputs] = useState<Map<string, string>>(new Map());
   const [currentRoomId, setCurrentRoomId] = useState<string | undefined>(roomId);
 
+  // Function to handle insertion of emoji into the message
+  const insertEmoji = (emoji: string) => {
+    setMessage((prevMessage) => prevMessage + emoji);
+  };
+
+  // Fetch custom emojis when the component mounts or when roomId changes
   useEffect(() => {
-    // Fetch custom emojis when the component mounts or when roomId changes
     const fetchCustomEmojis = async () => {
       try {
         // Replace with your actual API endpoint for fetching custom emojis
@@ -269,6 +274,8 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
       setTypingTimer(null);
     }
   }, [roomId, currentRoomId, message, typingTimer]);
+
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added isSubmitting state
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) {
@@ -396,18 +403,18 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
                 <div className="mb-3">
                   <h4 className="text-xs font-semibold text-gray-600 mb-2">Custom Emojis</h4>
                   <div className="grid grid-cols-8 gap-1">
-                    {customEmojis.map((item, index) => (
+                    {customEmojis.map((item) => ( // Removed index from map key
                       <Button
-                        key={`custom-${index}`}
+                        key={item.id} // Use item.id as key
                         variant="ghost"
                         size="sm"
                         className="p-1 h-8 flex flex-col items-center"
                         onClick={() => {
-                          setMessage(prev => prev + item.emojiUrl); // Assuming emojiUrl contains the emoji character or a placeholder
+                          insertEmoji(item.emojiCode); // Use insertEmoji to append
                           setShowEmojis(false);
                         }}
                       >
-                        <img src={item.imageUrl} alt={item.name} className="w-6 h-6" />
+                        <img src={item.fileUrl} alt={item.name} className="w-6 h-6" />
                       </Button>
                     ))}
                   </div>
@@ -458,7 +465,7 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
                       size="sm"
                       className="p-1 h-8 flex flex-col items-center"
                       onClick={() => {
-                        setMessage(prev => prev + item.emoji);
+                        insertEmoji(item.emoji); // Use insertEmoji to append
                         setShowEmojis(false);
                       }}
                     >

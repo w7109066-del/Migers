@@ -18,6 +18,16 @@ import {
 } from "lucide-react";
 import { gifts } from "@/animations/gifts";
 
+interface CustomEmoji {
+  id: string;
+  name: string;
+  emojiCode: string;
+  fileUrl: string;
+  fileType: string;
+  category: string;
+  isActive: boolean;
+}
+
 interface DirectMessage {
   id: string;
   content: string;
@@ -58,7 +68,10 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   const [showEmojis, setShowEmojis] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,10 +81,48 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
     scrollToBottom();
   }, [messages]);
 
+  const loadMessages = async () => {
+    if (!recipient?.id || !user?.id) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/messages/direct/${recipient.id}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(Array.isArray(data) ? data : []);
+      } else {
+        console.error('Failed to load messages');
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      setMessages([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadCustomEmojis = async () => {
+    try {
+      const response = await fetch('/api/emojis/custom', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const emojis = await response.json();
+        setCustomEmojis(emojis);
+      }
+    } catch (error) {
+      console.error('Failed to load custom emojis:', error);
+    }
+  };
+
   useEffect(() => {
-    // Load existing direct messages
-    loadDirectMessages();
-  }, [recipient.id]);
+    loadMessages();
+    loadCustomEmojis();
+  }, [recipient?.id, user?.id]);
 
   useEffect(() => {
     // Listen for new direct messages
@@ -98,25 +149,6 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
       window.removeEventListener('newDirectMessage', handleNewDirectMessage as EventListener);
     };
   }, [recipient.id, user?.id]);
-
-  const loadDirectMessages = async () => {
-    try {
-      console.log(`Loading direct messages with user: ${recipient.id}`);
-      const response = await fetch(`/api/messages/direct/${recipient.id}`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const directMessages = await response.json();
-        console.log(`Loaded ${directMessages.length} direct messages`);
-        setMessages(directMessages);
-      } else {
-        console.error('Failed to load direct messages:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('Failed to load direct messages:', error);
-    }
-  };
 
   const handleSendMessage = async () => {
     if ((!newMessage || !newMessage.trim()) && !selectedMedia) {
@@ -649,6 +681,16 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
     e.target.files?.[0] && handleMediaSelect(e.target.files[0])
   }
 
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    setShowEmojis(false); // Close emoji picker after selection
+  };
+
+  const handleCustomEmojiSelect = (emoji: CustomEmoji) => {
+    setNewMessage(prev => prev + emoji.emojiCode); // Assuming emojiCode is the actual emoji or a placeholder
+    setShowEmojis(false); // Close emoji picker after selection
+  };
+
   return (
     <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
       {/* Chat Header */}
@@ -838,6 +880,30 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                 </div>
               </div>
 
+              {/* Custom Emojis Section */}
+              {customEmojis.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="text-xs font-semibold text-gray-600 mb-2">Custom Emojis</h4>
+                  <div className="grid grid-cols-8 gap-1">
+                    {customEmojis.map((item) => (
+                      <Button
+                        key={item.id}
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-8 flex flex-col items-center"
+                        onClick={() => handleCustomEmojiSelect(item)}
+                      >
+                        {item.fileType === 'image/gif' ? (
+                          <img src={item.fileUrl} alt={item.name} className="w-5 h-5"/>
+                        ) : (
+                          <span className="text-sm">{item.emojiCode}</span>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Regular Emojis Section */}
               <div>
                 <h4 className="text-xs font-semibold text-gray-600 mb-2">Regular Emojis</h4>
@@ -848,10 +914,7 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                       variant="ghost"
                       size="sm"
                       className="p-1 h-8 flex flex-col items-center"
-                      onClick={() => {
-                        setNewMessage(prev => prev + item.emoji);
-                        setShowEmojis(false);
-                      }}
+                      onClick={() => handleEmojiSelect(item.emoji)}
                     >
                       <span className="text-sm">{item.emoji}</span>
                     </Button>

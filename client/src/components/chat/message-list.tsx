@@ -33,20 +33,27 @@ interface MessageListProps {
   currentUserId?: string;
 }
 
+interface CustomEmoji {
+  id: string;
+  name: string;
+  emojiCode: string;
+  fileUrl: string;
+  fileType: string;
+  category: string;
+  isActive: boolean;
+}
+
 export function MessageList({ messages, onUserClick, roomName, isAdmin, currentUserId }: MessageListProps) {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hiddenGiftMessages, setHiddenGiftMessages] = useState<Set<string>>(new Set());
-  const [customEmojis, setCustomEmojis] = useState<any[]>([]);
+  const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    loadCustomEmojis();
-  }, []);
-
+  // Load custom emojis for rendering
   const loadCustomEmojis = async () => {
     try {
       const response = await fetch('/api/emojis/custom', {
@@ -63,6 +70,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
       console.error('Error loading custom emojis:', error);
     }
   };
+
+  useEffect(() => {
+    loadCustomEmojis();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -600,21 +611,35 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
     }
   };
 
-  const renderMessageContent = (message: Message) => {
-    if (message.content.startsWith('/me ')) {
-      return message.content.substring(4); // Remove '/me ' prefix
-    }
-    if (message.content.includes('🎁 sent')) {
-      return (
-        <div className="inline-block p-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-lg border border-orange-200 ml-1">
-          <span className="text-sm font-medium text-orange-700">
-            {message.content}
-          </span>
-        </div>
+  const renderMessageContent = (content: string) => {
+    if (!content) return content;
+
+    // Process custom emojis first
+    let processedContent = content;
+    customEmojis.forEach(emoji => {
+      // Ensure emoji.emojiCode is treated literally, escaping special regex characters
+      const escapedEmojiCode = emoji.emojiCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedEmojiCode, 'g');
+      processedContent = processedContent.replace(
+        regex,
+        `<img src="${emoji.fileUrl}" alt="${emoji.name}" class="inline-block w-6 h-6 object-contain align-middle" title="${emoji.name}" />`
       );
+    });
+
+    // Then process other message types like /me or gifts
+    if (processedContent.startsWith('/me ')) {
+      return `<span class="italic text-purple-700 dark:text-purple-400">${processedContent.substring(4)}</span>`;
     }
-    return message.content;
+    if (processedContent.includes('🎁 sent')) {
+      return `
+        <div class="inline-block p-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-lg border border-orange-200 ml-1">
+          <span class="text-sm font-medium text-orange-700">${processedContent}</span>
+        </div>
+      `;
+    }
+    return processedContent;
   };
+
 
   const renderGift = (giftData: any) => {
     // Check if this is a built-in emoji animation first
@@ -639,26 +664,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
     return null;
   };
 
-  const renderMessageWithCustomEmojis = (content: string) => {
-    if (!content) return content;
-
-    // Replace custom emoji codes with images
-    let processedContent = content;
-    customEmojis.forEach(emoji => {
-      const regex = new RegExp(emoji.emojiCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-      processedContent = processedContent.replace(
-        regex,
-        `<img src="${emoji.fileUrl}" alt="${emoji.name}" class="inline-block w-6 h-6 object-contain" title="${emoji.name}" />`
-      );
-    });
-
-    return processedContent;
-  };
-
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
-        const isOwnMessage = message.senderId === user?.id;
+        const isCurrentUser = message.senderId === user?.id;
         const isSystemMessage = message.senderId === 'system';
         const isGift = isGiftMessage(message.content);
 
@@ -800,7 +809,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                           className={cn(
                             "text-sm font-medium cursor-pointer hover:underline",
                             // Check if this is own message first
-                            isOwnMessage ? "text-green-700" : // Own message color (dark green)
+                            isCurrentUser ? "text-green-700" : // Own message color (dark green)
                             // Admin color (orange tua) visible in all rooms
                             (() => {
                               const currentRoomId = window.location.pathname.split('/').pop();
@@ -834,7 +843,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         <div
                           className="text-sm break-words"
                           dangerouslySetInnerHTML={{
-                            __html: renderMessageWithCustomEmojis(message.content)
+                            __html: renderMessageContent(message.content)
                           }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
