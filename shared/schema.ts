@@ -383,13 +383,15 @@ export const insertPostSchema = createInsertSchema(posts).pick({
   mediaType: true,
   mediaUrl: true,
 });
-
 export const insertCommentSchema = createInsertSchema(postComments).pick({
   postId: true,
   authorId: true,
   content: true,
   parentCommentId: true,
 });
+
+// Re-export posts table and related tables for use in routes
+export { posts, postLikes, postComments };
 
 // Schema for followers
 export const insertFollowerSchema = createInsertSchema(followers).pick({

@@ -10,7 +10,7 @@ import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
 import { eq, desc, and, or, sql, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
-import { directMessages, users, messages, friendships, notifications, gifts } from "@shared/schema"; // Import gifts schema
+import { directMessages, users, messages, friendships, notifications, gifts, posts, postLikes, postComments } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
@@ -683,6 +683,11 @@ export function registerRoutes(app: Express): Server {
   // Create a new feed post
   app.post('/api/feed', requireAuth, upload.single('media'), async (req, res) => {
     try {
+      console.log('=== POST CREATION DEBUG ===');
+      console.log('Request body:', req.body);
+      console.log('Request file:', req.file ? { filename: req.file.filename, mimetype: req.file.mimetype, size: req.file.size } : 'No file');
+      console.log('User ID:', req.user!.id);
+
       const { content } = req.body;
       const authorId = req.user!.id;
 
@@ -693,10 +698,13 @@ export function registerRoutes(app: Express): Server {
         mediaUrl = `/uploads/${req.file.filename}`;
         mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
 
+        console.log('Media processed:', { mediaUrl, mediaType });
+
         // Check video duration if it's a video file
         if (mediaType === 'video') {
           try {
             const duration = await getVideoDuration(req.file.path);
+            console.log('Video duration:', duration);
             if (duration > 16) {
               // Delete the uploaded file
               fs.unlinkSync(req.file.path);
@@ -722,15 +730,23 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Post must have content or media" });
       }
 
+      console.log('Creating post with data:', {
+        content: content?.trim() || null,
+        authorId,
+        mediaUrl,
+        mediaType
+      });
+
       const [newPost] = await db.insert(posts).values({
         content: content?.trim() || null,
         authorId,
         mediaUrl,
         mediaType,
-        createdAt: new Date(),
         likesCount: 0,
         commentsCount: 0
       }).returning();
+
+      console.log('Post created successfully:', newPost.id);
 
       // Fetch the complete post with author info
       const [postWithAuthor] = await db
@@ -746,24 +762,37 @@ export function registerRoutes(app: Express): Server {
             id: users.id,
             username: users.username,
             profilePhotoUrl: users.profilePhotoUrl,
+            level: users.level,
+            isAdmin: users.isAdmin
           },
         })
         .from(posts)
         .innerJoin(users, eq(posts.authorId, users.id))
         .where(eq(posts.id, newPost.id));
 
+      console.log('Post with author fetched:', postWithAuthor);
+
       res.status(201).json(postWithAuthor);
     } catch (error) {
-      console.error('Error creating post:', error);
+      console.error('=== POST CREATION ERROR ===');
+      console.error('Error details:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
       // Clean up uploaded file if an error occurs after upload but before saving to DB
       if (req.file && fs.existsSync(req.file.path)) {
         try {
           fs.unlinkSync(req.file.path);
+          console.log('Cleaned up uploaded file after error');
         } catch (unlinkError) {
           console.error('Error cleaning up uploaded file after post creation error:', unlinkError);
         }
       }
-      res.status(500).json({ message: 'Failed to create post' });
+      
+      res.status(500).json({ 
+        message: 'Failed to create post',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      });
     }
   });
 
