@@ -1261,24 +1261,34 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserMentorStatus(userId: string, isMentor: boolean, specialty?: string): Promise<User | undefined> {
-    try {
-      const updateData: any = {
-        isMentor,
-        mentorSpecialty: specialty || null
-      };
-
-      const [updatedUser] = await this.db
-        .update(users)
-        .set(updateData)
-        .where(eq(users.id, userId))
-        .returning();
-
-      return updatedUser;
-    } catch (error) {
-      console.error('Error updating mentor status:', error);
-      return undefined;
+  async updateUserMentorStatus(userId: string, isMentor: boolean, specialty?: string): Promise<any> {
+    const updateData: any = { isMentor };
+    if (specialty) {
+      updateData.mentorSpecialty = specialty;
     }
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
+  }
+
+  async updateUserMerchantStatus(userId: string, isMerchant: boolean): Promise<any> {
+    const updateData: any = { 
+      isMerchant,
+      merchantRegisteredAt: isMerchant ? new Date() : null
+    };
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
   }
 
   async getMentors(): Promise<User[]> {
@@ -1660,7 +1670,7 @@ export class DatabaseStorage implements IStorage {
     await this.db.delete(customEmojis).where(eq(customEmojis.id, emojiId));
   }
 
-  
+
 }
 
 export const storage = new DatabaseStorage();
