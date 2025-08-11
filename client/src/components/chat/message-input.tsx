@@ -392,7 +392,7 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
           giftName: gift.name,
           recipientName: 'everyone in the room',
           emoji: gift.emoji,
-          value: gift.value,
+          value: 15, // Default value for custom emojis
           fileUrl: gift.fileUrl,
           isCustom: true
         })}`);
@@ -441,9 +441,9 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
                         title={item.name}
                       >
                         {item.fileType?.includes('gif') || item.fileUrl?.includes('.gif') ? (
-                          <img 
-                            src={item.fileUrl} 
-                            alt={item.name} 
+                          <img
+                            src={item.fileUrl}
+                            alt={item.name}
                             className="w-6 h-6 object-contain"
                             onError={(e) => {
                               console.error('Failed to load custom emoji:', item.fileUrl);
@@ -452,9 +452,9 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
                             }}
                           />
                         ) : (
-                          <img 
-                            src={item.fileUrl} 
-                            alt={item.name} 
+                          <img
+                            src={item.fileUrl}
+                            alt={item.name}
                             className="w-6 h-6 object-contain"
                             onError={(e) => {
                               console.error('Failed to load custom emoji:', item.fileUrl);
@@ -552,9 +552,9 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
                         })}
                       >
                         <div className="w-8 h-8 mb-1 flex items-center justify-center">
-                          <img 
-                            src={emoji.fileUrl} 
-                            alt={emoji.name} 
+                          <img
+                            src={emoji.fileUrl}
+                            alt={emoji.name}
                             className="w-8 h-8 object-contain"
                             onError={(e) => {
                               console.error('Failed to load custom emoji gift:', emoji.fileUrl);

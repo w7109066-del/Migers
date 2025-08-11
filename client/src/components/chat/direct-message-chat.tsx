@@ -40,6 +40,8 @@ interface DirectMessage {
     emoji: string;
     value: number;
     lottie: any;
+    fileUrl?: string; // Add fileUrl for custom gifts
+    isCustom?: boolean; // Indicate if it's a custom gift
   };
   sender: {
     id: string;
@@ -853,12 +855,19 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                       >
                         <div className="w-8 h-8 mb-1 flex items-center justify-center">
                           <img 
-                            src={emoji.fileUrl} 
+                            src={emoji.fileUrl.startsWith('/') ? emoji.fileUrl : `/${emoji.fileUrl}`} 
                             alt={emoji.name} 
                             className="w-8 h-8 object-contain"
                             onError={(e) => {
                               console.error('Failed to load custom emoji gift:', emoji.fileUrl);
-                              e.currentTarget.style.display = 'none';
+                              // Try alternative URL
+                              const currentSrc = e.currentTarget.src;
+                              if (!currentSrc.includes('/uploads/')) {
+                                e.currentTarget.src = `/uploads/${emoji.fileUrl.split('/').pop()}`;
+                              } else {
+                                // Fallback to emoji code as text
+                                e.currentTarget.outerHTML = `<span class="text-xs">${emoji.emojiCode}</span>`;
+                              }
                             }}
                           />
                         </div>
@@ -953,13 +962,19 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                         title={item.name}
                       >
                         <img 
-                          src={item.fileUrl} 
+                          src={item.fileUrl.startsWith('/') ? item.fileUrl : `/${item.fileUrl}`} 
                           alt={item.name} 
                           className="w-6 h-6 object-contain"
                           onError={(e) => {
                             console.error('Failed to load custom emoji:', item.fileUrl);
-                            // Fallback to emoji code as text
-                            e.currentTarget.outerHTML = `<span class="text-xs">${item.emojiCode}</span>`;
+                            // Try alternative URL
+                            const currentSrc = e.currentTarget.src;
+                            if (!currentSrc.includes('/uploads/')) {
+                              e.currentTarget.src = `/uploads/${item.fileUrl.split('/').pop()}`;
+                            } else {
+                              // Fallback to emoji code as text
+                              e.currentTarget.outerHTML = `<span class="text-xs">${item.emojiCode}</span>`;
+                            }
                           }}
                         />
                       </Button>

@@ -2264,8 +2264,15 @@ export function registerRoutes(app: Express): Server {
       console.log('API: Fetching custom emojis...');
       const emojis = await storage.getActiveCustomEmojis();
       console.log('API: Found custom emojis:', emojis.length);
-      console.log('API: Custom emojis data:', emojis);
-      res.json(emojis);
+      
+      // Ensure file URLs are properly formatted
+      const formattedEmojis = emojis.map(emoji => ({
+        ...emoji,
+        fileUrl: emoji.fileUrl.startsWith('/') ? emoji.fileUrl : `/${emoji.fileUrl}`
+      }));
+      
+      console.log('API: Formatted custom emojis data:', formattedEmojis);
+      res.json(formattedEmojis);
     } catch (error) {
       console.error('API: Error fetching custom emojis:', error);
       res.status(500).json({ error: 'Failed to fetch custom emojis', details: error.message });
