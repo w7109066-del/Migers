@@ -1276,19 +1276,26 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
-  async updateUserMerchantStatus(userId: string, isMerchant: boolean): Promise<any> {
-    const updateData: any = { 
-      isMerchant,
-      merchantRegisteredAt: isMerchant ? new Date() : null
-    };
-
-    const [updatedUser] = await db
+  async updateUserMerchantStatus(userId: string, isMerchant: boolean): Promise<User> {
+    const [updatedUser] = await this.db
       .update(users)
-      .set(updateData)
+      .set({
+        isMerchant,
+        merchantRegisteredAt: isMerchant ? new Date().toISOString() : null
+      })
       .where(eq(users.id, userId))
       .returning();
 
     return updatedUser;
+  }
+
+  async getMerchantCount(): Promise<number> {
+    const result = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.isMerchant, true));
+
+    return result[0]?.count || 0;
   }
 
   async getMentors(): Promise<User[]> {

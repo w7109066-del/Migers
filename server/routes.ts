@@ -1145,6 +1145,20 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/merchants/count', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    try {
+      const count = await storage.getMerchantCount();
+      res.json({ count });
+    } catch (error) {
+      console.error('Error fetching merchant count:', error);
+      res.status(500).json({ message: 'Failed to fetch merchant count' });
+    }
+  });
+
   // Admin routes
   app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {

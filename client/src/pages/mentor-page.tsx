@@ -34,10 +34,27 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
   const [specialty, setSpecialty] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isRegisteringMerchant, setIsRegisteringMerchant] = useState(false);
+  const [merchantCount, setMerchantCount] = useState(0);
 
   useEffect(() => {
     loadMentors();
+    loadMerchantCount();
   }, []);
+
+  const loadMerchantCount = async () => {
+    try {
+      const response = await fetch('/api/merchants/count', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMerchantCount(data.count);
+      }
+    } catch (error) {
+      console.error('Failed to load merchant count:', error);
+    }
+  };
 
   const loadMentors = async () => {
     try {
@@ -222,9 +239,9 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {user.fansCount || 0}
+                      {merchantCount}
                     </div>
-                    <div className="text-sm text-red-700 dark:text-red-300">Students</div>
+                    <div className="text-sm text-red-700 dark:text-red-300">Total Merchants</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400">
