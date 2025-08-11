@@ -1070,7 +1070,12 @@ function HomePageContent() {
                       />
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <span className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
+                          <span className={cn(
+                            "font-semibold",
+                            post.author?.isAdmin || (post.author?.level && post.author.level >= 5)
+                              ? "text-orange-800"
+                              : (isDarkMode ? "text-gray-200" : "text-gray-800")
+                          )}>
                             {post.author?.username || 'Unknown'}
                           </span>
                           {post.author?.level && (
@@ -1090,8 +1095,8 @@ function HomePageContent() {
                               </Badge>
                             </div>
                           )}
-                          {post.author?.isAdmin && (
-                            <Badge variant="default" className="bg-orange-800 text-white text-xs font-semibold ml-1">
+                          {(post.author?.isAdmin || (post.author?.level && post.author.level >= 5)) && (
+                            <Badge variant="destructive" className="bg-red-600 text-white text-xs font-semibold">
                               Admin
                             </Badge>
                           )}
