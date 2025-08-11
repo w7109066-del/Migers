@@ -1159,6 +1159,25 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/merchants/list', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    // Check if user is mentor (has access to this feature)
+    if (!req.user?.isMentor) {
+      return res.status(403).json({ message: 'Access denied. Mentor status required.' });
+    }
+
+    try {
+      const merchants = await storage.getAllMerchants();
+      res.json(merchants);
+    } catch (error) {
+      console.error('Error fetching merchants list:', error);
+      res.status(500).json({ message: 'Failed to fetch merchants list' });
+    }
+  });
+
   app.post('/api/admin/add-merchant', async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });

@@ -37,10 +37,13 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
   const [merchantCount, setMerchantCount] = useState(0);
   const [merchantUsername, setMerchantUsername] = useState('');
   const [isAddingMerchant, setIsAddingMerchant] = useState(false);
+  const [merchantList, setMerchantList] = useState<Mentor[]>([]);
+  const [isLoadingMerchants, setIsLoadingMerchants] = useState(false);
 
   useEffect(() => {
     loadMentors();
     loadMerchantCount();
+    loadMerchantList();
   }, []);
 
   const loadMerchantCount = async () => {
@@ -55,6 +58,24 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
       }
     } catch (error) {
       console.error('Failed to load merchant count:', error);
+    }
+  };
+
+  const loadMerchantList = async () => {
+    setIsLoadingMerchants(true);
+    try {
+      const response = await fetch('/api/merchants/list', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const merchantData = await response.json();
+        setMerchantList(merchantData);
+      }
+    } catch (error) {
+      console.error('Failed to load merchant list:', error);
+    } finally {
+      setIsLoadingMerchants(false);
     }
   };
 
@@ -153,6 +174,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
         alert(`Successfully added ${merchantUsername} as merchant!`);
         setMerchantUsername('');
         await loadMerchantCount(); // Refresh merchant count
+        await loadMerchantList(); // Refresh merchant list
       } else {
         const errorData = await response.json();
         alert(errorData.message || 'Failed to add merchant');
@@ -195,6 +217,110 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
       year: 'numeric'
     });
   };
+
+  const getMerchantExpiryDate = (lastRechargeDate?: string) => {
+    if (!lastRechargeDate) return 'Tidak ada recharge';
+    const lastRecharge = new Date(lastRechargeDate);
+    const expiry = new Date(lastRecharge);
+    expiry.setMonth(expiry.getMonth() + 1);
+    return formatDate(expiry.toISOString());
+  };
+
+  const isMerchantExpired = (lastRechargeDate?: string) => {
+    if (!lastRechargeDate) return true;
+    const lastRecharge = new Date(lastRechargeDate);
+    const expiry = new Date(lastRecharge);
+    expiry.setMonth(expiry.getMonth() + 1);
+    return new Date() > expiry;
+  };
+
+  const MerchantListCard = () => (
+    <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+      <CardHeader>
+        <CardTitle className="text-purple-800 dark:text-purple-200 flex items-center space-x-2">
+          <Users className="w-5 h-5 text-purple-600" />
+          <span>Daftar Merchant ({merchantCount})</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoadingMerchants ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-purple-600 dark:text-purple-400">Loading merchants...</p>
+          </div>
+        ) : merchantList.length === 0 ? (
+          <div className="text-center py-8">
+            <ShoppingBag className="w-12 h-12 text-purple-300 mx-auto mb-4" />
+            <p className="text-purple-600 dark:text-purple-400">Belum ada merchant terdaftar</p>
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {merchantList.map((merchant) => (
+              <div
+                key={merchant.id}
+                className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start space-x-4">
+                  <UserAvatar
+                    user={merchant}
+                    size="md"
+                    showStatus={true}
+                  />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-purple-800 dark:text-purple-200">
+                        {merchant.username}
+                      </h4>
+                      <Badge className={getMerchantStatusColor(merchant)}>
+                        {isMerchantExpired(merchant.lastRechargeAt) ? 'Expired' : 'Active'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300 mb-1">
+                          <Calendar className="w-3 h-3" />
+                          <span className="font-medium">Tanggal Daftar:</span>
+                        </div>
+                        <p className="text-purple-600 dark:text-purple-400 ml-5">
+                          {formatDate(merchant.merchantRegisteredAt)}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300 mb-1">
+                          <CreditCard className="w-3 h-3" />
+                          <span className="font-medium">Tanggal Berakhir:</span>
+                        </div>
+                        <p className={cn(
+                          "ml-5",
+                          isMerchantExpired(merchant.lastRechargeAt) 
+                            ? "text-red-600 dark:text-red-400" 
+                            : "text-purple-600 dark:text-purple-400"
+                        )}>
+                          {getMerchantExpiryDate(merchant.lastRechargeAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-purple-100 dark:border-purple-800">
+                      <div className="flex items-center space-x-4 text-xs text-purple-600 dark:text-purple-400">
+                        <span>Level {merchant.level}</span>
+                        <span>{merchant.fansCount} fans</span>
+                      </div>
+                      <div className="text-xs text-purple-500 dark:text-purple-400">
+                        {merchant.lastRechargeAt ? `Last recharge: ${formatDate(merchant.lastRechargeAt)}` : 'No recharge yet'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   if (!open) return null;
 
@@ -373,6 +499,9 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Merchants List Card */}
+            <MerchantListCard />
 
             
           </>

@@ -30,7 +30,7 @@ import {
   type InsertCustomEmoji
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, asc, isNull, inArray } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, isNull, inArray, count } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -1291,11 +1291,39 @@ export class DatabaseStorage implements IStorage {
 
   async getMerchantCount(): Promise<number> {
     const result = await this.db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: count() })
       .from(users)
       .where(eq(users.isMerchant, true));
 
     return result[0]?.count || 0;
+  }
+
+  async getAllMerchants(): Promise<Array<{
+    id: string;
+    username: string;
+    profilePhotoUrl?: string;
+    merchantRegisteredAt?: string;
+    lastRechargeAt?: string;
+    level: number;
+    fansCount: number;
+    isOnline: boolean;
+  }>> {
+    const merchantList = await this.db
+      .select({
+        id: users.id,
+        username: users.username,
+        profilePhotoUrl: users.profilePhotoUrl,
+        merchantRegisteredAt: users.merchantRegisteredAt,
+        lastRechargeAt: users.lastRechargeAt,
+        level: users.level,
+        fansCount: users.fansCount,
+        isOnline: users.isOnline,
+      })
+      .from(users)
+      .where(eq(users.isMerchant, true))
+      .orderBy(desc(users.merchantRegisteredAt));
+
+    return merchantList;
   }
 
   async getMentors(): Promise<User[]> {
