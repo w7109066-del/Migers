@@ -332,26 +332,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                   </div>
 
                   {/* Current User Merchant Status */}
-                  {!user.isMerchant ? (
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-purple-100 dark:bg-purple-800 rounded-full mx-auto mb-4 flex items-center justify-center">
-                        <ShoppingBag className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <h3 className="text-xl font-bold text-purple-800 dark:text-purple-200 mb-2">
-                        Become a Merchant
-                      </h3>
-                      <p className="text-purple-600 dark:text-purple-300 mb-4">
-                        Register as a merchant to sell products and services through our platform!
-                      </p>
-                      <Button
-                        onClick={handleRegisterAsMerchant}
-                        disabled={isRegisteringMerchant}
-                        className="bg-purple-600 hover:bg-purple-700 text-white"
-                      >
-                        {isRegisteringMerchant ? 'Registering...' : 'Register as Merchant'}
-                      </Button>
-                    </div>
-                  ) : (
+                  {user.isMerchant && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200">
