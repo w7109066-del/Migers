@@ -35,6 +35,8 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isRegisteringMerchant, setIsRegisteringMerchant] = useState(false);
   const [merchantCount, setMerchantCount] = useState(0);
+  const [merchantUsername, setMerchantUsername] = useState('');
+  const [isAddingMerchant, setIsAddingMerchant] = useState(false);
 
   useEffect(() => {
     loadMentors();
@@ -127,6 +129,39 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
       alert('Failed to register as merchant');
     } finally {
       setIsRegisteringMerchant(false);
+    }
+  };
+
+  const handleAddMerchant = async () => {
+    if (!merchantUsername.trim()) {
+      alert('Please enter a username');
+      return;
+    }
+
+    setIsAddingMerchant(true);
+    try {
+      const response = await fetch('/api/admin/add-merchant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username: merchantUsername.trim() }),
+      });
+
+      if (response.ok) {
+        alert(`Successfully added ${merchantUsername} as merchant!`);
+        setMerchantUsername('');
+        await loadMerchantCount(); // Refresh merchant count
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to add merchant');
+      }
+    } catch (error) {
+      console.error('Failed to add merchant:', error);
+      alert('Failed to add merchant');
+    } finally {
+      setIsAddingMerchant(false);
     }
   };
 
@@ -264,7 +299,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
               </CardContent>
             </Card>
 
-            {/* Merchant Registration Card */}
+            {/* Merchant Management Card */}
             <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
               <CardHeader>
                 <CardTitle className="text-purple-800 dark:text-purple-200 flex items-center space-x-2">
@@ -273,63 +308,88 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {!user.isMerchant ? (
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-purple-100 dark:bg-purple-800 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <ShoppingBag className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-purple-800 dark:text-purple-200 mb-2">
-                      Become a Merchant
+                <div className="space-y-6">
+                  {/* Add Merchant Section */}
+                  <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200">
+                    <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200 mb-4">
+                      Add New Merchant
                     </h3>
-                    <p className="text-purple-600 dark:text-purple-300 mb-4">
-                      Register as a merchant to sell products and services through our platform!
-                    </p>
-                    <Button
-                      onClick={handleRegisterAsMerchant}
-                      disabled={isRegisteringMerchant}
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      {isRegisteringMerchant ? 'Registering...' : 'Register as Merchant'}
-                    </Button>
+                    <div className="flex space-x-3">
+                      <Input
+                        placeholder="Enter username to add as merchant"
+                        value={merchantUsername}
+                        onChange={(e) => setMerchantUsername(e.target.value)}
+                        className="flex-1 border-purple-300 focus:border-purple-500"
+                      />
+                      <Button
+                        onClick={handleAddMerchant}
+                        disabled={isAddingMerchant || !merchantUsername.trim()}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6"
+                      >
+                        {isAddingMerchant ? 'Adding...' : 'Add Merchant'}
+                      </Button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200">
-                        Merchant Status
+
+                  {/* Current User Merchant Status */}
+                  {!user.isMerchant ? (
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-purple-100 dark:bg-purple-800 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <ShoppingBag className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-purple-800 dark:text-purple-200 mb-2">
+                        Become a Merchant
                       </h3>
-                      <Badge className={getMerchantStatusColor(user as Mentor)}>
-                        Active Merchant
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300">
-                          <Calendar className="w-4 h-4" />
-                          <span className="text-sm font-medium">Registered:</span>
-                        </div>
-                        <p className="text-sm text-purple-600 dark:text-purple-400">
-                          {formatDate(user.merchantRegisteredAt)}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300">
-                          <CreditCard className="w-4 h-4" />
-                          <span className="text-sm font-medium">Last Recharge:</span>
-                        </div>
-                        <p className="text-sm text-purple-600 dark:text-purple-400">
-                          {formatDate(user.lastRechargeAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-200">
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        <strong>Note:</strong> Merchant status will fade if no recharge is made within 1 month. 
-                        Keep your merchant status active by making regular transactions.
+                      <p className="text-purple-600 dark:text-purple-300 mb-4">
+                        Register as a merchant to sell products and services through our platform!
                       </p>
+                      <Button
+                        onClick={handleRegisterAsMerchant}
+                        disabled={isRegisteringMerchant}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        {isRegisteringMerchant ? 'Registering...' : 'Register as Merchant'}
+                      </Button>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200">
+                          Your Merchant Status
+                        </h3>
+                        <Badge className={getMerchantStatusColor(user as Mentor)}>
+                          Active Merchant
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300">
+                            <Calendar className="w-4 h-4" />
+                            <span className="text-sm font-medium">Registered:</span>
+                          </div>
+                          <p className="text-sm text-purple-600 dark:text-purple-400">
+                            {formatDate(user.merchantRegisteredAt)}
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300">
+                            <CreditCard className="w-4 h-4" />
+                            <span className="text-sm font-medium">Last Recharge:</span>
+                          </div>
+                          <p className="text-sm text-purple-600 dark:text-purple-400">
+                            {formatDate(user.lastRechargeAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-200">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          <strong>Note:</strong> Merchant status will fade if no recharge is made within 1 month. 
+                          Keep your merchant status active by making regular transactions.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 

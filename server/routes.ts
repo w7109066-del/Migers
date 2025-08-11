@@ -1159,6 +1159,52 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/admin/add-merchant', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    // Check if user is mentor (has access to this feature)
+    if (!req.user?.isMentor) {
+      return res.status(403).json({ message: 'Access denied. Mentor status required.' });
+    }
+
+    try {
+      const { username } = req.body;
+
+      if (!username || !username.trim()) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+
+      // Find user by username
+      const targetUser = await storage.getUserByUsername(username.trim());
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if user is already a merchant
+      if (targetUser.isMerchant) {
+        return res.status(400).json({ message: 'User is already a merchant' });
+      }
+
+      // Add user as merchant
+      const updatedUser = await storage.updateUserMerchantStatus(targetUser.id, true);
+      res.json({
+        success: true,
+        message: `Successfully added ${username} as merchant`,
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          isMerchant: updatedUser.isMerchant,
+          merchantRegisteredAt: updatedUser.merchantRegisteredAt
+        }
+      });
+    } catch (error) {
+      console.error('Error adding merchant:', error);
+      res.status(500).json({ message: 'Failed to add merchant' });
+    }
+  });
+
   // Admin routes
   app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {
