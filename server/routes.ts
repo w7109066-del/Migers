@@ -2261,11 +2261,14 @@ export function registerRoutes(app: Express): Server {
   // Custom Emoji endpoints
   app.get('/api/emojis/custom', async (req, res) => {
     try {
+      console.log('API: Fetching custom emojis...');
       const emojis = await storage.getActiveCustomEmojis();
+      console.log('API: Found custom emojis:', emojis.length);
+      console.log('API: Custom emojis data:', emojis);
       res.json(emojis);
     } catch (error) {
-      console.error('Error fetching custom emojis:', error);
-      res.status(500).json({ error: 'Failed to fetch custom emojis' });
+      console.error('API: Error fetching custom emojis:', error);
+      res.status(500).json({ error: 'Failed to fetch custom emojis', details: error.message });
     }
   });
 

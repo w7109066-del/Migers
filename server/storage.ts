@@ -1628,7 +1628,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActiveCustomEmojis(): Promise<CustomEmoji[]> {
-    return await this.db.select().from(customEmojis).where(eq(customEmojis.isActive, true));
+    try {
+      console.log('Storage: Getting active custom emojis...');
+      const emojis = await this.db.select().from(customEmojis).where(eq(customEmojis.isActive, true));
+      console.log('Storage: Found', emojis.length, 'active custom emojis');
+      return emojis;
+    } catch (error) {
+      console.error('Storage: Error getting active custom emojis:', error);
+      return [];
+    }
   }
 
   async createCustomEmoji(emojiData: InsertCustomEmoji): Promise<CustomEmoji> {

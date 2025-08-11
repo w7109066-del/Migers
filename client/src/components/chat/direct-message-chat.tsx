@@ -108,19 +108,21 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
   // Function to fetch custom emojis
   const fetchCustomEmojis = async () => {
     try {
+      console.log('DM: Fetching custom emojis...');
       const response = await fetch('/api/emojis/custom', { 
         credentials: 'include' 
       });
       if (response.ok) {
         const data = await response.json();
         console.log('DM: Fetched custom emojis:', data);
+        console.log('DM: Number of custom emojis:', data.length);
         setCustomEmojis(data);
       } else {
-        console.error('Failed to fetch custom emojis:', response.status);
+        console.error('DM: Failed to fetch custom emojis, status:', response.status);
         setCustomEmojis([]);
       }
     } catch (error) {
-      console.error('Error fetching custom emojis:', error);
+      console.error('DM: Error fetching custom emojis:', error);
       setCustomEmojis([]);
     }
   };
@@ -898,12 +900,18 @@ export function DirectMessageChat({ recipient, onBack }: DirectMessageChatProps)
                         size="sm"
                         className="p-1 h-8 flex flex-col items-center"
                         onClick={() => handleCustomEmojiSelect(item)}
+                        title={item.name}
                       >
-                        {item.fileType === 'image/gif' ? (
-                          <img src={item.fileUrl} alt={item.name} className="w-5 h-5"/>
-                        ) : (
-                          <span className="text-sm">{item.emojiCode}</span>
-                        )}
+                        <img 
+                          src={item.fileUrl} 
+                          alt={item.name} 
+                          className="w-6 h-6 object-contain"
+                          onError={(e) => {
+                            console.error('Failed to load custom emoji:', item.fileUrl);
+                            // Fallback to emoji code as text
+                            e.currentTarget.outerHTML = `<span class="text-xs">${item.emojiCode}</span>`;
+                          }}
+                        />
                       </Button>
                     ))}
                   </div>

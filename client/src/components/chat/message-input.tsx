@@ -232,17 +232,20 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
   useEffect(() => {
     const fetchCustomEmojis = async () => {
       try {
+        console.log('MessageInput: Fetching custom emojis...');
         const response = await fetch('/api/emojis/custom', {
           credentials: 'include'
         });
         if (!response.ok) {
+          console.error('MessageInput: Failed to fetch custom emojis, status:', response.status);
           throw new Error('Failed to fetch custom emojis');
         }
         const data = await response.json();
-        console.log('Fetched custom emojis:', data);
+        console.log('MessageInput: Fetched custom emojis:', data);
+        console.log('MessageInput: Number of custom emojis:', data.length);
         setCustomEmojis(data);
       } catch (error) {
-        console.error('Error fetching custom emojis:', error);
+        console.error('MessageInput: Error fetching custom emojis:', error);
         setCustomEmojis([]);
       }
     };
@@ -418,15 +421,29 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
                         }}
                         title={item.name}
                       >
-                        <img 
-                          src={item.fileUrl} 
-                          alt={item.name} 
-                          className="w-6 h-6 object-contain"
-                          onError={(e) => {
-                            console.error('Failed to load emoji image:', item.fileUrl);
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
+                        {item.fileType?.includes('gif') || item.fileUrl?.includes('.gif') ? (
+                          <img 
+                            src={item.fileUrl} 
+                            alt={item.name} 
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                              console.error('Failed to load custom emoji:', item.fileUrl);
+                              // Fallback to emoji code as text
+                              e.currentTarget.outerHTML = `<span class="text-xs">${item.emojiCode}</span>`;
+                            }}
+                          />
+                        ) : (
+                          <img 
+                            src={item.fileUrl} 
+                            alt={item.name} 
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                              console.error('Failed to load custom emoji:', item.fileUrl);
+                              // Fallback to emoji code as text
+                              e.currentTarget.outerHTML = `<span class="text-xs">${item.emojiCode}</span>`;
+                            }}
+                          />
+                        )}
                       </Button>
                     ))}
                   </div>
