@@ -141,6 +141,7 @@ function HomePageContent() {
   const [showCommentEmojis, setShowCommentEmojis] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState<{url: string, type: string} | null>(null);
   const [isFullscreenMode, setIsFullscreenMode] = useState(false);
+  const [isSubmittingPost, setIsSubmittingPost] = useState(false);
 
   // Update local status when user data changes
   React.useEffect(() => {
@@ -521,6 +522,9 @@ function HomePageContent() {
   };
 
   const handleCreatePost = async () => {
+    // Prevent multiple simultaneous submissions
+    if (isSubmittingPost) return;
+
     // Check if user is authenticated
     if (!user) {
       console.error('User not authenticated');
@@ -533,10 +537,22 @@ function HomePageContent() {
       return;
     }
 
-    // Video duration validation is already handled in handleMediaSelect
-    // If selectedMedia is a video and its duration was > 16s, it would have been nullified.
+    // Set loading state
+    setIsSubmittingPost(true);
 
     try {
+      // Validate content length
+      if (postContent.trim().length > 2000) {
+        alert('Post content is too long. Maximum 2000 characters allowed.');
+        return;
+      }
+
+      // Validate media file size
+      if (selectedMedia && selectedMedia.size > 50 * 1024 * 1024) { // 50MB limit
+        alert('Media file is too large. Maximum 50MB allowed.');
+        return;
+      }
+
       const formData = new FormData();
 
       // Always append content, even if empty string for media-only posts
@@ -548,11 +564,17 @@ function HomePageContent() {
 
       console.log('Sending post with content:', postContent.trim());
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch('/api/feed', {
         method: 'POST',
         body: formData,
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const newPost = await response.json();
@@ -562,13 +584,29 @@ function HomePageContent() {
         setMediaPreview(null);
         console.log('Post created successfully');
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to create post');
-        console.error('Failed to create post:', errorData.message);
+        let errorMessage = 'Failed to create post';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = `Server error: ${response.status}`;
+        }
+        console.error('Failed to create post:', errorMessage);
+        alert(errorMessage);
       }
     } catch (error) {
-      console.error('Network error creating post:', error);
-      alert('Network error. Please check your connection and try again.');
+      console.error('Error creating post:', error);
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          alert('Post creation timed out. Please try again.');
+        } else {
+          alert('Network error. Please check your connection and try again.');
+        }
+      } else {
+        alert('An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      setIsSubmittingPost(false);
     }
   };
 
@@ -921,9 +959,12 @@ function HomePageContent() {
                         value={postContent}
                         onChange={(e) => setPostContent(e.target.value)}
                         className={cn("pr-20 border-0 focus:ring-2 focus:ring-primary", isDarkMode ? "focus:bg-gray-700 bg-gray-900" : "focus:bg-white bg-gray-100")}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && (postContent.trim() || selectedMedia)) {
-                            handleCreatePost();
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if ((postContent.trim() || selectedMedia) && !isSubmittingPost) {
+                              handleCreatePost();
+                            }
                           }
                         }}
                       />
@@ -932,9 +973,16 @@ function HomePageContent() {
                         size="sm"
                         className="absolute right-1 top-1 bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-full"
                         onClick={handleCreatePost}
-                        disabled={(!postContent.trim() && !selectedMedia) || !user}
+                        disabled={(!postContent.trim() && !selectedMedia) || !user || isSubmittingPost}
                       >
-                        Send
+                        {isSubmittingPost ? (
+                          <div className="flex items-center space-x-1">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                            <span>Posting...</span>
+                          </div>
+                        ) : (
+                          'Send'
+                        )}
                       </Button>
                     </div>
 
