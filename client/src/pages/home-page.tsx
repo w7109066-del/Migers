@@ -429,12 +429,32 @@ function HomePageContent() {
   };
 
   const handleMediaSelect = (file: File) => {
-    setSelectedMedia(file);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setMediaPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    // Video duration check for feed posts
+    if (file.type.startsWith('video/')) {
+      const video = document.createElement('video');
+      video.addEventListener('loadedmetadata', () => {
+        if (video.duration > 16) {
+          alert('Video duration must be 16 seconds or less for feed posts.');
+          setSelectedMedia(null);
+          setMediaPreview(null);
+        } else {
+          setSelectedMedia(file);
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setMediaPreview(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      video.src = URL.createObjectURL(file);
+    } else {
+      setSelectedMedia(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setMediaPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const removeMedia = () => {
@@ -513,6 +533,9 @@ function HomePageContent() {
       return;
     }
 
+    // Video duration validation is already handled in handleMediaSelect
+    // If selectedMedia is a video and its duration was > 16s, it would have been nullified.
+
     try {
       const formData = new FormData();
 
@@ -527,25 +550,21 @@ function HomePageContent() {
 
       const response = await fetch('/api/feed', {
         method: 'POST',
-        credentials: 'include',
         body: formData,
+        credentials: 'include'
       });
 
       if (response.ok) {
         const newPost = await response.json();
-        console.log('Post created successfully:', newPost);
-
-        // Clear form
+        setFeedPosts(prev => [newPost, ...prev]);
         setPostContent('');
         setSelectedMedia(null);
         setMediaPreview(null);
-
-        // Refresh feed
-        await loadFeedPosts();
+        console.log('Post created successfully');
       } else {
         const errorData = await response.json();
-        console.error('Failed to create post:', response.status, errorData);
-        alert(`Failed to create post: ${errorData.message || 'Unknown error'}`);
+        alert(errorData.message || 'Failed to create post');
+        console.error('Failed to create post:', errorData.message);
       }
     } catch (error) {
       console.error('Network error creating post:', error);

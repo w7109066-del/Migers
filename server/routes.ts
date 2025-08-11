@@ -13,6 +13,18 @@ import { db } from "./db";
 import { directMessages, users, messages, friendships, notifications, gifts } from "@shared/schema"; // Import gifts schema
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
+
+// Helper function to get video duration
+async function getVideoDuration(filePath: string): Promise<number> {
+  try {
+    const duration = await getVideoDurationInSeconds(filePath);
+    return duration;
+  } catch (error) {
+    console.error(`Error getting video duration for ${filePath}:`, error);
+    throw error; // Re-throw to be handled by the caller
+  }
+}
 
 // Mock data for gifts
 let customGifts: any[] = [];
@@ -263,7 +275,7 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Failed to fetch rooms:", error);
       console.error("Error stack:", error.stack);
-      
+
       // Return fallback mock rooms even on error
       const fallbackRooms = [
         {
@@ -668,23 +680,40 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/feed", upload.single('media'), async (req, res) => {
-    if (!req.isAuthenticated()) {
-      console.log('User not authenticated for post creation');
-      return res.status(401).json({ message: "Authentication required" });
-    }
-
+  // Create a new feed post
+  app.post('/api/feed', requireAuth, upload.single('media'), async (req, res) => {
     try {
       const { content } = req.body;
-      let mediaType = 'text';
-      let mediaUrl = null;
+      const authorId = req.user!.id;
 
-      console.log('Creating post with content:', content, 'User:', req.user!.id);
+      let mediaUrl = null;
+      let mediaType = null;
 
       if (req.file) {
         mediaUrl = `/uploads/${req.file.filename}`;
         mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
-        console.log('Media uploaded:', mediaUrl, 'Type:', mediaType);
+
+        // Check video duration if it's a video file
+        if (mediaType === 'video') {
+          try {
+            const duration = await getVideoDuration(req.file.path);
+            if (duration > 16) {
+              // Delete the uploaded file
+              fs.unlinkSync(req.file.path);
+
+              return res.status(400).json({
+                message: `Video terlalu panjang! Durasi maksimal untuk video di feed adalah 16 detik. Video Anda berdurasi ${Math.round(duration)} detik.`
+              });
+            }
+          } catch (error) {
+            console.error('Error checking video duration:', error);
+            // Clean up potentially uploaded file on error
+            if (req.file && fs.existsSync(req.file.path)) {
+              fs.unlinkSync(req.file.path);
+            }
+            return res.status(500).json({ message: 'Error processing video file' });
+          }
+        }
       }
 
       // Allow text-only posts, media-only posts, or both
@@ -693,23 +722,51 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Post must have content or media" });
       }
 
-      const post = await storage.createFeedPost({
+      const [newPost] = await db.insert(posts).values({
         content: content?.trim() || null,
-        authorId: req.user!.id,
-        mediaType,
+        authorId,
         mediaUrl,
-      });
+        mediaType,
+        createdAt: new Date(),
+        likesCount: 0,
+        commentsCount: 0
+      }).returning();
 
-      console.log('Post created successfully:', post.id);
-      res.status(201).json(post);
+      // Fetch the complete post with author info
+      const [postWithAuthor] = await db
+        .select({
+          id: posts.id,
+          content: posts.content,
+          mediaUrl: posts.mediaUrl,
+          mediaType: posts.mediaType,
+          createdAt: posts.createdAt,
+          likesCount: posts.likesCount,
+          commentsCount: posts.commentsCount,
+          author: {
+            id: users.id,
+            username: users.username,
+            profilePhotoUrl: users.profilePhotoUrl,
+          },
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.authorId, users.id))
+        .where(eq(posts.id, newPost.id));
+
+      res.status(201).json(postWithAuthor);
     } catch (error) {
-      console.error('Post creation error:', error);
-      res.status(500).json({
-        message: "Failed to create post",
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      console.error('Error creating post:', error);
+      // Clean up uploaded file if an error occurs after upload but before saving to DB
+      if (req.file && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (unlinkError) {
+          console.error('Error cleaning up uploaded file after post creation error:', unlinkError);
+        }
+      }
+      res.status(500).json({ message: 'Failed to create post' });
     }
   });
+
 
   // Post interactions API
   app.post("/api/feed/:postId/like", async (req, res) => {
@@ -1356,9 +1413,9 @@ export function registerRoutes(app: Express): Server {
         roomName: room.name
       });
 
-      res.json({ 
-        success: true, 
-        message: `Room "${room.name}" has been deleted successfully` 
+      res.json({
+        success: true,
+        message: `Room "${room.name}" has been deleted successfully`
       });
     } catch (error) {
       console.error('Error deleting room:', error);
@@ -2202,17 +2259,17 @@ export function registerRoutes(app: Express): Server {
   setInterval(() => {
     try {
       console.log(`Cleaning up stale connections. Current active connections: ${userConnections.size}`);
-      
+
       const now = Date.now();
       const staleTimeout = 10 * 60 * 1000; // 10 minutes
-      
+
       for (const [userId, connection] of userConnections.entries()) {
         if (connection.socket && !connection.socket.connected) {
           console.log(`Removing stale connection for user ${userId}`);
           userConnections.delete(userId);
         }
       }
-      
+
       // Cleanup expired temp bans
       for (const [userId, ban] of tempBans.entries()) {
         if (now > ban.expiration) {
@@ -2245,7 +2302,7 @@ export function registerRoutes(app: Express): Server {
     socket.on('authenticate', async (data) => {
       try {
         console.log('Socket authentication attempt:', { userId: data.userId, socketId: socket.id });
-        
+
         if (!data.userId) {
           console.error('Authentication failed: userId not provided');
           socket.emit('error', {
@@ -2255,7 +2312,7 @@ export function registerRoutes(app: Express): Server {
         }
 
         userId = data.userId;
-        
+
         // Verify user exists before creating session
         const user = await storage.getUser(userId);
         if (!user) {
@@ -2295,13 +2352,13 @@ export function registerRoutes(app: Express): Server {
           });
         } catch (sessionError) {
           console.error('Session creation error:', sessionError);
-          
+
           try {
             // Try to continue without session if user verification passed
             await storage.updateUserOnlineStatus(userId, true);
             socket.join(`user_${userId}`);
             userConnections.set(userId, { socket, currentRoomId: null });
-            
+
             console.log('Socket authentication successful (fallback) for user:', userId);
             socket.emit('authenticated', {
               success: true,
@@ -2349,7 +2406,7 @@ export function registerRoutes(app: Express): Server {
           });
           return;
         }
-        
+
         console.log(`User ${user.username} (${userId}) attempting to join room ${data.roomId}`);
 
         console.log(`User ${user.username} attempting to join room ${data.roomId}`);
@@ -2949,7 +3006,7 @@ export function registerRoutes(app: Express): Server {
 
     socket.on('disconnect', async (reason) => {
       console.log(`Socket.IO disconnection - ID: ${socket.id}, Reason: ${reason}, UserID: ${userId}`);
-      
+
       if (userId) {
         try {
           // Remove from user connections tracking
@@ -3049,7 +3106,7 @@ export function registerRoutes(app: Express): Server {
           console.error(`Error during disconnect cleanup for user ${userId}:`, error);
         }
       }
-      
+
       console.log(`Socket.IO connection closed: ${socket.id}`);
     });
   });
