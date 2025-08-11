@@ -731,6 +731,13 @@ function HomePageContent() {
     setSelectedDirectMessage(profile); // Set the profile to open the DM chat
   };
 
+  // Handler for showing mini profile modal
+  const handleShowMiniProfile = (profile: MiniProfileData) => {
+    console.log("Showing mini profile for:", profile.username);
+    setSelectedProfile(profile);
+    setShowMiniProfile(true);
+  };
+
   const tabs = [
     {
       id: "friends", // Changed from "home" to "friends" to match the initial state
