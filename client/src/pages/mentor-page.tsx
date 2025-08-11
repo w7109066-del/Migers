@@ -316,31 +316,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
               </CardContent>
             </Card>
 
-            <Card className="border-red-200">
-              <CardHeader>
-                <CardTitle className="text-red-800 dark:text-red-200">Mentor Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Start Mentoring Session
-                </Button>
-                <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">
-                  <Users className="w-4 h-4 mr-2" />
-                  Manage Students
-                </Button>
-                <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Create Learning Material
-                </Button>
-                {user.isMerchant && (
-                  <Button variant="outline" className="w-full border-purple-300 text-purple-600 hover:bg-purple-50">
-                    <ShoppingBag className="w-4 h-4 mr-2" />
-                    Manage Products
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+            
           </>
         )}
 
