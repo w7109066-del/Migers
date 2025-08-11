@@ -114,9 +114,6 @@ function HomePageContent() {
   const [currentRoom, setCurrentRoom] = useState<{ id: string; name: string } | null>(null);
   const [roomName, setRoomName] = useState<string>('');
   const [selectedDirectMessage, setSelectedDirectMessage] = useState<any>(null);
-  // const [showAdmin, setShowAdmin] = useState(false); // Removed duplicate state
-  // const [showMentor, setShowMentor] = useState(false); // Removed duplicate state
-  // const [showCredits, setShowCredits] = useState(false); // Removed duplicate state
   const [activeTab, setActiveTab] = useState<'friends' | 'chatroom' | 'feed' | 'settings' | 'dm'>('friends');
   const [showMobileMenu, setShowMobileMenu] = useState(false); // State to control mobile menu visibility
 
@@ -1794,7 +1791,7 @@ function HomePageContent() {
         )}
 
         {/* Mentor Page */}
-        <MentorPage open={showMentor} onClose={() => setShowMentorPage(false)} />
+        <MentorPage open={showMentorPage} onClose={() => setShowMentorPage(false)} />
 
         {/* Credits Page */}
         {showCredits && (
