@@ -390,8 +390,7 @@ export const insertCommentSchema = createInsertSchema(postComments).pick({
   parentCommentId: true,
 });
 
-// Re-export posts table and related tables for use in routes
-export { posts, postLikes, postComments };
+
 
 // Schema for followers
 export const insertFollowerSchema = createInsertSchema(followers).pick({
