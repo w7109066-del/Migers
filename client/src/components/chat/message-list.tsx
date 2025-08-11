@@ -124,7 +124,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           recipientName: giftData.recipientName,
           emoji: giftData.emoji,
           value: giftData.value,
-          lottie: giftData.lottie
+          lottie: giftData.lottie,
+          isCustom: giftData.isCustom,
+          fileUrl: giftData.fileUrl
         };
       } catch (e) {
         console.error('Failed to parse gift JSON:', e);
