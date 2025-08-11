@@ -1308,22 +1308,30 @@ export class DatabaseStorage implements IStorage {
     fansCount: number;
     isOnline: boolean;
   }>> {
-    const merchantList = await this.db
-      .select({
-        id: users.id,
-        username: users.username,
-        profilePhotoUrl: users.profilePhotoUrl,
-        merchantRegisteredAt: users.merchantRegisteredAt,
-        lastRechargeAt: users.lastRechargeAt,
-        level: users.level,
-        fansCount: users.fansCount,
-        isOnline: users.isOnline,
-      })
-      .from(users)
-      .where(eq(users.isMerchant, true))
-      .orderBy(desc(users.merchantRegisteredAt));
+    try {
+      console.log('Getting all merchants from database...');
+      
+      const merchantList = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          profilePhotoUrl: users.profilePhotoUrl,
+          merchantRegisteredAt: users.merchantRegisteredAt,
+          lastRechargeAt: users.lastRechargeAt,
+          level: users.level,
+          fansCount: users.fansCount,
+          isOnline: users.isOnline,
+        })
+        .from(users)
+        .where(eq(users.isMerchant, true))
+        .orderBy(desc(users.merchantRegisteredAt));
 
-    return merchantList;
+      console.log(`Found ${merchantList.length} merchants:`, merchantList.map(m => m.username));
+      return merchantList;
+    } catch (error) {
+      console.error('Error getting all merchants:', error);
+      return [];
+    }
   }
 
   async getMentors(): Promise<User[]> {

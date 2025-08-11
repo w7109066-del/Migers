@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -187,18 +186,16 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
     }
   };
 
-  const getMerchantStatusColor = (mentor: Mentor) => {
-    if (!mentor.isMerchant) return '';
-    
-    if (!mentor.lastRechargeAt) {
+  const getMerchantStatusColor = (merchant: any) => {
+    if (!merchant.lastRechargeAt) {
       // Just registered, purple color
       return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200';
     }
-    
-    const lastRecharge = new Date(mentor.lastRechargeAt);
+
+    const lastRecharge = new Date(merchant.lastRechargeAt);
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    
+
     if (lastRecharge > oneMonthAgo) {
       // Active merchant - bright purple
       return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200';
@@ -260,60 +257,64 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                 key={merchant.id}
                 className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start space-x-4">
-                  <UserAvatar
-                    user={merchant}
-                    size="md"
-                    showStatus={true}
-                  />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-purple-800 dark:text-purple-200">
-                        {merchant.username}
-                      </h4>
-                      <Badge className={getMerchantStatusColor(merchant)}>
-                        {isMerchantExpired(merchant.lastRechargeAt) ? 'Expired' : 'Active'}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300 mb-1">
-                          <Calendar className="w-3 h-3" />
-                          <span className="font-medium">Tanggal Daftar:</span>
-                        </div>
-                        <p className="text-purple-600 dark:text-purple-400 ml-5">
-                          {formatDate(merchant.merchantRegisteredAt)}
-                        </p>
+                <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-purple-600">
+                        {merchant.username.charAt(0).toUpperCase()}
                       </div>
-                      
-                      <div>
-                        <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300 mb-1">
-                          <CreditCard className="w-3 h-3" />
-                          <span className="font-medium">Tanggal Berakhir:</span>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-purple-800 dark:text-purple-200">
+                            {merchant.username}
+                          </h4>
+                          <Badge className={getMerchantStatusColor(merchant)}>
+                            {isMerchantExpired(merchant.lastRechargeAt) ? 'Expired' : 'Active'}
+                          </Badge>
                         </div>
-                        <p className={cn(
-                          "ml-5",
-                          isMerchantExpired(merchant.lastRechargeAt) 
-                            ? "text-red-600 dark:text-red-400" 
-                            : "text-purple-600 dark:text-purple-400"
-                        )}>
-                          {getMerchantExpiryDate(merchant.lastRechargeAt)}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-purple-100 dark:border-purple-800">
-                      <div className="flex items-center space-x-4 text-xs text-purple-600 dark:text-purple-400">
-                        <span>Level {merchant.level}</span>
-                        <span>{merchant.fansCount} fans</span>
-                      </div>
-                      <div className="text-xs text-purple-500 dark:text-purple-400">
-                        {merchant.lastRechargeAt ? `Last recharge: ${formatDate(merchant.lastRechargeAt)}` : 'No recharge yet'}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300 mb-1">
+                              <Calendar className="w-3 h-3" />
+                              <span className="font-medium">Tanggal Daftar:</span>
+                            </div>
+                            <p className="text-purple-600 dark:text-purple-400 ml-5">
+                              {formatDate(merchant.merchantRegisteredAt)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center space-x-2 text-purple-700 dark:text-purple-300 mb-1">
+                              <CreditCard className="w-3 h-3" />
+                              <span className="font-medium">Status:</span>
+                            </div>
+                            <p className={cn(
+                              "ml-5",
+                              isMerchantExpired(merchant.lastRechargeAt) 
+                                ? "text-red-600 dark:text-red-400" 
+                                : "text-purple-600 dark:text-purple-400"
+                            )}>
+                              {merchant.lastRechargeAt 
+                                ? (isMerchantExpired(merchant.lastRechargeAt) ? 'Expired' : 'Active until ' + getMerchantExpiryDate(merchant.lastRechargeAt))
+                                : 'Just registered'
+                              }
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-purple-100 dark:border-purple-800">
+                          <div className="flex items-center space-x-4 text-xs text-purple-600 dark:text-purple-400">
+                            <span>Level {merchant.level || 1}</span>
+                            <span>{merchant.fansCount || 0} fans</span>
+                            <span className={`${merchant.isOnline ? 'text-green-500' : 'text-gray-400'}`}>
+                              {merchant.isOnline ? 'Online' : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-purple-500 dark:text-purple-400">
+                            {merchant.lastRechargeAt ? `Last recharge: ${formatDate(merchant.lastRechargeAt)}` : 'Baru terdaftar'}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
               </div>
             ))}
           </div>
@@ -365,7 +366,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                 <p className="text-red-600 dark:text-red-300 mb-6">
                   You need to register as a mentor to access this feature. Share your expertise and help others grow!
                 </p>
-                
+
                 <div className="max-w-md mx-auto space-y-4">
                   <Input
                     placeholder="Enter your specialty (e.g., Programming, Design, Business)"
@@ -503,11 +504,11 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
             {/* Merchants List Card */}
             <MerchantListCard />
 
-            
+
           </>
         )}
 
-        
+
       </div>
     </div>
   );
