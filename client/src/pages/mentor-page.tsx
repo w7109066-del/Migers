@@ -148,8 +148,11 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
       if (response.ok) {
         alert(`Successfully added ${merchantUsername} as merchant!`);
         setMerchantUsername('');
-        await loadMerchantCount(); // Refresh merchant count
-        await loadMerchantList(); // Refresh merchant list
+        // Refresh both merchant count and list
+        await Promise.all([
+          loadMerchantCount(),
+          loadMerchantList()
+        ]);
       } else {
         console.error('Failed to add merchant:', responseData);
         const errorMessage = responseData.message || `Failed to add merchant (${response.status})`;
@@ -165,14 +168,14 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
 
   const getMerchantStatusColor = (merchant: any) => {
     // Check if merchant is expired
-    const isExpired = isMerchantExpired(merchant.lastRechargeAt);
+    const isExpired = isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt);
     
     if (isExpired) {
       // Expired merchant - red/orange color
       return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-200';
     } else {
-      // Active merchant - bright purple/green color
-      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-200';
+      // Active merchant - bright purple color
+      return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200';
     }
   };
 
@@ -203,10 +206,14 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
     return formatDate(expiry.toISOString());
   };
 
-  const isMerchantExpired = (lastRechargeDate?: string) => {
+  const isMerchantExpired = (lastRechargeDate?: string, registeredDate?: string) => {
     if (!lastRechargeDate) {
-      // If no recharge date, merchant is considered active for first month after registration
-      return false;
+      if (!registeredDate) return true;
+      // If no recharge date, check if 1 month has passed since registration
+      const registered = new Date(registeredDate);
+      const expiry = new Date(registered);
+      expiry.setMonth(expiry.getMonth() + 1);
+      return new Date() > expiry;
     }
     const lastRecharge = new Date(lastRechargeDate);
     const expiry = new Date(lastRecharge);
@@ -250,7 +257,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             {merchant.username}
                           </h4>
                           <Badge className={getMerchantStatusColor(merchant)}>
-                            {isMerchantExpired(merchant.lastRechargeAt) ? 'Expired' : 'Active'}
+                            {isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt) ? 'Expired' : 'Active'}
                           </Badge>
                         </div>
 
@@ -272,12 +279,12 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             </div>
                             <p className={cn(
                               "ml-5",
-                              isMerchantExpired(merchant.lastRechargeAt) 
+                              isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt) 
                                 ? "text-red-600 dark:text-red-400" 
-                                : "text-green-600 dark:text-green-400"
+                                : "text-purple-600 dark:text-purple-400"
                             )}>
                               {merchant.lastRechargeAt 
-                                ? (isMerchantExpired(merchant.lastRechargeAt) ? 'Expired' : 'Active until ' + getMerchantExpiryDate(merchant.lastRechargeAt))
+                                ? (isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt) ? 'Expired' : 'Active until ' + getMerchantExpiryDate(merchant.lastRechargeAt))
                                 : 'Active until ' + getMerchantExpiryDate(null, merchant.merchantRegisteredAt)
                               }
                             </p>
