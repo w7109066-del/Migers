@@ -1337,15 +1337,25 @@ export class DatabaseStorage implements IStorage {
           merchantRegisteredAt: users.merchantRegisteredAt,
           lastRechargeAt: users.lastRechargeAt,
           level: users.level,
-          fansCount: users.fansCount,
           isOnline: users.isOnline,
         })
         .from(users)
         .where(eq(users.isMerchant, true))
         .orderBy(desc(users.merchantRegisteredAt));
 
-      console.log(`Found ${merchantList.length} merchants:`, merchantList.map(m => m.username));
-      return merchantList;
+      // Calculate fans count for each merchant
+      const merchantsWithFans = await Promise.all(
+        merchantList.map(async (merchant) => {
+          const fansCount = await this.getFansCount(merchant.id);
+          return {
+            ...merchant,
+            fansCount
+          };
+        })
+      );
+
+      console.log(`Found ${merchantsWithFans.length} merchants:`, merchantsWithFans.map(m => m.username));
+      return merchantsWithFans;
     } catch (error) {
       console.error('Error getting all merchants:', error);
       return [];

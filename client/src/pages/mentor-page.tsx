@@ -164,21 +164,15 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
   };
 
   const getMerchantStatusColor = (merchant: any) => {
-    if (!merchant.lastRechargeAt) {
-      // Just registered, purple color
-      return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200';
-    }
-
-    const lastRecharge = new Date(merchant.lastRechargeAt);
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-    if (lastRecharge > oneMonthAgo) {
-      // Active merchant - bright purple
-      return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200';
+    // Check if merchant is expired
+    const isExpired = isMerchantExpired(merchant.lastRechargeAt);
+    
+    if (isExpired) {
+      // Expired merchant - red/orange color
+      return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-200';
     } else {
-      // Inactive merchant - faded purple
-      return 'bg-purple-50 text-purple-400 border-purple-100 dark:bg-purple-900/10 dark:text-purple-400';
+      // Active merchant - bright purple/green color
+      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-200';
     }
   };
 
@@ -192,8 +186,17 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
     });
   };
 
-  const getMerchantExpiryDate = (lastRechargeDate?: string) => {
-    if (!lastRechargeDate) return 'Tidak ada recharge';
+  const getMerchantExpiryDate = (lastRechargeDate?: string, registeredDate?: string) => {
+    if (!lastRechargeDate) {
+      if (registeredDate) {
+        // For new merchants, expiry is 1 month after registration
+        const registered = new Date(registeredDate);
+        const expiry = new Date(registered);
+        expiry.setMonth(expiry.getMonth() + 1);
+        return formatDate(expiry.toISOString());
+      }
+      return 'Tidak ada tanggal';
+    }
     const lastRecharge = new Date(lastRechargeDate);
     const expiry = new Date(lastRecharge);
     expiry.setMonth(expiry.getMonth() + 1);
@@ -201,7 +204,10 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
   };
 
   const isMerchantExpired = (lastRechargeDate?: string) => {
-    if (!lastRechargeDate) return true;
+    if (!lastRechargeDate) {
+      // If no recharge date, merchant is considered active for first month after registration
+      return false;
+    }
     const lastRecharge = new Date(lastRechargeDate);
     const expiry = new Date(lastRecharge);
     expiry.setMonth(expiry.getMonth() + 1);
@@ -268,11 +274,11 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                               "ml-5",
                               isMerchantExpired(merchant.lastRechargeAt) 
                                 ? "text-red-600 dark:text-red-400" 
-                                : "text-purple-600 dark:text-purple-400"
+                                : "text-green-600 dark:text-green-400"
                             )}>
                               {merchant.lastRechargeAt 
                                 ? (isMerchantExpired(merchant.lastRechargeAt) ? 'Expired' : 'Active until ' + getMerchantExpiryDate(merchant.lastRechargeAt))
-                                : 'Just registered'
+                                : 'Active until ' + getMerchantExpiryDate(null, merchant.merchantRegisteredAt)
                               }
                             </p>
                           </div>
