@@ -87,10 +87,10 @@ export function ChatRoom({
   const [localSettingsOpen, setLocalSettingsOpen] = useState(false);
 
   // Use props if provided, otherwise fall back to local state
-  const userListOpen = isUserListOpen ?? localUserListOpen;
-  const settingsOpen = isSettingsOpen ?? localSettingsOpen;
-  const setUserListOpen = onSetUserListOpen ?? setLocalUserListOpen;
-  const setSettingsOpen = onSetSettingsOpen ?? setLocalSettingsOpen;
+  const userListOpen = onSetUserListOpen ? isUserListOpen : localUserListOpen;
+  const settingsOpen = onSetSettingsOpen ? isSettingsOpen : localSettingsOpen;
+  const setUserListOpen = onSetUserListOpen || setLocalUserListOpen;
+  const setSettingsOpen = onSetSettingsOpen || setLocalSettingsOpen;
   const [voteKicks, setVoteKicks] = useState<Map<string, Set<string>>>(new Map()); // userId -> Set of voter IDs
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
@@ -952,11 +952,60 @@ export function ChatRoom({
 
   return (
     <div className="h-full flex flex-col bg-gray-50 relative">
+      {/* Room Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <Hash className="w-4 h-4 text-gray-500" />
+            <h2 className="font-semibold text-gray-900">{roomName}</h2>
+          </div>
+          <Badge variant="outline" className="text-xs">
+            {roomMembers?.length || 0} members
+          </Badge>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setUserListOpen(!userListOpen)}
+            data-member-trigger
+            className={cn(
+              "flex items-center space-x-1",
+              userListOpen && "bg-blue-50 border-blue-200"
+            )}
+          >
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Members</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSettingsOpen(!settingsOpen)}
+            className={cn(
+              "flex items-center space-x-1",
+              settingsOpen && "bg-blue-50 border-blue-200"
+            )}
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Settings</span>
+          </Button>
+        </div>
+      </div>
+
       {/* Messages List and Input - Full height */}
-      <div className="h-full flex flex-col">
+      <div className="flex-1 flex flex-col">
         {/* Member List Sheet */}
-        <Sheet open={userListOpen} onOpenChange={setUserListOpen}>
-            <SheetContent side="right" className="w-80">
+        <Sheet open={userListOpen} onOpenChange={(open) => {
+          console.log('Member list sheet state change:', open);
+          setUserListOpen(open);
+        }}>
+            <SheetContent side="right" className="w-80" onPointerDownOutside={(e) => {
+              // Prevent closing when clicking on trigger button
+              const target = e.target as Element;
+              if (target.closest('[data-member-trigger]')) {
+                e.preventDefault();
+              }
+            }}>
               <SheetHeader>
                 <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
               </SheetHeader>
@@ -1100,7 +1149,10 @@ export function ChatRoom({
         </Sheet>
 
         {/* Settings Dialog */}
-        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <Dialog open={settingsOpen} onOpenChange={(open) => {
+          console.log('Settings dialog state change:', open);
+          setSettingsOpen(open);
+        }}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Room Settings</DialogTitle>
