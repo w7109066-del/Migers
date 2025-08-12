@@ -1801,7 +1801,7 @@ function HomePageContent() {
 
         {/* Credits Page */}
         {showCredits && (
-          <CreditsPage open={showCredits} onClose={() => setShowCredits(false)} />
+          <CreditsPage onBack={() => setShowCredits(false)} />
         )}
 
         {/* Edit Profile Modal */}
