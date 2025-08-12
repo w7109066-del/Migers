@@ -1480,7 +1480,8 @@ export function ChatRoom({
                   </AlertDialog>
                 )}
               </div>
-            </DialogContent>
+            </div>
+          </DialogContent>
         </Dialog>
 
         {/* Messages List - Takes remaining space */}
