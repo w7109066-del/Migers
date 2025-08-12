@@ -17,8 +17,8 @@ interface Mentor {
   isOnline: boolean;
   fansCount: number;
   isMerchant?: boolean;
-  merchantRegisteredAt?: string;
-  lastRechargeAt?: string;
+  merchant_registered_at?: string;
+  last_recharge_at?: string;
 }
 
 interface MentorPageProps {
@@ -168,7 +168,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
 
   const getMerchantStatusColor = (merchant: any) => {
     // Check if merchant is expired
-    const isExpired = isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt);
+    const isExpired = isMerchantExpired(merchant.last_recharge_at, merchant.merchant_registered_at);
     
     if (isExpired) {
       // Expired merchant - red/orange color
@@ -257,7 +257,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             {merchant.username}
                           </h4>
                           <Badge className={getMerchantStatusColor(merchant)}>
-                            {isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt) ? 'Expired' : 'Active'}
+                            {isMerchantExpired(merchant.last_recharge_at, merchant.merchant_registered_at) ? 'Expired' : 'Active'}
                           </Badge>
                         </div>
 
@@ -268,7 +268,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                               <span className="font-medium">Tanggal Daftar:</span>
                             </div>
                             <p className="text-purple-600 dark:text-purple-400 ml-5">
-                              {formatDate(merchant.merchantRegisteredAt)}
+                              {formatDate(merchant.merchant_registered_at)}
                             </p>
                           </div>
 
@@ -279,13 +279,13 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             </div>
                             <p className={cn(
                               "ml-5",
-                              isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt) 
+                              isMerchantExpired(merchant.last_recharge_at, merchant.merchant_registered_at) 
                                 ? "text-red-600 dark:text-red-400" 
                                 : "text-purple-600 dark:text-purple-400"
                             )}>
-                              {merchant.lastRechargeAt 
-                                ? (isMerchantExpired(merchant.lastRechargeAt, merchant.merchantRegisteredAt) ? 'Expired' : 'Active until ' + getMerchantExpiryDate(merchant.lastRechargeAt))
-                                : 'Active until ' + getMerchantExpiryDate(null, merchant.merchantRegisteredAt)
+                              {merchant.last_recharge_at 
+                                ? (isMerchantExpired(merchant.last_recharge_at, merchant.merchant_registered_at) ? 'Expired' : 'Active until ' + getMerchantExpiryDate(merchant.last_recharge_at))
+                                : 'Active until ' + getMerchantExpiryDate(null, merchant.merchant_registered_at)
                               }
                             </p>
                           </div>
@@ -300,7 +300,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             </span>
                           </div>
                           <div className="text-xs text-purple-500 dark:text-purple-400">
-                            {merchant.lastRechargeAt ? `Last recharge: ${formatDate(merchant.lastRechargeAt)}` : 'Baru terdaftar'}
+                            {merchant.last_recharge_at ? `Last recharge: ${formatDate(merchant.last_recharge_at)}` : 'Baru terdaftar'}
                           </div>
                         </div>
                       </div>
@@ -458,7 +458,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             <span className="text-sm font-medium">Registered:</span>
                           </div>
                           <p className="text-sm text-purple-600 dark:text-purple-400">
-                            {formatDate(user.merchantRegisteredAt)}
+                            {formatDate(user.merchant_registered_at)}
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -467,7 +467,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             <span className="text-sm font-medium">Last Recharge:</span>
                           </div>
                           <p className="text-sm text-purple-600 dark:text-purple-400">
-                            {formatDate(user.lastRechargeAt)}
+                            {formatDate(user.last_recharge_at)}
                           </p>
                         </div>
                       </div>

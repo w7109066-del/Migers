@@ -1320,8 +1320,8 @@ export class DatabaseStorage implements IStorage {
     id: string;
     username: string;
     profilePhotoUrl?: string;
-    merchantRegisteredAt?: string;
-    lastRechargeAt?: string;
+    merchant_registered_at?: string;
+    last_recharge_at?: string;
     level: number;
     fansCount: number;
     isOnline: boolean;
@@ -1334,8 +1334,8 @@ export class DatabaseStorage implements IStorage {
           id: users.id,
           username: users.username,
           profilePhotoUrl: users.profilePhotoUrl,
-          merchantRegisteredAt: users.merchantRegisteredAt,
-          lastRechargeAt: users.lastRechargeAt,
+          merchant_registered_at: users.merchantRegisteredAt,
+          last_recharge_at: users.lastRechargeAt,
           level: users.level,
           isOnline: users.isOnline,
         })
