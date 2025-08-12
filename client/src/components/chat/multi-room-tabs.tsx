@@ -4,6 +4,7 @@ import { ChatRoom } from "./chat-room";
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAuth } from "@/hooks/use-auth";
+import { Crown } from "lucide-react"; // Import Crown for merchant badge
 
 interface Room {
   id: string;
@@ -253,6 +254,9 @@ export function MultiRoomTabs({
         <div className="relative w-full h-full overflow-hidden">
           {rooms.map((room, index) => {
             const isActive = activeRoomIndex === index;
+            // Determine if the current user is a merchant for styling purposes
+            const isMerchant = user && user.isMerchant; // Assuming user object has an isMerchant flag
+
             return (
               <div
                 key={`room-content-${room.id}-${index}-${isActive}`}
@@ -273,7 +277,10 @@ export function MultiRoomTabs({
                       <div className="flex items-center space-x-3">
                         <div className={cn("w-3 h-3 rounded-full bg-green-500")} />
                         <div>
-                          <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{room.name}</h2>
+                          <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800", isMerchant && "text-purple-500")}>
+                            {room.name}
+                            {isMerchant && <Crown className="w-4 h-4 inline-block ml-1 text-purple-500" />}
+                          </h2>
                           <p className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
                             Online members
                           </p>
@@ -376,7 +383,7 @@ export function MultiRoomTabs({
                                   localStorage.setItem(localStorageKey, JSON.stringify(currentRoom.messages));
                                   console.log('Saved messages to localStorage for room:', currentRoom.id);
                                 }
-                                
+
                                 // Clear new message indicator for this room
                                 setHasNewMessages(prev => {
                                   const newMap = new Map(prev);
@@ -481,8 +488,9 @@ export function MultiRoomTabs({
           isDarkMode ? "bg-gray-900 border-gray-700 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-500"
         )}>
           <div className="flex items-center space-x-2">
-            <span className="font-medium">
+            <span className={cn("font-medium", isMerchant && "text-purple-500")}>
               {rooms[activeRoomIndex]?.name || 'No Room'}
+              {isMerchant && <Crown className="w-3 h-3 inline-block ml-1 text-purple-500" />}
             </span>
             <span className="text-gray-400">•</span>
             <span>
