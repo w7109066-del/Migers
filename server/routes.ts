@@ -2572,8 +2572,10 @@ export function registerRoutes(app: Express): Server {
             success: true,
             user: {
               id: user.id,
-              username: user.username
-            }
+              username: user.username,
+              isMerchant: user.isMerchant,
+              merchantRegisteredAt: user.merchantRegisteredAt,
+            },
           });
         } catch (sessionError) {
           console.error('Session creation error:', sessionError);
@@ -2589,7 +2591,9 @@ export function registerRoutes(app: Express): Server {
               success: true,
               user: {
                 id: user.id,
-                username: user.username
+                username: user.username,
+                isMerchant: user.isMerchant,
+                merchantRegisteredAt: user.merchantRegisteredAt,
               },
               warning: 'Session creation failed but authentication succeeded'
             });
@@ -2691,9 +2695,11 @@ export function registerRoutes(app: Express): Server {
               id: userId,
               username: user.username,
               level: user.level || 1,
-              isOnline: true,
+              isOnline: user.isOnline,
               profilePhotoUrl: user.profilePhotoUrl,
-              isAdmin: user.isAdmin || false
+              isAdmin: user.isAdmin || false,
+              isMerchant: user.isMerchant,
+              merchantRegisteredAt: user.merchantRegisteredAt,
             });
           } else {
             // Real room

@@ -817,6 +817,8 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                               const currentRoomId = window.location.pathname.split('/').pop();
                               // Admin color visible in all rooms - Dark orange
                               if (message.sender.level >= 5) return "text-orange-800"; // Admin dark orange
+                              // Merchant color - Purple (check for isMerchant property)
+                              if (message.sender.isMerchant === true || message.sender.isMerchant) return "text-purple-600"; // Merchant purple
                               // Owner and moderator colors only in user-created rooms (not system rooms 1-4)
                               if (!['1', '2', '3', '4'].includes(currentRoomId || '')) {
                                 // Check if user is room owner (username matches room name)
