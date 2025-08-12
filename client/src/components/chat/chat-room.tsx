@@ -293,7 +293,7 @@ export function ChatRoom({
     return () => {
       console.log('Cleaning up chat room for UI switch:', roomId);
 
-      // Only close modals when switching tabs
+      // Close modals when switching tabs
       setUserListOpen(false);
       setSettingsOpen(false);
 
@@ -1172,6 +1172,12 @@ export function ChatRoom({
                                         {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
                                           <Crown className="w-3 h-3 text-yellow-500" />
                                         )}
+                                        {/* Mentor badge */}
+                                        {member.user.isMentor && (
+                                          <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                                            M
+                                          </Badge>
+                                        )}
                                         {/* Merchant badge - check for both boolean and truthy values */}
                                         {(member.user.isMerchant === true || member.user.isMerchant) && (
                                           <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
@@ -1329,33 +1335,35 @@ export function ChatRoom({
                                                 isAdmin={(member.user.level || 0) >= 5}
                                               />
                                               <div>
-                                                <div className="flex items-center space-x-2">
-                                                  <span className={cn(
-                                                    "font-medium text-sm truncate",
-                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
-                                                  )}>
-                                                    {member.user.username || 'Unknown'}
-                                                  </span>
+                                                <div className="flex items-center space-x-2 mb-1">
                                                   <div className="flex items-center space-x-1">
-                                                    {/* Crown only for owner in managed rooms */}
-                                                    {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                                      <Crown className="w-3 h-3 text-yellow-500" />
-                                                    )}
-                                                    {/* Merchant badge */}
-                                                    {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                                        🛍️
-                                                      </Badge>
-                                                    )}
-                                                    {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
-                                                      <Badge variant="destructive" className="text-xs bg-red-600">
-                                                        Admin
-                                                      </Badge>
-                                                    )}
+                                                    <span className={cn(
+                                                      "font-medium text-sm truncate",
+                                                      ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                                    )}>
+                                                      {member.user.username || 'Unknown'}
+                                                    </span>
+                                                    <div className="flex items-center space-x-1">
+                                                      {/* Crown only for owner in managed rooms */}
+                                                      {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                                        <Crown className="w-3 h-3 text-yellow-500" />
+                                                      )}
+                                                      {/* Merchant badge */}
+                                                      {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                                        <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                                          🛍️
+                                                        </Badge>
+                                                      )}
+                                                      {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                                        <Badge variant="destructive" className="text-xs bg-red-600">
+                                                          Admin
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <Badge variant="outline" className="text-xs">
+                                                      Level {member.user.level || 1}
+                                                    </Badge>
                                                   </div>
-                                                  <Badge variant="outline" className="text-xs">
-                                                    Level {member.user.level || 1}
-                                                  </Badge>
                                                 </div>
                                               </div>
                                             </div>
@@ -1622,6 +1630,12 @@ export function ChatRoom({
                                  {/* Crown only for owner in managed rooms */}
                                   {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
                                     <Crown className="w-3 h-3 text-yellow-500" />
+                                  )}
+                                  {/* Mentor badge */}
+                                  {member.user.isMentor && (
+                                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                                      M
+                                    </Badge>
                                   )}
                                   {/* Merchant badge - check for both boolean and truthy values */}
                                   {(member.user.isMerchant === true || member.user.isMerchant) && (
