@@ -1277,16 +1277,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserMerchantStatus(userId: string, isMerchant: boolean): Promise<User> {
-    const [updatedUser] = await this.db
-      .update(users)
-      .set({
-        isMerchant,
-        merchantRegisteredAt: isMerchant ? new Date().toISOString() : null
-      })
-      .where(eq(users.id, userId))
-      .returning();
+    try {
+      console.log('Updating merchant status for user:', userId, 'to:', isMerchant);
 
-    return updatedUser;
+      const [updatedUser] = await this.db
+        .update(users)
+        .set({
+          isMerchant,
+          merchantRegisteredAt: isMerchant ? new Date() : null
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      if (!updatedUser) {
+        throw new Error('User not found or update failed');
+      }
+
+      console.log('Merchant status updated successfully:', {
+        userId: updatedUser.id,
+        username: updatedUser.username,
+        isMerchant: updatedUser.isMerchant,
+        merchantRegisteredAt: updatedUser.merchantRegisteredAt
+      });
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating merchant status:', error);
+      throw new Error(`Failed to update merchant status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async getMerchantCount(): Promise<number> {
@@ -1310,7 +1328,7 @@ export class DatabaseStorage implements IStorage {
   }>> {
     try {
       console.log('Getting all merchants from database...');
-      
+
       const merchantList = await this.db
         .select({
           id: users.id,

@@ -129,6 +129,8 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
 
     setIsAddingMerchant(true);
     try {
+      console.log('Adding merchant:', merchantUsername.trim());
+      
       const response = await fetch('/api/admin/add-merchant', {
         method: 'POST',
         headers: {
@@ -138,18 +140,24 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
         body: JSON.stringify({ username: merchantUsername.trim() }),
       });
 
+      console.log('Add merchant response status:', response.status);
+      
+      const responseData = await response.json();
+      console.log('Add merchant response data:', responseData);
+
       if (response.ok) {
         alert(`Successfully added ${merchantUsername} as merchant!`);
         setMerchantUsername('');
         await loadMerchantCount(); // Refresh merchant count
         await loadMerchantList(); // Refresh merchant list
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to add merchant');
+        console.error('Failed to add merchant:', responseData);
+        const errorMessage = responseData.message || `Failed to add merchant (${response.status})`;
+        alert(errorMessage);
       }
     } catch (error) {
-      console.error('Failed to add merchant:', error);
-      alert('Failed to add merchant');
+      console.error('Network error adding merchant:', error);
+      alert('Network error: Failed to add merchant. Please check your connection and try again.');
     } finally {
       setIsAddingMerchant(false);
     }

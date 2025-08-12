@@ -1178,23 +1178,34 @@ export function registerRoutes(app: Express): Server {
     try {
       const { username } = req.body;
 
+      console.log('Add merchant request:', { username, requestedBy: req.user?.username });
+
       if (!username || !username.trim()) {
+        console.log('Username validation failed - empty username');
         return res.status(400).json({ message: 'Username is required' });
       }
 
       // Find user by username
+      console.log('Looking for user:', username.trim());
       const targetUser = await storage.getUserByUsername(username.trim());
       if (!targetUser) {
+        console.log('User not found:', username.trim());
         return res.status(404).json({ message: 'User not found' });
       }
 
+      console.log('Target user found:', { id: targetUser.id, username: targetUser.username, isMerchant: targetUser.isMerchant });
+
       // Check if user is already a merchant
       if (targetUser.isMerchant) {
+        console.log('User is already a merchant');
         return res.status(400).json({ message: 'User is already a merchant' });
       }
 
       // Add user as merchant
+      console.log('Updating user merchant status...');
       const updatedUser = await storage.updateUserMerchantStatus(targetUser.id, true);
+      console.log('User merchant status updated successfully:', updatedUser);
+
       res.json({
         success: true,
         message: `Successfully added ${username} as merchant`,
@@ -1207,7 +1218,11 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error('Error adding merchant:', error);
-      res.status(500).json({ message: 'Failed to add merchant' });
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      res.status(500).json({ 
+        message: 'Failed to add merchant',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
