@@ -182,7 +182,7 @@ export function MultiRoomTabs({
     setIsDragging(false);
   };
 
-  // Typing event listeners and new message tracking
+  // WebSocket event listeners and new message tracking
   useEffect(() => {
     const handleUserTyping = (event: CustomEvent) => {
       const { userId, roomId, isTyping, username } = event.detail;
@@ -212,15 +212,30 @@ export function MultiRoomTabs({
 
     const handleNewMessage = (event: CustomEvent) => {
       const message = event.detail;
+      console.log('MultiRoomTabs: Received new message:', message);
+
       if (message.roomId) {
         const currentActiveRoom = rooms[activeRoomIndex];
-        // If message is for a room that's not currently active, mark it as having new messages
-        if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
-          setHasNewMessages(prev => {
-            const newMap = new Map(prev);
-            newMap.set(message.roomId, true);
-            return newMap;
-          });
+
+        // Update room messages for all rooms, not just inactive ones
+        const targetRoom = rooms.find(room => room.id === message.roomId);
+        if (targetRoom) {
+          console.log('MultiRoomTabs: Adding message to room:', message.roomId);
+          // Update the room's messages
+          targetRoom.messages = [...(targetRoom.messages || []), message];
+
+          // Save to localStorage immediately
+          const localStorageKey = `chatMessages-${message.roomId}`;
+          localStorage.setItem(localStorageKey, JSON.stringify(targetRoom.messages));
+
+          // If message is for a room that's not currently active, mark it as having new messages
+          if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
+            setHasNewMessages(prev => {
+              const newMap = new Map(prev);
+              newMap.set(message.roomId, true);
+              return newMap;
+            });
+          }
         }
       }
     };
@@ -627,8 +642,6 @@ export function MultiRoomTabs({
           </div>
         </div>
       )}
-
-
     </div>
   );
 }
