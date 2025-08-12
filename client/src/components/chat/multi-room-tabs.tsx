@@ -44,29 +44,27 @@ export function MultiRoomTabs({
   const { isConnected } = useWebSocket();
   const { user } = useAuth();
 
-  // Add safety checks
-  if (!rooms || !Array.isArray(rooms)) {
-    console.error('MultiRoomTabs: Invalid rooms prop', rooms);
+  // Add safety checks with better error handling
+  if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
+    console.log('MultiRoomTabs: No rooms available or invalid rooms prop', rooms);
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-500">Invalid room data</p>
+          <p className="text-gray-500">No rooms available</p>
         </div>
       </div>
     );
   }
 
-  if (activeRoomIndex < 0 || activeRoomIndex >= rooms.length) {
-    console.error('MultiRoomTabs: Invalid activeRoomIndex', activeRoomIndex, 'rooms length:', rooms.length);
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-500">Invalid room selection</p>
-        </div>
-      </div>
-    );
+  // Ensure activeRoomIndex is valid
+  const safeActiveRoomIndex = Math.max(0, Math.min(activeRoomIndex, rooms.length - 1));
+  if (activeRoomIndex !== safeActiveRoomIndex) {
+    console.log('MultiRoomTabs: Correcting activeRoomIndex from', activeRoomIndex, 'to', safeActiveRoomIndex);
+    // Use the safe index without causing a re-render loop
+    React.useEffect(() => {
+      onSwitchRoom(safeActiveRoomIndex);
+    }, [safeActiveRoomIndex, onSwitchRoom]);
   }
 
   // Sync room states across tabs using localStorage
@@ -278,18 +276,22 @@ export function MultiRoomTabs({
 
         <div className="relative w-full h-full overflow-hidden">
           {rooms.map((room, index) => {
-            if (!room || !room.id || !room.name) {
+            // Enhanced room validation
+            if (!room || typeof room !== 'object' || !room.id || !room.name) {
               console.error('MultiRoomTabs: Invalid room data at index', index, room);
-              return null;
+              return (
+                <div key={`invalid-room-${index}`} className="hidden">
+                  Invalid room data
+                </div>
+              );
             }
 
-            const isActive = activeRoomIndex === index;
-            // Determine if the current user is a merchant for styling purposes
-            const isMerchant = user && user.isMerchant; // Assuming user object has an isMerchant flag
+            const isActive = safeActiveRoomIndex === index;
+            const isMerchant = user && user.isMerchant;
 
             return (
               <div
-                key={`room-content-${room.id}-${index}-${isActive}`}
+                key={`room-content-${room.id}-${index}`}
                 className={cn(
                   "absolute inset-0 w-full h-full transition-opacity duration-200",
                   isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
@@ -308,7 +310,7 @@ export function MultiRoomTabs({
                         <div className={cn("w-3 h-3 rounded-full bg-green-500")} />
                         <div>
                           <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800", isMerchant && "text-purple-500")}>
-                            {room.name}
+                            {room?.name || 'Unknown Room'}
                             {isMerchant && <Crown className="w-4 h-4 inline-block ml-1 text-purple-500" />}
                           </h2>
                           <p className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
@@ -366,12 +368,12 @@ export function MultiRoomTabs({
                       isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
                     )}>
                       <div className="flex space-x-2">
-                        {rooms.map((_, dotIndex) => (
+                        {rooms.map((roomForDot, dotIndex) => (
                           <div
-                            key={`dot-${dotIndex}`}
+                            key={`dot-${roomForDot?.id || dotIndex}`}
                             className={cn(
                               "w-3 h-3 rounded-full transition-all duration-200 cursor-pointer shadow-sm",
-                              activeRoomIndex === dotIndex
+                              safeActiveRoomIndex === dotIndex
                                 ? "bg-blue-500 scale-110"
                                 : (isDarkMode ? "bg-gray-600 hover:bg-gray-500" : "bg-gray-400 hover:bg-gray-500")
                             )}
@@ -381,7 +383,7 @@ export function MultiRoomTabs({
                         {/* Show indicator even for single room */}
                         {rooms.length === 1 && (
                           <div className="text-xs text-gray-500 ml-2">
-                            Room {activeRoomIndex + 1} of {rooms.length}
+                            Room {safeActiveRoomIndex + 1} of {rooms.length}
                           </div>
                         )}
                       </div>
@@ -497,18 +499,18 @@ export function MultiRoomTabs({
                           roomName={room.name}
                           onUserClick={onUserClick || (() => {})}
                           onLeaveRoom={() => onCloseRoom(index)}
-                          savedMessages={room.messages || []}
+                          savedMessages={Array.isArray(room.messages) ? room.messages : []}
                           onSaveMessages={(messages) => onSaveMessages(room.id, messages)}
-                          isUserListOpen={isUserListOpen && activeRoomIndex === index}
+                          isUserListOpen={isUserListOpen && safeActiveRoomIndex === index}
                           onSetUserListOpen={setIsUserListOpen}
-                          isSettingsOpen={isSettingsOpen && activeRoomIndex === index}
+                          isSettingsOpen={isSettingsOpen && safeActiveRoomIndex === index}
                           onSetSettingsOpen={setIsSettingsOpen}
                         />
                       ) : (
                         <div className="h-full flex items-center justify-center">
                           <div className="text-center text-gray-500">
                             <MessageCircle className="w-8 h-8 mx-auto mb-2" />
-                            <p>Invalid room data</p>
+                            <p>Loading room...</p>
                           </div>
                         </div>
                       )}
@@ -527,16 +529,16 @@ export function MultiRoomTabs({
           isDarkMode ? "bg-gray-900 border-gray-700 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-500"
         )}>
           <div className="flex items-center space-x-2">
-            <span className={cn("font-medium", isMerchant && "text-purple-500")}>
-              {(rooms && rooms[activeRoomIndex] && rooms[activeRoomIndex].name) || 'No Room'}
-              {isMerchant && <Crown className="w-3 h-3 inline-block ml-1 text-purple-500" />}
+            <span className={cn("font-medium", user?.isMerchant && "text-purple-500")}>
+              {(rooms && rooms[safeActiveRoomIndex] && rooms[safeActiveRoomIndex].name) || 'No Room'}
+              {user?.isMerchant && <Crown className="w-3 h-3 inline-block ml-1 text-purple-500" />}
             </span>
             <span className="text-gray-400">•</span>
             <span>
-              {activeRoomIndex + 1} of {rooms?.length || 0}
+              {safeActiveRoomIndex + 1} of {rooms?.length || 0}
             </span>
             {/* Show typing indicator for current room */}
-            {rooms && rooms[activeRoomIndex] && typingUsers.get(rooms[activeRoomIndex].id) && typingUsers.get(rooms[activeRoomIndex].id)!.length > 0 && (
+            {rooms && rooms[safeActiveRoomIndex] && typingUsers.get(rooms[safeActiveRoomIndex].id) && typingUsers.get(rooms[safeActiveRoomIndex].id)!.length > 0 && (
               <>
                 <span className="text-gray-400">•</span>
                 <div className="flex items-center space-x-1 text-blue-500">
@@ -546,8 +548,8 @@ export function MultiRoomTabs({
                     <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                   <span className="text-[10px]">
-                    {rooms && rooms[activeRoomIndex] && typingUsers.get(rooms[activeRoomIndex].id) ? 
-                      typingUsers.get(rooms[activeRoomIndex].id)!.join(', ') : ''} typing...
+                    {rooms && rooms[safeActiveRoomIndex] && typingUsers.get(rooms[safeActiveRoomIndex].id) ? 
+                      typingUsers.get(rooms[safeActiveRoomIndex].id)!.join(', ') : ''} typing...
                   </span>
                 </div>
               </>
