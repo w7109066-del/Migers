@@ -1621,21 +1621,7 @@ function HomePageContent() {
 
                   <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
-                    onClick={() => {
-                      console.log('Credits button clicked from settings');
-                      // Close all other modals first
-                      setShowSettings(false);
-                      setShowProfile(false);
-                      setShowMentorPage(false);
-                      setShowAdmin(false);
-                      setShowEditProfile(false);
-                      setShowUserSearch(false);
-                      setShowStatusUpdate(false);
-                      setShowPrivacySecurity(false);
-                      setShowHelpSupport(false);
-                      // Then open credits
-                      setShowCredits(true);
-                    }}
+                    onClick={handleCreditsClick}
                   >
                     <svg className="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -1711,6 +1697,22 @@ function HomePageContent() {
     setShowMentorPage(false);
     // Then open admin panel
     setShowAdmin(true);
+  };
+
+  const handleCreditsClick = () => {
+    console.log('Credits button clicked');
+    // Close all other modals first
+    setShowSettings(false);
+    setShowProfile(false);
+    setShowMentorPage(false);
+    setShowAdmin(false);
+    setShowEditProfile(false);
+    setShowUserSearch(false);
+    setShowStatusUpdate(false);
+    setShowPrivacySecurity(false);
+    setShowHelpSupport(false);
+    // Then open credits
+    setShowCredits(true);
   };
 
   // Update active tab based on currentRoom changes
@@ -1809,9 +1811,11 @@ function HomePageContent() {
         {/* Mentor Page */}
         <MentorPage open={showMentorPage} onClose={() => setShowMentorPage(false)} />
 
-        {/* Credits Page */}
+        {/* Credits Page - Render at top level */}
         {showCredits && (
-          <CreditsPage onBack={() => setShowCredits(false)} />
+          <div className="fixed inset-0 z-50">
+            <CreditsPage onBack={() => setShowCredits(false)} />
+          </div>
         )}
 
         {/* Edit Profile Modal */}
