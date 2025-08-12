@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,7 @@ const mockTopUsers: RankedUser[] = [
     profilePhotoUrl: undefined
   },
   {
-    id: "2", 
+    id: "2",
     username: "dimas",
     level: 83439,
     coins: 83439,
@@ -108,7 +107,7 @@ export default function TopRankPage() {
   if (isLoading) {
     return (
       <div className="h-full w-full bg-gradient-to-b from-orange-400 to-orange-600 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center bg-white/10 backdrop-blur-md rounded-lg p-6 border border-white/20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
           <p className="text-white">Loading rankings...</p>
         </div>
@@ -124,7 +123,7 @@ export default function TopRankPage() {
           variant="ghost"
           size="sm"
           onClick={handleBackToFriends}
-          className="text-white hover:bg-red-700"
+          className="text-white hover:bg-white/20 backdrop-blur-sm"
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -132,7 +131,7 @@ export default function TopRankPage() {
         <Button
           variant="ghost"
           size="sm"
-          className="text-white hover:bg-red-700"
+          className="text-white hover:bg-white/20 backdrop-blur-sm"
         >
           ?
         </Button>
@@ -174,7 +173,7 @@ export default function TopRankPage() {
 
       {/* Top 3 Display */}
       {topUsers.length > 0 && (
-        <div className="px-4 py-6 flex justify-center">
+        <div className="px-4 py-6 flex justify-center relative z-10">
           <div className="text-center">
             {/* Winner */}
             <div className="relative mb-4">
@@ -203,7 +202,7 @@ export default function TopRankPage() {
       )}
 
       {/* Rankings List */}
-      <div className="flex-1 bg-orange-500 px-4 pb-4 overflow-y-auto">
+      <div className="flex-1 bg-gradient-to-b from-transparent to-black/10 px-4 pb-4 overflow-y-auto relative z-10">
         <div className="space-y-3">
           {topUsers.map((user, index) => (
             <Card key={user.id} className="bg-orange-400/50 border-none">
@@ -212,7 +211,7 @@ export default function TopRankPage() {
                   <div className="flex items-center justify-center w-8">
                     {getRankIcon(user.rank)}
                   </div>
-                  
+
                   <div className="relative">
                     <UserAvatar
                       username={user.username}
@@ -225,14 +224,14 @@ export default function TopRankPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="text-white font-semibold">{user.username}</span>
                       {user.rank <= 3 && getRankBadge(user.rank) && (
                         <Badge className={`text-xs ${
-                          user.rank === 1 ? 'bg-yellow-500' : 
-                          user.rank === 2 ? 'bg-gray-400' : 
+                          user.rank === 1 ? 'bg-yellow-500' :
+                          user.rank === 2 ? 'bg-gray-400' :
                           'bg-orange-500'
                         } text-white`}>
                           {getRankBadge(user.rank)}
@@ -248,10 +247,10 @@ export default function TopRankPage() {
             </Card>
           ))}
         </div>
-        
+
         {/* User's current position if not in top */}
         {user && !topUsers.find(u => u.id === user.id) && (
-          <div className="mt-6 pt-4 border-t border-orange-400">
+          <div className="mt-6 pt-4 border-t border-white/20 bg-white/5 rounded-lg p-4 backdrop-blur-sm">
             <div className="text-white text-center text-sm">
               Saya belum ada dalam daftar, dibutuhkan ~6980 untuk masuk daftar
             </div>
