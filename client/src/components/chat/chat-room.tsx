@@ -1519,35 +1519,7 @@ export function ChatRoom({
         </div>
       )}
 
-      {/* Placeholder for the button that opens the member list */}
-      <div className="absolute bottom-4 right-4 z-10">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            try {
-              // Check if user is connected and in the room before opening member list
-              if (!isConnected) {
-                alert('⚠️ You are not in the chatroom. Please reconnect to view member list.');
-                return;
-              }
-              setMemberListError(false);
-              setUserListOpen(!userListOpen);
-            } catch (error) {
-              console.error('Error toggling member list:', error);
-              setMemberListError(true);
-            }
-          }}
-          data-member-trigger
-          className={cn(
-            "flex items-center space-x-1",
-            userListOpen && "bg-blue-50 border-blue-200"
-          )}
-        >
-          <Users className="w-4 h-4" />
-          <span className="hidden sm:inline">Members</span>
-        </Button>
-      </div>
+      
     </div>
   );
 }
