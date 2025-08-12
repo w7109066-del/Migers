@@ -160,6 +160,24 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     socket.current.on('error', (data) => {
       console.log('Socket error:', data);
+      
+      // Show toast notification for critical errors
+      if (data.message && data.message.includes('banned')) {
+        toast({
+          title: "Access Restricted",
+          description: data.message,
+          variant: "destructive",
+          duration: 5000,
+        });
+      } else if (data.message && data.message.includes('not in the chatroom')) {
+        toast({
+          title: "Chat Room Error",
+          description: "You are not in this chatroom",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+      
       // Dispatch custom event for chat room to handle
       window.dispatchEvent(new CustomEvent('socketError', { 
         detail: data 

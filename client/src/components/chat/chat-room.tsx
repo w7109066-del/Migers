@@ -389,18 +389,17 @@ export function ChatRoom({
 
     const handleSocketError = (event: CustomEvent) => {
       const { message } = event.detail;
-      if (message === 'You are not in the chatroom') {
-        // Show error message in chat
-        const errorMessage = {
-          id: `error-${Date.now()}`,
-          content: '❌ You are not in the chatroom',
-          senderId: 'system',
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-          messageType: 'system'
-        };
-        setMessages(prev => [...prev, errorMessage]);
-      }
+      
+      // Show error message in chat for any socket error
+      const errorMessage = {
+        id: `error-${Date.now()}`,
+        content: `❌ ${message || 'An error occurred'}`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, errorMessage]);
     };
 
     const handleUserJoin = (event: CustomEvent) => {
