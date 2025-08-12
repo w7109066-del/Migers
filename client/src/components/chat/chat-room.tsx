@@ -468,7 +468,7 @@ export function ChatRoom({
       if (eventRoomId === roomId) {
         const kickMessage = {
           id: `kick-${Date.now()}-${username}`,
-          content: `${username} has been kicked by admin ${kickedBy}`,
+          content: `${username} has been kicked from the room`,
           senderId: 'system',
           createdAt: new Date().toISOString(),
           sender: { id: 'system', username: 'System', level: 0, isOnline: true },
@@ -1011,11 +1011,54 @@ export function ChatRoom({
                     <div className="space-y-3">
                       {(() => {
                         try {
+                          if (isLoadingMembers) {
+                            return (
+                              <div className="text-center py-8 text-gray-500">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+                                <p className="text-sm">Loading members...</p>
+                              </div>
+                            );
+                          }
+
                           if (!roomMembers || roomMembers.length === 0) {
+                            // Show current user if no members loaded but user is connected
+                            if (user && isConnected) {
+                              return (
+                                <div className="space-y-3">
+                                  <div className="flex items-center space-x-3 p-2 rounded-lg bg-blue-50 border border-blue-200">
+                                    <UserAvatar
+                                      username={user.username || 'You'}
+                                      size="sm"
+                                      isOnline={true}
+                                      profilePhotoUrl={user.profilePhotoUrl}
+                                      isAdmin={(user.level || 0) >= 5}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center space-x-2 mb-1">
+                                        <span className="font-medium text-sm text-blue-700">
+                                          {user.username} (You)
+                                        </span>
+                                        <Badge variant="outline" className="text-xs">
+                                          Level {user.level || 1}
+                                        </Badge>
+                                      </div>
+                                      <div className="text-xs text-green-600">
+                                        Online
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-center py-4 text-gray-500">
+                                    <p className="text-sm">You are the only member in this room</p>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             return (
                               <div className="text-center py-8 text-gray-500">
                                 <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                                 <p className="text-sm">No members found</p>
+                                <p className="text-xs mt-1">Try refreshing or check your connection</p>
                               </div>
                             );
                           }
@@ -1408,11 +1451,54 @@ export function ChatRoom({
               <div className="space-y-3">
                 {(() => {
                   try {
+                    if (isLoadingMembers) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+                          <p className="text-sm">Loading members...</p>
+                        </div>
+                      );
+                    }
+
                     if (!roomMembers || roomMembers.length === 0) {
+                      // Show current user if no members loaded but user is connected
+                      if (user && isConnected) {
+                        return (
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-3 p-2 rounded-lg bg-blue-50 border border-blue-200">
+                              <UserAvatar
+                                username={user.username || 'You'}
+                                size="sm"
+                                isOnline={true}
+                                profilePhotoUrl={user.profilePhotoUrl}
+                                isAdmin={(user.level || 0) >= 5}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className="font-medium text-sm text-blue-700">
+                                    {user.username} (You)
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    Level {user.level || 1}
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-green-600">
+                                  Online
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-center py-4 text-gray-500">
+                              <p className="text-sm">You are the only member in this room</p>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div className="text-center py-8 text-gray-500">
                           <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                           <p className="text-sm">No members found</p>
+                          <p className="text-xs mt-1">Try refreshing or check your connection</p>
                         </div>
                       );
                     }
@@ -1519,7 +1605,7 @@ export function ChatRoom({
         </div>
       )}
 
-      
+
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAuth } from "@/hooks/use-auth";
 import { Crown } from "lucide-react"; // Import Crown for merchant badge
+import { UserAvatar } from "./user-avatar"; // Assuming UserAvatar component exists
+import { Badge } from "@/components/ui/badge"; // Assuming Badge component exists
 
 interface Room {
   id: string;
@@ -44,7 +46,10 @@ export function MultiRoomTabs({
   const [memberListError, setMemberListError] = useState(false);
   const { isConnected } = useWebSocket();
   const { user } = useAuth();
-  
+
+  // State for managing members and loading status
+  const [roomMembers, setRoomMembers] = useState<any[]>([]); // Assuming member data structure
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false); // Loading state for members
 
   // Add safety checks with better error handling
   if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
@@ -249,6 +254,52 @@ export function MultiRoomTabs({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeRoomIndex, rooms.length, onSwitchRoom, onCloseRoom]);
+
+  // Fetch room members when the active room changes
+  useEffect(() => {
+    const fetchRoomMembers = async () => {
+      if (!isConnected || !user || !rooms || rooms.length === 0) {
+        setRoomMembers([]);
+        return;
+      }
+      const currentRoomId = rooms[safeActiveRoomIndex]?.id;
+      if (!currentRoomId) {
+        setRoomMembers([]);
+        return;
+      }
+
+      setIsLoadingMembers(true);
+      setMemberListError(false);
+      try {
+        // Mock fetching members. Replace with actual API call.
+        // Example: const response = await fetch(`/api/rooms/${currentRoomId}/members`);
+        // const data = await response.json();
+        // For now, simulate data or fetch from a mock source.
+        // Simulate members for testing the UI, including a single-user case.
+        const mockMembers = [
+          { user: { id: user.id, username: user.username, level: user.level, status: "Online", isOnline: true, profilePhotoUrl: user.profilePhotoUrl } }
+        ];
+
+        // If it's a solo room, ensure the current user is listed.
+        if (mockMembers.length === 1 && mockMembers[0].user.id === user.id) {
+          // This is the correct behavior for a solo room.
+        } else if (mockMembers.length === 0 && isConnected) {
+          // If no members are returned but we are connected, add the current user.
+          mockMembers.push({ user: { id: user.id, username: user.username, level: user.level, status: "Online", isOnline: true, profilePhotoUrl: user.profilePhotoUrl } });
+        }
+
+        setRoomMembers(mockMembers);
+      } catch (error) {
+        console.error("Failed to fetch room members:", error);
+        setMemberListError(true);
+        setRoomMembers([]); // Clear members on error
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+
+    fetchRoomMembers();
+  }, [safeActiveRoomIndex, rooms, isConnected, user]); // Re-fetch when active room or connection status changes
 
   if (rooms.length === 0) {
     return (
@@ -577,7 +628,7 @@ export function MultiRoomTabs({
         </div>
       )}
 
-      
+
     </div>
   );
 }
