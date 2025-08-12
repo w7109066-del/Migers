@@ -1163,6 +1163,7 @@ export function ChatRoom({
                                     <div className="flex items-center space-x-1">
                                       <span className={cn(
                                         "font-medium text-sm truncate",
+                                        member.user.isMentor ? "text-red-600" :
                                         ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
                                       )}>
                                         {member.user.username || 'Unknown'}
@@ -1341,6 +1342,7 @@ export function ChatRoom({
                                                 <div className="flex items-center space-x-1">
                                                   <span className={cn(
                                                     "font-medium text-sm truncate",
+                                                    member.user.isMentor ? "text-red-600" :
                                                     ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
                                                   )}>
                                                     {member.user.username || 'Unknown'}
@@ -1631,6 +1633,7 @@ export function ChatRoom({
                               <div className="flex items-center space-x-1">
                                 <span className={cn(
                                   "font-medium text-sm truncate",
+                                  member.user.isMentor ? "text-red-600" :
                                   ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
                                 )}>
                                   {member.user.username || 'Unknown'}
