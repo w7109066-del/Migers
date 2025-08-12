@@ -1266,7 +1266,7 @@ export function ChatRoom({
                     </h2>
                     {user?.isMentor && (
                         <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-2 py-0.5 dark:bg-red-900/20 dark:text-red-200">
-                          M Mentor
+                          🎓 Mentor
                         </Badge>
                       )}
                     {user?.isMerchant && (
@@ -1464,7 +1464,7 @@ export function ChatRoom({
                 </Sheet>
               )}
 
-              {/* Leave Room - Available for all users */}
+              {/* Leave Room - Available for all users including mentors */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
@@ -1476,13 +1476,15 @@ export function ChatRoom({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Leave Room</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to leave {roomName}? You will need to rejoin to continue chatting.
+                      Are you sure you want to leave {roomName}? 
+                      {user?.isMentor && " As a mentor, you can rejoin anytime to continue mentoring."}
+                      {!user?.isMentor && " You will need to rejoin to continue chatting."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleLeaveRoom} className="bg-red-600 hover:bg-red-700">
-                      Leave Room
+                      {user?.isMentor ? "Leave as Mentor" : "Leave Room"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
