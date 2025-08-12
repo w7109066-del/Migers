@@ -387,6 +387,22 @@ export function ChatRoom({
       }
     };
 
+    const handleSocketError = (event: CustomEvent) => {
+      const { message } = event.detail;
+      if (message === 'You are not in the chatroom') {
+        // Show error message in chat
+        const errorMessage = {
+          id: `error-${Date.now()}`,
+          content: '❌ You are not in the chatroom',
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    };
+
     const handleUserJoin = (event: CustomEvent) => {
       const { username, roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId && username && username !== 'undefined') {
@@ -475,6 +491,7 @@ export function ChatRoom({
     window.addEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
     window.addEventListener('userKicked', handleUserKicked as EventListener);
     window.addEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
+    window.addEventListener('socketError', handleSocketError as EventListener);
 
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
@@ -483,6 +500,7 @@ export function ChatRoom({
       window.removeEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
       window.removeEventListener('userKicked', handleUserKicked as EventListener);
       window.removeEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
+      window.removeEventListener('socketError', handleSocketError as EventListener);
     };
   }, [roomId, refetchMembers, messages, blockedUsers]); // Added messages and blockedUsers to dependencies
 

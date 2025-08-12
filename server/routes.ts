@@ -2866,6 +2866,36 @@ export function registerRoutes(app: Express): Server {
             });
             return;
           }
+
+          // Check if user is actually a member of the room (except for system rooms)
+          if (!['1', '2', '3', '4'].includes(data.roomId)) {
+            try {
+              const roomMembers = await storage.getRoomMembers(data.roomId);
+              const isMember = roomMembers?.some(member => member.user.id === userId);
+              
+              if (!isMember) {
+                socket.emit('error', {
+                  message: 'You are not in the chatroom',
+                });
+                return;
+              }
+            } catch (error) {
+              console.error('Error checking room membership:', error);
+              socket.emit('error', {
+                message: 'You are not in the chatroom',
+              });
+              return;
+            }
+          } else {
+            // For mock rooms (1-4), check if user is in the mock room members
+            const roomMembers = mockRoomMembers.get(data.roomId);
+            if (!roomMembers || !roomMembers.has(userId)) {
+              socket.emit('error', {
+                message: 'You are not in the chatroom',
+              });
+              return;
+            }
+          }
         }
 
         if (data.roomId) {

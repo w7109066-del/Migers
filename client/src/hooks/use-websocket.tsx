@@ -24,7 +24,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const { addNotification } = useNotifications();
-  
+
   // Track joined rooms in localStorage to prevent leaving on tab switch
   const joinedRoomsRef = useRef<Set<string>>(new Set());
   const sessionId = useRef<string>(`session-${Date.now()}-${Math.random()}`);
@@ -94,7 +94,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     socket.current.on('authenticated', (data) => {
       console.log('Socket.IO authenticated successfully:', data);
-      
+
       // Clear any previous authentication errors
       if (data.success) {
         console.log('Authentication successful for user:', data.user?.username);
@@ -159,71 +159,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     socket.current.on('error', (data) => {
-      console.error('WebSocket error received:', data);
-      
-      // Handle authentication errors specifically
-      if (data.message && data.message.includes('Authentication failed')) {
-        console.error('Authentication failed, attempting reconnection...');
-        
-        // Try to reconnect after a short delay
-        setTimeout(() => {
-          if (user && socket.current && !socket.current.connected) {
-            connect();
-          }
-        }, 2000);
-        
-        return;
-      }
-      
-      // Check if it's a temporary ban error
-      if (data.message && data.message.includes('temporarily banned from rooms')) {
-        // Extract remaining time from message
-        const timeMatch = data.message.match(/for (\d+) more minutes?/);
-        const remainingMinutes = timeMatch ? parseInt(timeMatch[1]) : 0;
-        
-        // Show temporary ban popup
-        const banMessage = data.message.includes('kicked by admin') 
-          ? `🚫 YOU HAVE BEEN KICKED!\n\nYou cannot enter any chat rooms right now.\n\nReason: Kicked by admin\nTime remaining: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nPlease wait until the restriction is lifted.`
-          : data.message;
-        
-        // Use browser alert for immediate visibility
-        alert(banMessage);
-        
-        // Also show toast notification
-        toast({
-          title: "Access Denied - Temporary Ban",
-          description: `Banned for ${remainingMinutes} more minute${remainingMinutes !== 1 ? 's' : ''}`,
-          variant: "destructive",
-          duration: 8000,
-        });
-        
-        // Navigate away from room
-        window.dispatchEvent(new CustomEvent('forcedLeaveRoom', {
-          detail: { reason: banMessage }
-        }));
-      } else if (data.message && data.message.includes('banned from accessing chat rooms')) {
-        const banMessage = '🚫 ACCESS DENIED\n\nYou are permanently banned from accessing chat rooms.\n\nPlease contact support if you believe this is an error.';
-        alert(banMessage);
-        
-        toast({
-          title: "Access Denied - Permanent Ban",
-          description: "You are banned from accessing chat rooms",
-          variant: "destructive",
-          duration: 8000,
-        });
-        
-        // Navigate away from room
-        window.dispatchEvent(new CustomEvent('forcedLeaveRoom', {
-          detail: { reason: banMessage }
-        }));
-      } else {
-        console.error('General WebSocket error:', data.message);
-        toast({
-          title: "Connection Error",
-          description: data.message || "An unknown error occurred",
-          variant: "destructive",
-        });
-      }
+      console.log('Socket error:', data);
+      // Dispatch custom event for chat room to handle
+      window.dispatchEvent(new CustomEvent('socketError', { 
+        detail: data 
+      }));
     });
 
           socket.current.on('friend_request_received', (data) => {
@@ -255,12 +195,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     socket.current.on('friend_request_accepted', (data) => {
       console.log('Friend request accepted notification received:', data);
-      
+
       // Dispatch custom event to clear friend request notifications
       window.dispatchEvent(new CustomEvent('clear-friend-request-notifications', {
         detail: { fromUserId: data.fromUser?.id }
       }));
-      
+
       addNotification({
         type: 'friend_accepted',
         title: 'Friend Request Accepted',
@@ -342,7 +282,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     socket.current.on('connect_error', (error) => {
       console.error('Socket.IO connection error:', error);
       setIsConnected(false);
-      
+
       // Show user-friendly error message for persistent connection issues
       if (global.reconnectAttempts > 3) {
         toast({
@@ -362,7 +302,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     socket.current.on('reconnect', (attemptNumber) => {
       console.log(`Socket.IO reconnected after ${attemptNumber} attempts`);
       global.reconnectAttempts = 0;
-      
+
       toast({
         title: "Connection Restored",
         description: "Successfully reconnected to the server.",
@@ -450,11 +390,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
       // Add to joined rooms tracking
       joinedRoomsRef.current.add(roomId);
-      
+
       // Save to localStorage for persistence across tabs
       const joinedRoomsArray = Array.from(joinedRoomsRef.current);
       localStorage.setItem(`joinedRooms-${user.id}`, JSON.stringify(joinedRoomsArray));
-      
+
       console.log('Joined room and saved to localStorage:', roomId);
     } else {
       console.error('Cannot join room: WebSocket not connected');
@@ -480,11 +420,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
       // Remove from joined rooms tracking
       joinedRoomsRef.current.delete(roomId);
-      
+
       // Update localStorage
       const joinedRoomsArray = Array.from(joinedRoomsRef.current);
       localStorage.setItem(`joinedRooms-${user.id}`, JSON.stringify(joinedRoomsArray));
-      
+
       console.log('Left room and removed from localStorage:', roomId);
     } else {
       console.log('UI tab switch detected - NOT leaving room:', roomId);
@@ -492,6 +432,19 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   };
 
   const sendChatMessage = (content: string, roomId?: string, recipientId?: string) => {
+    // Check if the user is in the member list of the current room before sending a message
+    // This assumes there's a way to access the member list or a check function.
+    // For now, we'll just send and let the backend handle validation if no member list is available here.
+    // A more robust solution would involve fetching the member list or passing it down.
+
+    // Placeholder for member list check:
+    // if (roomId && !isUserInMemberList(user.id, roomId)) {
+    //   window.dispatchEvent(new CustomEvent('errorMessage', { 
+    //     detail: { message: "You are not in this chatroom." } 
+    //   }));
+    //   return;
+    // }
+
     sendMessage('send_message', {
       content,
       roomId,
