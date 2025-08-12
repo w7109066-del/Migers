@@ -1644,7 +1644,6 @@ function HomePageContent() {
                       Credits
                     </span>
                   </button>
-</old_str>
 
                   <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "text-red-600 hover:bg-red-700" : "text-red-600 hover:bg-red-50")}
