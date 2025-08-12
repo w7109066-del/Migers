@@ -472,9 +472,11 @@ export function ChatRoom({
       console.log('User leave event received:', { username, eventRoomId, leftUserId, currentRoomId: roomId });
 
       if (eventRoomId === roomId && username && username !== 'undefined') {
-        // Don't show leave message for current user
+        // Don't show leave message for current user unless they are leaving
         if (leftUserId === user?.id) {
-          console.log('Skipping leave message for current user');
+          console.log('Current user is leaving, clearing room state');
+          // Clear messages when current user leaves
+          setMessages([]);
           return;
         }
 
@@ -954,13 +956,24 @@ export function ChatRoom({
         localStorage.removeItem(localStorageKey);
         console.log('Cleared localStorage cache for room:', roomId);
 
+        // Clear any room-specific state
+        setMessages([]);
+        setIsRoomJoined(false);
+
         // Actually leave the room via WebSocket with forceLeave=true
         leaveRoom(roomId, true); // Force leave the room
-        setIsRoomJoined(false);
         console.log('User explicitly left room:', roomId);
-      }
-      if (onLeaveRoom) {
-        onLeaveRoom();
+
+        // Add a small delay to ensure leave message is sent before navigation
+        setTimeout(() => {
+          if (onLeaveRoom) {
+            onLeaveRoom();
+          }
+        }, 100);
+      } else {
+        if (onLeaveRoom) {
+          onLeaveRoom();
+        }
       }
     }
   };

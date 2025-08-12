@@ -436,6 +436,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       sendMessage('leave_room', {
         roomId,
         sessionId: sessionId.current,
+        explicit: true, // Add explicit flag for server to broadcast
       });
 
       // Remove from joined rooms tracking
