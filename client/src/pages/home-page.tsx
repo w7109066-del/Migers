@@ -1623,7 +1623,17 @@ function HomePageContent() {
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
                     onClick={() => {
                       console.log('Credits button clicked from settings');
+                      // Close all other modals first
                       setShowSettings(false);
+                      setShowProfile(false);
+                      setShowMentorPage(false);
+                      setShowAdmin(false);
+                      setShowEditProfile(false);
+                      setShowUserSearch(false);
+                      setShowStatusUpdate(false);
+                      setShowPrivacySecurity(false);
+                      setShowHelpSupport(false);
+                      // Then open credits
                       setShowCredits(true);
                     }}
                   >
@@ -1634,6 +1644,7 @@ function HomePageContent() {
                       Credits
                     </span>
                   </button>
+</old_str>
 
                   <button
                     className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "text-red-600 hover:bg-red-700" : "text-red-600 hover:bg-red-50")}
