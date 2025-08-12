@@ -1230,11 +1230,12 @@ export function ChatRoom({
             </SheetContent>
         </Sheet>
 
-        {/* Settings Dialog */}
-        <Dialog open={settingsOpen} onOpenChange={(open) => {
-          console.log('Settings dialog state change:', open);
-          setSettingsOpen(open);
-        }}>
+        {/* Settings Dialog - Only for non-mentors */}
+        {!user?.isMentor && (
+          <Dialog open={settingsOpen} onOpenChange={(open) => {
+            console.log('Settings dialog state change:', open);
+            setSettingsOpen(open);
+          }}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Room Settings</DialogTitle>
@@ -1491,7 +1492,8 @@ export function ChatRoom({
               </div>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        )}
 
         {/* Messages List - Takes remaining space */}
         <div className="flex-1 overflow-hidden">
