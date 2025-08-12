@@ -41,6 +41,7 @@ export function MultiRoomTabs({
   const [settingsOpen, setSettingsOpen] = useState(false); // Renamed for clarity with Sheet component
   const [typingUsers, setTypingUsers] = useState<Map<string, string[]>>(new Map()); // roomId -> array of usernames
   const [hasNewMessages, setHasNewMessages] = useState<Map<string, boolean>>(new Map()); // roomId -> has new messages
+  const [memberListError, setMemberListError] = useState(false);
   const { isConnected } = useWebSocket();
   const { user } = useAuth();
   
