@@ -108,7 +108,10 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
     onClose();
   };
 
-  const handleMessageClick = (user: User) => {
+  const handleMessageClick = (user: User, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
     if (onMessageClick && typeof onMessageClick === 'function') {
       onMessageClick({
         ...user,
@@ -122,17 +125,16 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={cn("sm:max-w-md h-[600px] p-0", isDarkMode ? "bg-gray-900" : "bg-white")}>
         {/* Header */}
-        <div className={cn("flex items-center justify-between px-4 py-4 border-b", isDarkMode ? "border-gray-700" : "border-gray-200")}>
+        <div className={cn("flex items-center justify-center px-4 py-4 border-b relative", isDarkMode ? "border-gray-700" : "border-gray-200")}>
           <button
             onClick={onClose}
-            className={cn("text-lg font-normal", isDarkMode ? "text-gray-300" : "text-gray-700")}
+            className={cn("absolute left-4 text-lg font-normal", isDarkMode ? "text-gray-300" : "text-gray-700")}
           >
             ✕
           </button>
           <h2 className={cn("text-lg font-semibold", isDarkMode ? "text-white" : "text-black")}>
             Search
           </h2>
-          <div className="w-6"></div> {/* Spacer for centering */}
         </div>
 
         {/* Search Input */}
@@ -230,10 +232,7 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMessageClick(user);
-                        }}
+                        onClick={(e) => handleMessageClick(user, e)}
                         className="p-2"
                       >
                         <MessageCircle className="w-4 h-4" />

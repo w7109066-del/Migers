@@ -664,22 +664,16 @@ function HomePageContent() {
     }
   };
 
-  const handleUserProfileClick = (profile: any) => {
-    console.log('User clicked:', profile);
-    if (profile.showMiniProfile) {
-      setSelectedProfile(profile);
-      setShowMiniProfile(true);
-    } else if (profile.openDirectMessage) {
-      // Switch to messages tab and open direct message
-      setActiveTab('dm'); // Change to 'dm' tab
-      // Close the room to go back to messages view
-      setCurrentRoom(null);
-      setRoomName('');
-      setSelectedDirectMessage(profile); // Set the selected user for DM
-    } else {
-      setSelectedProfile(profile);
-      setActiveTab('dm'); // Default to 'dm' tab if not showing mini profile or directly opening DM
-    }
+  const handleUserSelect = (profile: MiniProfileData) => {
+    console.log('User selected from search:', profile);
+    setSelectedProfile(profile);
+    setShowMiniProfile(true);
+  };
+
+  const handleStartDirectMessage = (profile: MiniProfileData) => {
+    console.log('Starting direct message with user:', profile.username);
+    setActiveTab('dm'); // Switch to the DM tab
+    setSelectedDirectMessage(profile); // Set the selected user for DM
   };
 
   const handleReply = (commentId: string) => {
@@ -828,7 +822,7 @@ function HomePageContent() {
   };
 
   // Modified handleUserClick function - moved here to avoid initialization error
-  const handleUserClick = (profile: any) => {
+  const handleUserProfileClick = (profile: any) => {
     console.log('User clicked:', profile);
     if (profile.showMiniProfile) {
       setSelectedProfile(profile);
@@ -874,8 +868,8 @@ function HomePageContent() {
               <div className="relative">
                 <div className={cn(
                   "flex items-center px-4 py-2 rounded-full border transition-colors",
-                  isDarkMode 
-                    ? "bg-gray-800 border-gray-700 text-gray-300" 
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-gray-300"
                     : "bg-gray-100 border-gray-200 text-gray-600"
                 )}>
                   <Search className="w-5 h-5 mr-3 flex-shrink-0" />
@@ -1853,8 +1847,11 @@ function HomePageContent() {
           <UserSearchModal
             isOpen={showUserSearch}
             onClose={() => setShowUserSearch(false)}
-            onUserSelect={handleUserProfileClick}
-            onMessageClick={handleDirectMessageClick}
+            onUserSelect={handleUserSelect}
+            onMessageClick={(user) => {
+              console.log('Starting DM with user:', user);
+              handleStartDirectMessage(user);
+            }}
           />
         )}
 
