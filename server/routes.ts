@@ -1141,6 +1141,65 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin: Get all mentors with recharge status
+  app.get('/api/admin/mentors', requireAdmin, async (req, res) => {
+    try {
+      const mentors = await storage.getAllMentorsWithRechargeStatus();
+      res.json(mentors);
+    } catch (error) {
+      console.error('Error fetching mentors:', error);
+      res.status(500).json({ message: 'Failed to fetch mentors' });
+    }
+  });
+
+  // Admin: Check and update expired mentors
+  app.post('/api/admin/mentors/check-expired', requireAdmin, async (req, res) => {
+    try {
+      const expiredMentors = await storage.checkAndExpireMentors();
+      res.json({ 
+        message: `Processed ${expiredMentors.length} expired mentors`,
+        expiredMentors 
+      });
+    } catch (error) {
+      console.error('Error checking expired mentors:', error);
+      res.status(500).json({ message: 'Failed to check expired mentors' });
+    }
+  });
+
+  // Admin: Manually expire mentor status
+  app.post('/api/admin/mentors/expire', requireAdmin, async (req, res) => {
+    try {
+      const { mentorId } = req.body;
+      
+      if (!mentorId) {
+        return res.status(400).json({ message: 'Mentor ID is required' });
+      }
+
+      const updatedMentor = await storage.updateUserMentorStatus(mentorId, false);
+      res.json(updatedMentor);
+    } catch (error) {
+      console.error('Error expiring mentor:', error);
+      res.status(500).json({ message: 'Failed to expire mentor' });
+    }
+  });
+
+  // Admin: Update mentor recharge time
+  app.post('/api/admin/mentors/recharge', requireAdmin, async (req, res) => {
+    try {
+      const { mentorId } = req.body;
+      
+      if (!mentorId) {
+        return res.status(400).json({ message: 'Mentor ID is required' });
+      }
+
+      const updatedMentor = await storage.updateUserRechargeTime(mentorId);
+      res.json(updatedMentor);
+    } catch (error) {
+      console.error('Error updating mentor recharge time:', error);
+      res.status(500).json({ message: 'Failed to update recharge time' });
+    }
+  });
+
   app.post('/api/admin/add-merchant', async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });

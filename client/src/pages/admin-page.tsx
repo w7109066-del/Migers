@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user/user-avatar';
 import { AddGiftModal } from '@/components/ui/add-gift-modal';
 import { AddCustomEmojiModal } from '@/components/ui/add-custom-emoji-modal';
-import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2, X, Smile } from 'lucide-react';
+import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2, X, Smile, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -65,6 +65,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [newRoomCapacity, setNewRoomCapacity] = useState(25);
   const [newRoomCreator, setNewRoomCreator] = useState('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [mentorsList, setMentorsList] = useState<any[]>([]);
+  const [isCheckingExpired, setIsCheckingExpired] = useState(false);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -73,6 +75,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
       loadGifts();
       loadRooms();
       loadCustomEmojis();
+      loadMentorsList();
     }
   }, [user?.isAdmin]);
 
@@ -227,6 +230,105 @@ export function AdminPage({ onBack }: AdminPageProps) {
     } catch (error) {
       console.error('Error deleting room:', error);
       alert('Error deleting room. Please try again.');
+    }
+  };
+
+  const loadMentorsList = async () => {
+    try {
+      const response = await fetch('/api/admin/mentors', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const mentorsData = await response.json();
+        setMentorsList(mentorsData);
+      } else {
+        console.error('Failed to load mentors list');
+      }
+    } catch (error) {
+      console.error('Error loading mentors list:', error);
+    }
+  };
+
+  const checkExpiredMentors = async () => {
+    setIsCheckingExpired(true);
+    try {
+      const response = await fetch('/api/admin/mentors/check-expired', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Expired mentors check result:', result);
+        
+        // Refresh mentors list and stats
+        loadMentorsList();
+        loadStats();
+        
+        alert(`Processed ${result.expiredMentors.length} expired mentors`);
+      } else {
+        console.error('Failed to check expired mentors');
+        alert('Failed to check expired mentors');
+      }
+    } catch (error) {
+      console.error('Error checking expired mentors:', error);
+      alert('Error checking expired mentors');
+    } finally {
+      setIsCheckingExpired(false);
+    }
+  };
+
+  const expireMentor = async (mentorId: string) => {
+    if (!confirm('Are you sure you want to remove mentor status for this user?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/mentors/expire', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ mentorId }),
+      });
+
+      if (response.ok) {
+        loadMentorsList();
+        loadStats();
+        alert('Mentor status removed successfully');
+      } else {
+        console.error('Failed to expire mentor');
+        alert('Failed to remove mentor status');
+      }
+    } catch (error) {
+      console.error('Error expiring mentor:', error);
+      alert('Error removing mentor status');
+    }
+  };
+
+  const updateRechargeTime = async (mentorId: string) => {
+    try {
+      const response = await fetch('/api/admin/mentors/recharge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ mentorId }),
+      });
+
+      if (response.ok) {
+        loadMentorsList();
+        alert('Recharge time updated successfully');
+      } else {
+        console.error('Failed to update recharge time');
+        alert('Failed to update recharge time');
+      }
+    } catch (error) {
+      console.error('Error updating recharge time:', error);
+      alert('Error updating recharge time');
     }
   };
 
@@ -794,6 +896,116 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 <div className="col-span-full text-center py-8">
                   <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
                     No gifts found. Add some gifts to get started.
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mentor Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className={cn("flex items-center justify-between", isDarkMode ? "text-white" : "text-gray-900")}>
+              <div className="flex items-center space-x-2">
+                <BookOpen className="w-5 h-5" />
+                <span>Mentor Management</span>
+              </div>
+              <Button
+                onClick={checkExpiredMentors}
+                size="sm"
+                className="flex items-center space-x-2"
+                disabled={isCheckingExpired}
+              >
+                <RefreshCw className={cn("w-4 h-4", isCheckingExpired ? "animate-spin" : "")} />
+                <span>Check Expired</span>
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {mentorsList.map((mentor) => (
+                <div
+                  key={mentor.id}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-lg border",
+                    isDarkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200",
+                    mentor.isExpired ? "border-red-500 bg-red-50 dark:bg-red-900/20" :
+                    mentor.isExpiringSoon ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20" : ""
+                  )}
+                >
+                  <div className="flex items-center space-x-3">
+                    <UserAvatar
+                      username={mentor.username}
+                      size="sm"
+                      isOnline={mentor.isOnline}
+                      profilePhotoUrl={mentor.profilePhotoUrl}
+                    />
+                    <div>
+                      <div className={cn("font-medium", isDarkMode ? "text-white" : "text-gray-900")}>
+                        {mentor.username}
+                      </div>
+                      <div className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                        Specialty: {mentor.mentorSpecialty || 'Not specified'}
+                      </div>
+                      <div className={cn("text-xs", isDarkMode ? "text-gray-500" : "text-gray-500")}>
+                        Created: {new Date(mentor.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className={cn("text-xs", isDarkMode ? "text-gray-500" : "text-gray-500")}>
+                        Last Recharge: {mentor.lastRechargeAt ? new Date(mentor.lastRechargeAt).toLocaleDateString() : 'Never'}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="text-xs">
+                        Level {mentor.level}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {mentor.fansCount} fans
+                      </Badge>
+                      <Badge 
+                        variant={mentor.isExpired ? "destructive" : mentor.isExpiringSoon ? "secondary" : "default"} 
+                        className={cn(
+                          "text-xs",
+                          mentor.isExpired ? "bg-red-600 text-white" :
+                          mentor.isExpiringSoon ? "bg-yellow-600 text-white" :
+                          "bg-green-600 text-white"
+                        )}
+                      >
+                        {mentor.isExpired ? "Expired" : mentor.isExpiringSoon ? "Expiring Soon" : "Active"}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {mentor.daysSinceRecharge} days
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {mentor.isExpired && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs text-red-600 border-red-300 hover:bg-red-50"
+                        onClick={() => expireMentor(mentor.id)}
+                      >
+                        Remove Status
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={() => updateRechargeTime(mentor.id)}
+                    >
+                      Update Recharge
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              {mentorsList.length === 0 && (
+                <div className="text-center py-8">
+                  <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                    No mentors found.
                   </p>
                 </div>
               )}

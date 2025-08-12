@@ -1407,6 +1407,113 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getAllMentorsWithRechargeStatus(): Promise<Array<{
+    id: string;
+    username: string;
+    email: string;
+    profilePhotoUrl?: string;
+    mentorSpecialty?: string;
+    level: number;
+    isOnline: boolean;
+    fansCount: number;
+    createdAt: string;
+    lastRechargeAt?: string;
+    daysSinceRecharge: number;
+    isExpiringSoon: boolean;
+    isExpired: boolean;
+  }>> {
+    try {
+      const mentors = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.isMentor, true))
+        .orderBy(desc(users.createdAt));
+
+      // Calculate recharge status for each mentor
+      const mentorsWithStatus = await Promise.all(
+        mentors.map(async (mentor) => {
+          const fansCount = await this.getFansCount(mentor.id);
+          const now = new Date();
+          const lastRecharge = mentor.lastRechargeAt ? new Date(mentor.lastRechargeAt) : new Date(mentor.createdAt || now);
+          const daysSinceRecharge = Math.floor((now.getTime() - lastRecharge.getTime()) / (1000 * 60 * 60 * 24));
+          
+          return {
+            id: mentor.id,
+            username: mentor.username,
+            email: mentor.email,
+            profilePhotoUrl: mentor.profilePhotoUrl || undefined,
+            mentorSpecialty: mentor.mentorSpecialty || undefined,
+            level: mentor.level || 1,
+            isOnline: mentor.isOnline || false,
+            fansCount,
+            createdAt: mentor.createdAt?.toISOString() || new Date().toISOString(),
+            lastRechargeAt: mentor.lastRechargeAt?.toISOString(),
+            daysSinceRecharge,
+            isExpiringSoon: daysSinceRecharge >= 25, // Warning at 25 days
+            isExpired: daysSinceRecharge >= 30 // Expired after 30 days
+          };
+        })
+      );
+
+      return mentorsWithStatus;
+    } catch (error) {
+      console.error('Error fetching mentors with recharge status:', error);
+      return [];
+    }
+  }
+
+  async checkAndExpireMentors(): Promise<Array<{
+    id: string;
+    username: string;
+    daysSinceRecharge: number;
+  }>> {
+    try {
+      const mentors = await this.getAllMentorsWithRechargeStatus();
+      const expiredMentors = mentors.filter(mentor => mentor.isExpired);
+      
+      const updatedMentors = [];
+      
+      for (const mentor of expiredMentors) {
+        // Remove mentor status for expired mentors
+        await this.db
+          .update(users)
+          .set({ 
+            isMentor: false,
+            mentorSpecialty: null
+          })
+          .where(eq(users.id, mentor.id));
+          
+        updatedMentors.push({
+          id: mentor.id,
+          username: mentor.username,
+          daysSinceRecharge: mentor.daysSinceRecharge
+        });
+        
+        console.log(`Mentor status expired for ${mentor.username} (${mentor.daysSinceRecharge} days since recharge)`);
+      }
+      
+      return updatedMentors;
+    } catch (error) {
+      console.error('Error checking expired mentors:', error);
+      return [];
+    }
+  }
+
+  async updateUserRechargeTime(userId: string): Promise<User | undefined> {
+    try {
+      const [updatedUser] = await this.db
+        .update(users)
+        .set({ lastRechargeAt: new Date() })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user recharge time:', error);
+      return undefined;
+    }
+  }
+
   async getFollowerCount(userId: string): Promise<number> {
     return this.getFansCount(userId);
   }
