@@ -44,6 +44,31 @@ export function MultiRoomTabs({
   const { isConnected } = useWebSocket();
   const { user } = useAuth();
 
+  // Add safety checks
+  if (!rooms || !Array.isArray(rooms)) {
+    console.error('MultiRoomTabs: Invalid rooms prop', rooms);
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-gray-500">Invalid room data</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeRoomIndex < 0 || activeRoomIndex >= rooms.length) {
+    console.error('MultiRoomTabs: Invalid activeRoomIndex', activeRoomIndex, 'rooms length:', rooms.length);
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-gray-500">Invalid room selection</p>
+        </div>
+      </div>
+    );
+  }
+
   // Sync room states across tabs using localStorage
   useEffect(() => {
     if (!user) return;
@@ -253,6 +278,11 @@ export function MultiRoomTabs({
 
         <div className="relative w-full h-full overflow-hidden">
           {rooms.map((room, index) => {
+            if (!room || !room.id || !room.name) {
+              console.error('MultiRoomTabs: Invalid room data at index', index, room);
+              return null;
+            }
+
             const isActive = activeRoomIndex === index;
             // Determine if the current user is a merchant for styling purposes
             const isMerchant = user && user.isMerchant; // Assuming user object has an isMerchant flag
@@ -460,19 +490,28 @@ export function MultiRoomTabs({
 
                     {/* Chat Room Content */}
                     <div className="flex-1 overflow-hidden">
-                      <ChatRoom
-                        key={`chat-${room.id}`}
-                        roomId={room.id}
-                        roomName={room.name}
-                        onUserClick={onUserClick || (() => {})}
-                        onLeaveRoom={() => onCloseRoom(index)}
-                        savedMessages={room.messages || []}
-                        onSaveMessages={(messages) => onSaveMessages(room.id, messages)}
-                        isUserListOpen={isUserListOpen && activeRoomIndex === index}
-                        onSetUserListOpen={setIsUserListOpen}
-                        isSettingsOpen={isSettingsOpen && activeRoomIndex === index}
-                        onSetSettingsOpen={setIsSettingsOpen}
-                      />
+                      {room && room.id && room.name ? (
+                        <ChatRoom
+                          key={`chat-${room.id}`}
+                          roomId={room.id}
+                          roomName={room.name}
+                          onUserClick={onUserClick || (() => {})}
+                          onLeaveRoom={() => onCloseRoom(index)}
+                          savedMessages={room.messages || []}
+                          onSaveMessages={(messages) => onSaveMessages(room.id, messages)}
+                          isUserListOpen={isUserListOpen && activeRoomIndex === index}
+                          onSetUserListOpen={setIsUserListOpen}
+                          isSettingsOpen={isSettingsOpen && activeRoomIndex === index}
+                          onSetSettingsOpen={setIsSettingsOpen}
+                        />
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <div className="text-center text-gray-500">
+                            <MessageCircle className="w-8 h-8 mx-auto mb-2" />
+                            <p>Invalid room data</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -489,15 +528,15 @@ export function MultiRoomTabs({
         )}>
           <div className="flex items-center space-x-2">
             <span className={cn("font-medium", isMerchant && "text-purple-500")}>
-              {rooms[activeRoomIndex]?.name || 'No Room'}
+              {(rooms && rooms[activeRoomIndex] && rooms[activeRoomIndex].name) || 'No Room'}
               {isMerchant && <Crown className="w-3 h-3 inline-block ml-1 text-purple-500" />}
             </span>
             <span className="text-gray-400">•</span>
             <span>
-              {activeRoomIndex + 1} of {rooms.length}
+              {activeRoomIndex + 1} of {rooms?.length || 0}
             </span>
             {/* Show typing indicator for current room */}
-            {typingUsers.get(rooms[activeRoomIndex]?.id) && typingUsers.get(rooms[activeRoomIndex]?.id)!.length > 0 && (
+            {rooms && rooms[activeRoomIndex] && typingUsers.get(rooms[activeRoomIndex].id) && typingUsers.get(rooms[activeRoomIndex].id)!.length > 0 && (
               <>
                 <span className="text-gray-400">•</span>
                 <div className="flex items-center space-x-1 text-blue-500">
@@ -507,7 +546,8 @@ export function MultiRoomTabs({
                     <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                   <span className="text-[10px]">
-                    {typingUsers.get(rooms[activeRoomIndex]?.id)!.join(', ')} typing...
+                    {rooms && rooms[activeRoomIndex] && typingUsers.get(rooms[activeRoomIndex].id) ? 
+                      typingUsers.get(rooms[activeRoomIndex].id)!.join(', ') : ''} typing...
                   </span>
                 </div>
               </>
