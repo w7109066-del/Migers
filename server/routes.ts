@@ -366,52 +366,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/rooms/:roomId/members", requireRoomAccess, async (req, res) => {
+  // Room members endpoint
+  app.get("/api/rooms/:roomId/members", requireAuth, async (req, res) => {
     try {
       const { roomId } = req.params;
 
-      // For mock rooms, return members from memory with deduplication
-      if (['1', '2', '3', '4'].includes(roomId)) {
-        if (mockRoomMembers.has(roomId)) {
-          const roomMembersMap = mockRoomMembers.get(roomId)!;
+      // Fetch members including merchant data from storage
+      const members = await storage.getRoomMembers(roomId);
 
-          // Deduplicate members by username
-          const uniqueMembers = new Map();
-
-          for (const [memberId, userData] of roomMembersMap) {
-            const username = userData.username;
-            if (!uniqueMembers.has(username) || uniqueMembers.get(username).id === memberId) {
-              uniqueMembers.set(username, userData);
-            }
-          }
-
-          const members = Array.from(uniqueMembers.values()).map(userData => ({
-            user: userData
-          }));
-
-          res.json(members);
-        } else {
-          res.json([]);
+      // Deduplicate members by user ID, keeping the latest entry if duplicates exist
+      const uniqueMembersMap = new Map<string, any>();
+      if (members) {
+        for (const member of members) {
+          uniqueMembersMap.set(member.user.id, member);
         }
-      } else {
-        // For real rooms, use storage with deduplication
-        const allMembers = await storage.getRoomMembers(roomId);
-
-        // Deduplicate by user ID
-        const uniqueMembers = new Map();
-        if (allMembers) {
-          for (const member of allMembers) {
-            if (!uniqueMembers.has(member.user.id)) {
-              uniqueMembers.set(member.user.id, member);
-            }
-          }
-        }
-
-        res.json(Array.from(uniqueMembers.values()));
       }
+
+      const uniqueMembers = Array.from(uniqueMembersMap.values());
+
+      res.json(uniqueMembers);
     } catch (error) {
-      console.error("Failed to fetch room members:", error);
-      res.status(500).json({ message: "Failed to fetch room members" });
+      console.error("Error fetching room members:", error);
+      res.status(500).json({ error: "Failed to fetch room members" });
     }
   });
 
@@ -777,7 +753,7 @@ export function registerRoutes(app: Express): Server {
       console.error('=== POST CREATION ERROR ===');
       console.error('Error details:', error);
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
+
       // Clean up uploaded file if an error occurs after upload but before saving to DB
       if (req.file && fs.existsSync(req.file.path)) {
         try {
@@ -787,8 +763,8 @@ export function registerRoutes(app: Express): Server {
           console.error('Error cleaning up uploaded file after post creation error:', unlinkError);
         }
       }
-      
-      res.status(500).json({ 
+
+      res.status(500).json({
         message: 'Failed to create post',
         error: error instanceof Error ? error.message : 'Unknown error',
         details: process.env.NODE_ENV === 'development' ? error : undefined
@@ -1116,7 +1092,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  
+
 
   app.post('/api/merchant/register', async (req, res) => {
     if (!req.isAuthenticated()) {
@@ -1219,7 +1195,7 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error adding merchant:', error);
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      res.status(500).json({ 
+      res.status(500).json({
         message: 'Failed to add merchant',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -1830,7 +1806,7 @@ export function registerRoutes(app: Express): Server {
           data: { acceptedBy: currentUserId, acceptedByUsername: currentUser.username }
         });
 
-        console.log(`Notification created:`, notification);
+        console.log('Notification created:', notification);
 
         // Send real-time notification to the requester
         if (notification) {
@@ -2359,13 +2335,13 @@ export function registerRoutes(app: Express): Server {
       console.log('API: Fetching custom emojis...');
       const emojis = await storage.getActiveCustomEmojis();
       console.log('API: Found custom emojis:', emojis.length);
-      
+
       // Ensure file URLs are properly formatted
       const formattedEmojis = emojis.map(emoji => ({
         ...emoji,
         fileUrl: emoji.fileUrl.startsWith('/') ? emoji.fileUrl : `/${emoji.fileUrl}`
       }));
-      
+
       console.log('API: Formatted custom emojis data:', formattedEmojis);
       res.json(formattedEmojis);
     } catch (error) {

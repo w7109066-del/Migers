@@ -602,20 +602,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]> {
-    const result = await this.db
-      .select({
-        id: roomMembers.id,
-        roomId: roomMembers.roomId,
-        userId: roomMembers.userId,
-        role: roomMembers.role,
-        joinedAt: roomMembers.joinedAt,
-        user: users,
-      })
-      .from(roomMembers)
-      .innerJoin(users, eq(roomMembers.userId, users.id))
-      .where(eq(roomMembers.roomId, roomId));
+    try {
+      const members = await this.db
+        .select({
+          id: roomMembers.id,
+          roomId: roomMembers.roomId,
+          userId: roomMembers.userId,
+          role: roomMembers.role,
+          joinedAt: roomMembers.joinedAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            level: users.level,
+            isOnline: users.isOnline,
+            isMerchant: users.isMerchant,
+            merchantRegisteredAt: users.merchantRegisteredAt,
+            lastRechargeAt: users.lastRechargeAt,
+          },
+        })
+        .from(roomMembers)
+        .innerJoin(users, eq(roomMembers.userId, users.id))
+        .where(eq(roomMembers.roomId, roomId));
 
-    return result;
+      return members;
+    } catch (error) {
+      console.error('Error getting room members:', error);
+      return [];
+    }
   }
 
   async kickMember(roomId: string, userId: string): Promise<void> {
@@ -780,7 +793,7 @@ export class DatabaseStorage implements IStorage {
         .from(users)
         .where(inArray(users.id, conversationIds));
 
-      console.log(`Found user details for ${userDetails.length} users`);
+      console.log(`Found ${userDetails.length} user details`);
 
       // Combine conversation data with user details
       const conversations = await Promise.all(userDetails.map(async user => {

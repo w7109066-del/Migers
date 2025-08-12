@@ -63,6 +63,9 @@ interface RoomMember {
     username: string;
     level: number;
     isOnline: boolean;
+    isMerchant?: boolean;
+    merchantRegisteredAt?: string;
+    lastRechargeAt?: string;
   };
   role?: string;
 }
@@ -962,8 +965,8 @@ export function ChatRoom({
                                   "font-medium text-sm truncate",
                                   // Apply special colors - Admin visible in all rooms - Dark orange
                                   member.role === 'admin' || member.user.level >= 5 ? "text-orange-800" :
-                                  // Merchant color - Purple
-                                  member.user.isMerchant ? "text-purple-600" :
+                                  // Merchant color - Purple (check for both boolean and truthy values)
+                                  (member.user.isMerchant === true || member.user.isMerchant) ? "text-purple-600" :
                                   // Owner and moderator colors only in managed rooms (not system rooms 1-4)
                                   !['1', '2', '3', '4'].includes(roomId || '') ? (
                                     (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
@@ -976,8 +979,8 @@ export function ChatRoom({
                                 {(member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
                                   <Crown className="w-3 h-3 text-yellow-500" />
                                 )}
-                                {/* Merchant badge */}
-                                {member.user.isMerchant && (
+                                {/* Merchant badge - check for both boolean and truthy values */}
+                                {(member.user.isMerchant === true || member.user.isMerchant) && (
                                   <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
                                     🛍️
                                   </Badge>
@@ -1143,6 +1146,8 @@ export function ChatRoom({
                                             "font-medium text-sm truncate",
                                             // Apply special colors - Admin visible in all rooms - Dark orange
                                             member.role === 'admin' || member.user.level >= 5 ? "text-orange-800" :
+                                            // Merchant color - Purple
+                                            (member.user.isMerchant === true || member.user.isMerchant) ? "text-purple-600" :
                                             // Owner and moderator colors only in managed rooms (not system rooms 1-4)
                                             !['1', '2', '3', '4'].includes(roomId || '') ? (
                                               (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
@@ -1154,6 +1159,12 @@ export function ChatRoom({
                                           {/* Crown only for owner in managed rooms */}
                                           {(member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
                                             <Crown className="w-3 h-3 text-yellow-500" />
+                                          )}
+                                          {/* Merchant badge */}
+                                          {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                            <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                              🛍️
+                                            </Badge>
                                           )}
                                           {(member.role === 'admin' || member.user.level >= 5) && (
                                             <Badge variant="destructive" className="text-xs bg-red-600">
