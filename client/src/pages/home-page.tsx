@@ -867,9 +867,29 @@ function HomePageContent() {
       icon: <Users className="w-5 h-5" />, // Changed icon to Users
       content: (
         <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
-          {/* Header with user info, notifications, and search */}
+          {/* Header with Search */}
           <div className={cn("border-b px-4 py-3 flex-shrink-0", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
-            <div className="flex items-center justify-between mb-3">
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <div className={cn(
+                  "flex items-center px-4 py-2 rounded-full border transition-colors",
+                  isDarkMode 
+                    ? "bg-gray-800 border-gray-700 text-gray-300" 
+                    : "bg-gray-100 border-gray-200 text-gray-600"
+                )}>
+                  <Search className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <Input
+                    placeholder="Search users..."
+                    className="border-0 bg-transparent text-base placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onClick={() => setShowUserSearch(true)}
+                    readOnly
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 {/* User Avatar and Info */}
                 <div className="flex items-center space-x-3">
@@ -932,19 +952,9 @@ function HomePageContent() {
                 </div>
               </div>
 
-              {/* Right side - Notifications, Search, and Coins */}
+              {/* Right side - Notifications and Coins */}
               <div className="flex flex-col items-end space-y-1">
                 <div className="flex items-center space-x-2">
-                  {/* Search Button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowUserSearch(true)}
-                    className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
-                  >
-                    <Search className="w-5 h-5" />
-                  </Button>
-
                   {/* Notification Dropdown */}
                   <NotificationDropdown />
                 </div>

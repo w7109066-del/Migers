@@ -35,14 +35,14 @@ interface UserSearchModalProps {
 
 export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick }: UserSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isDarkMode } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: searchResults, isLoading, refetch } = useQuery({
     queryKey: ["/api/users/search", searchQuery],
     queryFn: async () => {
-      if (searchQuery.trim().length < 2) return [];
+      if (searchQuery.trim().length < 1) return [];
 
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
         credentials: 'include',
@@ -54,7 +54,7 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
 
       return response.json();
     },
-    enabled: searchQuery.trim().length >= 2,
+    enabled: searchQuery.trim().length >= 1,
   });
 
   const handleAddFriend = async (userId: string, username: string) => {
@@ -112,112 +112,141 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Search Users</DialogTitle>
-          <DialogDescription>Enter a username to find other users.</DialogDescription>
-        </DialogHeader>
+      <DialogContent className={cn("sm:max-w-md h-[600px] p-0", isDarkMode ? "bg-gray-900" : "bg-white")}>
+        {/* Header */}
+        <div className={cn("flex items-center justify-center py-4 border-b relative", isDarkMode ? "border-gray-700" : "border-gray-200")}>
+          <button
+            onClick={onClose}
+            className={cn("absolute left-4 text-lg font-normal", isDarkMode ? "text-gray-300" : "text-gray-700")}
+          >
+            ✕
+          </button>
+          <h2 className={cn("text-lg font-semibold", isDarkMode ? "text-white" : "text-black")}>
+            Search
+          </h2>
+        </div>
 
-        <Command className="rounded-lg border shadow-md">
-          <CommandInput 
-            placeholder="Search by username..." 
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
-          <CommandList>
-            {isLoading && searchQuery.trim().length >= 2 && (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="ml-2 text-sm text-gray-500">Searching...</span>
-              </div>
-            )}
+        {/* Search Input */}
+        <div className={cn("px-4 py-3 border-b", isDarkMode ? "border-gray-700" : "border-gray-200")}>
+          <div className={cn("relative rounded-lg", isDarkMode ? "bg-gray-800" : "bg-gray-100")}>
+            <Search className={cn("absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4", isDarkMode ? "text-gray-400" : "text-gray-500")} />
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={cn(
+                "w-full pl-10 pr-4 py-2 rounded-lg border-0 focus:ring-0 focus:outline-none text-sm",
+                isDarkMode ? "bg-gray-800 text-white placeholder:text-gray-400" : "bg-gray-100 text-black placeholder:text-gray-500"
+              )}
+              autoFocus
+            />
+          </div>
+        </div>
 
-            {!isLoading && searchQuery.trim().length >= 2 && (!searchResults || searchResults.length === 0) && (
-              <CommandEmpty>No users found.</CommandEmpty>
-            )}
+        {/* Results */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading && searchQuery.trim().length >= 1 && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            </div>
+          )}
 
-            {searchQuery.trim().length < 2 && (
-              <div className="py-6 text-center text-sm text-gray-500">
-                Type at least 2 characters to search
-              </div>
-            )}
+          {!isLoading && searchQuery.trim().length >= 1 && (!searchResults || searchResults.length === 0) && (
+            <div className={cn("text-center py-8", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+              <p className="text-sm">No users found.</p>
+            </div>
+          )}
 
-            {searchResults && searchResults.length > 0 && (
-              <CommandGroup heading="Users">
-                {searchResults.map((user: User) => (
-                  <CommandItem key={user.id} className="p-3">
-                    <div className="flex items-center justify-between w-full">
-                      <div 
-                        className="flex items-center space-x-3 cursor-pointer flex-1"
-                        onClick={() => handleUserClick(user)}
-                      >
-                        <div className="relative">
-                          {user.profilePhotoUrl ? (
-                            <div className="w-12 h-12 rounded-full overflow-hidden relative">
-                              <img
-                                src={user.profilePhotoUrl}
-                                alt={user.username}
-                                className="w-full h-full object-cover"
-                              />
-                              {user.isOnline && (
-                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                              )}
-                            </div>
-                          ) : (
-                            <UserAvatar
-                              username={user.username}
-                              size="md"
-                              isOnline={user.isOnline}
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
+          {searchQuery.trim().length === 0 && (
+            <div className={cn("text-center py-8", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+              <Search className="w-16 h-16 mx-auto mb-4 opacity-20" />
+              <p className="text-sm">Search for users</p>
+            </div>
+          )}
+
+          {searchResults && searchResults.length > 0 && (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {searchResults.map((user: User) => (
+                <div key={user.id} className={cn("px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors")}>
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex items-center space-x-3 cursor-pointer flex-1"
+                      onClick={() => handleUserClick(user)}
+                    >
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        {user.profilePhotoUrl ? (
+                          <img
+                            src={user.profilePhotoUrl}
+                            alt={user.username}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <UserAvatar
+                            username={user.username}
+                            size="md"
+                            isOnline={user.isOnline}
+                          />
+                        )}
+                        {user.isOnline && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <p className={cn("font-semibold truncate", isDarkMode ? "text-white" : "text-black")}>
                             {user.username}
                           </p>
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="secondary" className="bg-warning text-white text-xs">
-                              {user.level}
-                            </Badge>
-                            {user.isAdmin && (
-                              <Badge variant="destructive" className="bg-red-600 text-white text-xs font-semibold">
-                                Admin
-                              </Badge>
-                            )}
-                            <UserStatus isOnline={user.isOnline} />
-                          </div>
+                          {user.isAdmin && (
+                            <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
-                      </div>
-
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMessageClick(user);
-                          }}
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddFriend(user.id, user.username);
-                          }}
-                        >
-                          <UserPlus className="w-4 h-4" />
-                        </Button>
+                        <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+                          Level {user.level} • {user.isOnline ? "Online" : "Offline"}
+                        </p>
+                        {user.status && (
+                          <p className={cn("text-xs truncate", isDarkMode ? "text-gray-500" : "text-gray-400")}>
+                            {user.status}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
+
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMessageClick(user);
+                        }}
+                        className="p-2"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddFriend(user.id, user.username);
+                        }}
+                        className="p-2"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
