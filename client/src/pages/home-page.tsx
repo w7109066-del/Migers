@@ -1633,7 +1633,6 @@ function HomePageContent() {
                     <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>
                       Credits
                     </span>
-                  </button>00")}>Credits</span>
                   </button>
 
                   <button
