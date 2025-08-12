@@ -85,6 +85,8 @@ export function ChatRoom({
   const [messages, setMessages] = useState<Message[]>([]);
   const [localUserListOpen, setLocalUserListOpen] = useState(false);
   const [localSettingsOpen, setLocalSettingsOpen] = useState(false);
+  const [memberListError, setMemberListError] = useState(false);
+
 
   // Use props if provided, otherwise fall back to local state
   const userListOpen = onSetUserListOpen ? isUserListOpen : localUserListOpen;
@@ -167,7 +169,7 @@ export function ChatRoom({
       // First, try to restore messages from localStorage for this room
       const localStorageKey = `chatMessages-${roomId}`;
       const storedMessages = localStorage.getItem(localStorageKey);
-      
+
       if (storedMessages) {
         try {
           const parsedMessages = JSON.parse(storedMessages);
@@ -178,7 +180,7 @@ export function ChatRoom({
           // Fall back to saved messages or default
         }
       }
-      
+
       // If no localStorage messages, check if we have saved messages for this room
       if (!storedMessages && savedMessages.length > 0) {
         console.log('Restoring saved messages for room:', roomId, savedMessages.length);
@@ -389,7 +391,7 @@ export function ChatRoom({
 
     const handleSocketError = (event: CustomEvent) => {
       const { message } = event.detail;
-      
+
       // Show error message in chat for any socket error
       const errorMessage = {
         id: `error-${Date.now()}`,
@@ -535,8 +537,8 @@ export function ChatRoom({
     const profileData = {
       id: user.id,
       username: user.username,
-      level: user.level || 1,
-      status: user.status || '',
+      level: user.level,
+      status: user.status || "",
       bio: user.bio || '',
       isOnline: user.isOnline || false,
       country: user.country || 'ID',
@@ -544,7 +546,7 @@ export function ChatRoom({
       fansCount: user.fansCount || 0,
       followingCount: user.followingCount || 0,
       isFriend: false, // You might want to check actual friend status
-      isAdmin: user.isAdmin || user.level >= 5 || false,
+      isAdmin: (user.level || 0) >= 5,
     };
 
     // Trigger the view profile event that the parent component can listen to
@@ -630,7 +632,7 @@ export function ChatRoom({
     }
 
     // Prevent kicking admin users
-    if (targetUser.level >= 5) {
+    if ((targetUser.level || 0) >= 5) {
       const errorMessage = {
         id: `kick-error-${Date.now()}`,
         content: `❌ Cannot kick admin users.`,
@@ -876,7 +878,7 @@ export function ChatRoom({
         const localStorageKey = `chatMessages-${roomId}`;
         localStorage.removeItem(localStorageKey);
         console.log('Cleared localStorage cache for room:', roomId);
-        
+
         // Actually leave the room via WebSocket with forceLeave=true
         leaveRoom(roomId, true); // Force leave the room
         setIsRoomJoined(false);
@@ -922,7 +924,7 @@ export function ChatRoom({
   };
 
   // Check if current user is admin/moderator
-  const isAdmin = user?.level >= 5; // Assuming level 5+ are admins
+  const isAdmin = (user?.level || 0) >= 5; // Assuming level 5+ are admins
 
   // More lenient loading check - only require roomId and roomName
   if (!roomId || !roomName) {
@@ -952,14 +954,20 @@ export function ChatRoom({
 
   return (
     <div className="h-full flex flex-col bg-gray-50 relative">
-      
+
 
       {/* Messages List and Input - Full height */}
       <div className="flex-1 flex flex-col">
         {/* Member List Sheet */}
         <Sheet open={userListOpen} onOpenChange={(open) => {
           console.log('Member list sheet state change:', open);
-          setUserListOpen(open);
+          try {
+            setMemberListError(false);
+            setUserListOpen(open);
+          } catch (error) {
+            console.error('Error handling member list sheet toggle:', error);
+            setMemberListError(true);
+          }
         }}>
             <SheetContent side="right" className="w-80" onPointerDownOutside={(e) => {
               // Prevent closing when clicking on trigger button
@@ -976,134 +984,130 @@ export function ChatRoom({
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                   </div>
-                ) : roomMembers && roomMembers.length > 0 ? (
-                  roomMembers.map((member) => (
-                    <ContextMenu key={member.user.id}>
-                      <ContextMenuTrigger>
-                        <Card className="p-3 hover:bg-gray-50 cursor-pointer transition-colors">
-                          <div className="flex items-center space-x-3">
-                            <UserAvatar
-                              username={member.user.username}
-                              size="sm"
-                              isOnline={member.user.isOnline}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center space-x-2">
-                                <span className={cn(
-                                  "font-medium text-sm truncate",
-                                  // Apply special colors - Admin visible in all rooms - Dark orange
-                                  member.role === 'admin' || member.user.level >= 5 ? "text-orange-800" :
-                                  // Merchant color - Purple (check for both boolean and truthy values)
-                                  (member.user.isMerchant === true || member.user.isMerchant) ? "text-purple-600" :
-                                  // Owner and moderator colors only in managed rooms (not system rooms 1-4)
-                                  !['1', '2', '3', '4'].includes(roomId || '') ? (
-                                    (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
-                                    (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : "text-blue-600"
-                                  ) : "text-blue-600"
-                                )}>
-                                  {member.user.username}
-                                </span>
-                                {/* Crown only for owner in managed rooms */}
-                                {(member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                  <Crown className="w-3 h-3 text-yellow-500" />
-                                )}
-                                {/* Merchant badge - check for both boolean and truthy values */}
-                                {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                  <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                    🛍️
-                                  </Badge>
-                                )}
-                                {(member.role === 'admin' || member.user.level >= 5) && (
-                                  <Badge variant="destructive" className="text-xs bg-red-600">
-                                    Admin
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Badge variant="outline" className="text-xs">
-                                  Level {member.user.level}
-                                </Badge>
-                                {member.user.isOnline && (
-                                  <span className="text-xs text-green-600">Online</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent>
-                        <ContextMenuGroup>
-                          <ContextMenuItem onClick={() => handleViewProfile(member.user)}>
-                            <User className="w-4 h-4 mr-2" />
-                            View Profile
-                          </ContextMenuItem>
-                          <ContextMenuItem onClick={() => handleChatUser(member.user)}>
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            Send Message
-                          </ContextMenuItem>
-                          <ContextMenuItem onClick={() => handleUserInfo(member.user.username)}>
-                            <Info className="w-4 h-4 mr-2" />
-                            User Info
-                          </ContextMenuItem>
-                        </ContextMenuGroup>
-                        {member.user.id !== user?.id && (
-                          <>
-                            <ContextMenuSeparator />
-                            <ContextMenuGroup>
-                              <ContextMenuItem
-                                onClick={() => handleKickUser(member.user.id, member.user.username)} // Pass username to handleKickUser
-                                className="text-red-600"
-                              >
-                                <UserMinus className="w-4 h-4 mr-2" />
-                                Kick User
-                              </ContextMenuItem>
-                              <ContextMenuItem
-                                onClick={() => handleVoteKick(member.user.id)}
-                                className="text-orange-600"
-                              >
-                                <UserMinus className="w-4 h-4 mr-2" />
-                                Vote Kick
-                              </ContextMenuItem>
-                              <ContextMenuItem
-                                onClick={() => handleBlockUser(member.user)}
-                                className="text-red-600"
-                              >
-                                {blockedUsers.has(member.user.id) ? (
-                                  <>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    Unblock User
-                                  </>
-                                ) : (
-                                  <>
-                                    <EyeOff className="w-4 h-4 mr-2" />
-                                    Block User
-                                  </>
-                                )}
-                              </ContextMenuItem>
-                              <ContextMenuItem
-                                onClick={() => handleReportUser(member.user)}
-                                className="text-yellow-600"
-                              >
-                                <Flag className="w-4 h-4 mr-2" />
-                                Report User
-                              </ContextMenuItem>
-                            </ContextMenuGroup>
-                          </>
-                        )}
-                        <ContextMenuSeparator />
-                        <ContextMenuGroup>
-                          <ContextMenuItem onClick={() => handleRoomInfo()}>
-                            <Info className="w-4 h-4 mr-2" />
-                            Room Info
-                          </ContextMenuItem>
-                        </ContextMenuGroup>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                  ))
+                ) : memberListError ? (
+                  <div className="text-center py-8 text-red-500">
+                    <p className="text-sm">Error loading members</p>
+                    <button
+                      onClick={() => {
+                        setMemberListError(false);
+                        setUserListOpen(false);
+                      }}
+                      className="text-xs mt-2 text-blue-600 hover:underline"
+                    >
+                      Close
+                    </button>
+                  </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>No members found</p>
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <div className="space-y-3">
+                      {(() => {
+                        try {
+                          if (!roomMembers || roomMembers.length === 0) {
+                            return (
+                              <div className="text-center py-8 text-gray-500">
+                                <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No members found</p>
+                              </div>
+                            );
+                          }
+
+                          return roomMembers.map((member) => {
+                            if (!member || !member.user) {
+                              return null;
+                            }
+
+                            return (
+                              <div
+                                key={`${member.user.id}-${member.user.username}`}
+                                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                                onClick={() => {
+                                  try {
+                                    const profileData = {
+                                      id: member.user.id,
+                                      username: member.user.username,
+                                      level: member.user.level || 1,
+                                      status: member.user.status || "",
+                                      isOnline: member.user.isOnline || false,
+                                      country: "ID",
+                                      profilePhotoUrl: member.user.profilePhotoUrl,
+                                      showMiniProfile: true,
+                                      isAdmin: (member.user.level || 0) >= 5,
+                                    };
+                                    onUserClick(profileData);
+                                    setUserListOpen(false);
+                                  } catch (error) {
+                                    console.error('Error handling user click:', error);
+                                    setMemberListError(true);
+                                  }
+                                }}
+                              >
+                                <UserAvatar
+                                  username={member.user.username || 'Unknown'}
+                                  size="sm"
+                                  isOnline={member.user.isOnline || false}
+                                  profilePhotoUrl={member.user.profilePhotoUrl}
+                                  isAdmin={(member.user.level || 0) >= 5}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <div className="flex items-center space-x-1">
+                                      <span className={cn(
+                                        "font-medium text-sm truncate",
+                                        ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                      )}>
+                                        {member.user.username || 'Unknown'}
+                                      </span>
+                                      <div className="flex items-center space-x-1">
+                                       {/* Crown only for owner in managed rooms */}
+                                        {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                          <Crown className="w-3 h-3 text-yellow-500" />
+                                        )}
+                                        {/* Merchant badge - check for both boolean and truthy values */}
+                                        {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                            🛍️
+                                          </Badge>
+                                        )}
+                                        {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                          <Badge variant="destructive" className="text-xs bg-red-600">
+                                            Admin
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant="outline" className="text-xs">
+                                          Level {member.user.level || 1}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className={cn("text-xs", (member.user.isOnline || false) ? "text-green-600" : "text-gray-500")}>
+                                    {(member.user.isOnline || false) ? "Online" : "Offline"}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }).filter(Boolean);
+                        } catch (error) {
+                          console.error('Error rendering member list:', error);
+                          setMemberListError(true);
+                          return (
+                            <div className="text-center py-8 text-red-500">
+                              <p className="text-sm">Error loading members</p>
+                              <button
+                                onClick={() => {
+                                  setMemberListError(false);
+                                  setUserListOpen(false);
+                                }}
+                                className="text-xs mt-2 text-blue-600 hover:underline"
+                              >
+                                Close and retry
+                              </button>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1159,105 +1163,148 @@ export function ChatRoom({
                             <div className="flex items-center justify-center py-8">
                               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                             </div>
-                          ) : roomMembers && roomMembers.length > 0 ? (
-                            roomMembers
-                              .filter(member => member.user.id !== user?.id) // Don't show current user
-                              .map((member) => (
-                                <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                      <UserAvatar
-                                        username={member.user.username}
-                                        size="sm"
-                                        isOnline={member.user.isOnline}
-                                      />
-                                      <div>
-                                        <div className="flex items-center space-x-2">
-                                          <span className={cn(
-                                            "font-medium text-sm truncate",
-                                            // Apply special colors - Admin visible in all rooms - Dark orange
-                                            member.role === 'admin' || member.user.level >= 5 ? "text-orange-800" :
-                                            // Merchant color - Purple
-                                            (member.user.isMerchant === true || member.user.isMerchant) ? "text-purple-600" :
-                                            // Owner and moderator colors only in managed rooms (not system rooms 1-4)
-                                            !['1', '2', '3', '4'].includes(roomId || '') ? (
-                                              (member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) ? "text-yellow-500" :
-                                              (member.user.level >= 3 && member.user.level < 5) ? "text-amber-600" : ""
-                                            ) : ""
-                                          )}>
-                                            {member.user.username}
-                                          </span>
-                                          {/* Crown only for owner in managed rooms */}
-                                          {(member.role === 'owner' || member.user.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                            <Crown className="w-3 h-3 text-yellow-500" />
-                                          )}
-                                          {/* Merchant badge */}
-                                          {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                            <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                              🛍️
-                                            </Badge>
-                                          )}
-                                          {(member.role === 'admin' || member.user.level >= 5) && (
-                                            <Badge variant="destructive" className="text-xs bg-red-600">
-                                              Admin
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        <Badge variant="outline" className="text-xs">
-                                          Level {member.user.level}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                    <div className="flex space-x-2">
-                                      {/* Vote Kick Button */}
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="text-xs text-orange-600 hover:bg-orange-50"
-                                        onClick={() => handleVoteKick(member.user.id)}
-                                      >
-                                        Vote Kick
-                                      </Button>
-                                      {/* Direct Kick Button - Only for admins (level 1+) */}
-                                      {(user?.level || 0) >= 1 && (
-                                        <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="destructive"
-                                              className="text-xs"
-                                            >
-                                              Kick
-                                            </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                              <AlertDialogTitle>Kick User</AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                Are you sure you want to kick {member.user.username} from {roomName}?
-                                                This action will immediately remove them from the room.
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                              <AlertDialogAction
-                                                onClick={() => handleKickUser(member.user.id, member.user.username)}
-                                                className="bg-red-600 hover:bg-red-700"
-                                              >
-                                                Kick User
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
-                                      )}
-                                    </div>
-                                  </div>
-                                </Card>
-                              ))
+                          ) : memberListError ? (
+                            <div className="text-center py-8 text-red-500">
+                              <p className="text-sm">Error loading members</p>
+                              <button
+                                onClick={() => {
+                                  setMemberListError(false);
+                                  setUserListOpen(false);
+                                }}
+                                className="text-xs mt-2 text-blue-600 hover:underline"
+                              >
+                                Close
+                              </button>
+                            </div>
                           ) : (
-                            <div className="text-center py-8 text-gray-500">
-                              <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                              <p>No other members found</p>
+                            <div className="flex-1 overflow-y-auto p-4">
+                              <div className="space-y-3">
+                                {(() => {
+                                  try {
+                                    if (!roomMembers || roomMembers.length === 0) {
+                                      return (
+                                        <div className="text-center py-8 text-gray-500">
+                                          <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                          <p className="text-sm">No other members found</p>
+                                        </div>
+                                      );
+                                    }
+
+                                    return roomMembers
+                                      .filter(member => member.user.id !== user?.id) // Don't show current user
+                                      .map((member) => {
+                                        if (!member || !member.user) {
+                                          return null;
+                                        }
+                                        return (
+                                          <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center space-x-3">
+                                                <UserAvatar
+                                                  username={member.user.username || 'Unknown'}
+                                                  size="sm"
+                                                  isOnline={member.user.isOnline || false}
+                                                  profilePhotoUrl={member.user.profilePhotoUrl}
+                                                  isAdmin={(member.user.level || 0) >= 5}
+                                                />
+                                                <div>
+                                                  <div className="flex items-center space-x-2">
+                                                    <span className={cn(
+                                                      "font-medium text-sm truncate",
+                                                      ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                                    )}>
+                                                      {member.user.username || 'Unknown'}
+                                                    </span>
+                                                    <div className="flex items-center space-x-1">
+                                                      {/* Crown only for owner in managed rooms */}
+                                                      {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                                        <Crown className="w-3 h-3 text-yellow-500" />
+                                                      )}
+                                                      {/* Merchant badge */}
+                                                      {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                                        <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                                          🛍️
+                                                        </Badge>
+                                                      )}
+                                                      {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                                        <Badge variant="destructive" className="text-xs bg-red-600">
+                                                          Admin
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <Badge variant="outline" className="text-xs">
+                                                      Level {member.user.level || 1}
+                                                    </Badge>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              <div className="flex space-x-2">
+                                                {/* Vote Kick Button */}
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  className="text-xs text-orange-600 hover:bg-orange-50"
+                                                  onClick={() => handleVoteKick(member.user.id)}
+                                                >
+                                                  Vote Kick
+                                                </Button>
+                                                {/* Direct Kick Button - Only for admins (level 1+) */}
+                                                {(user?.level || 0) >= 1 && (
+                                                  <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                      <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        className="text-xs"
+                                                      >
+                                                        Kick
+                                                      </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                      <AlertDialogHeader>
+                                                        <AlertDialogTitle>Kick User</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                          Are you sure you want to kick {member.user.username} from {roomName}?
+                                                          This action will immediately remove them from the room.
+                                                        </AlertDialogDescription>
+                                                      </AlertDialogHeader>
+                                                      <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                          onClick={() => handleKickUser(member.user.id, member.user.username)}
+                                                          className="bg-red-600 hover:bg-red-700"
+                                                        >
+                                                          Kick User
+                                                        </AlertDialogAction>
+                                                      </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                  </AlertDialog>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </Card>
+                                        );
+                                      }).filter(Boolean);
+                                    } catch (error) {
+                                      console.error('Error rendering member list for kick menu:', error);
+                                      setMemberListError(true);
+                                      return (
+                                        <div className="text-center py-8 text-red-500">
+                                          <p className="text-sm">Error loading members</p>
+                                          <button
+                                            onClick={() => {
+                                              setMemberListError(false);
+                                              setUserListOpen(false);
+                                            }}
+                                            className="text-xs mt-2 text-blue-600 hover:underline"
+                                          >
+                                            Close
+                                          </button>
+                                        </div>
+                                      );
+                                    }
+                                  })()}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1330,6 +1377,162 @@ export function ChatRoom({
 
         {/* Message Input - Fixed at bottom */}
         <MessageInput onSendMessage={handleSendMessage} roomId={roomId} />
+      </div>
+
+      {/* Conditional rendering for member list sidebar */}
+      {userListOpen && !memberListError && (
+        <div className="w-64 border-l border-gray-200 bg-white flex-shrink-0 overflow-hidden relative z-20">
+          <div className="h-full flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="font-medium text-gray-800">Members ({roomMembers?.length || 0})</h3>
+              <button
+                onClick={() => {
+                  setUserListOpen(false);
+                  setMemberListError(false);
+                }}
+                className="text-gray-500 hover:text-gray-700 p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-3">
+                {(() => {
+                  try {
+                    if (!roomMembers || roomMembers.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No members found</p>
+                        </div>
+                      );
+                    }
+
+                    return roomMembers.map((member) => {
+                      if (!member || !member.user) {
+                        return null;
+                      }
+
+                      return (
+                        <div
+                          key={`${member.user.id}-${member.user.username}`}
+                          className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                          onClick={() => {
+                            try {
+                              const profileData = {
+                                id: member.user.id,
+                                username: member.user.username,
+                                level: member.user.level || 1,
+                                status: member.user.status || "",
+                                isOnline: member.user.isOnline || false,
+                                country: "ID",
+                                profilePhotoUrl: member.user.profilePhotoUrl,
+                                showMiniProfile: true,
+                                isAdmin: (member.user.level || 0) >= 5,
+                              };
+                              onUserClick(profileData);
+                              setUserListOpen(false);
+                            } catch (error) {
+                              console.error('Error handling user click:', error);
+                              setMemberListError(true);
+                            }
+                          }}
+                        >
+                          <UserAvatar
+                            username={member.user.username || 'Unknown'}
+                            size="sm"
+                            isOnline={member.user.isOnline || false}
+                            profilePhotoUrl={member.user.profilePhotoUrl}
+                            isAdmin={(member.user.level || 0) >= 5}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <div className="flex items-center space-x-1">
+                                <span className={cn(
+                                  "font-medium text-sm truncate",
+                                  ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                )}>
+                                  {member.user.username || 'Unknown'}
+                                </span>
+                                <div className="flex items-center space-x-1">
+                                 {/* Crown only for owner in managed rooms */}
+                                  {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                    <Crown className="w-3 h-3 text-yellow-500" />
+                                  )}
+                                  {/* Merchant badge - check for both boolean and truthy values */}
+                                  {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                    <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                      🛍️
+                                    </Badge>
+                                  )}
+                                  {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                    <Badge variant="destructive" className="text-xs bg-red-600">
+                                      Admin
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    Level {member.user.level || 1}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div className={cn("text-xs", (member.user.isOnline || false) ? "text-green-600" : "text-gray-500")}>
+                              {(member.user.isOnline || false) ? "Online" : "Offline"}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }).filter(Boolean);
+                  } catch (error) {
+                    console.error('Error rendering member list:', error);
+                    setMemberListError(true);
+                    return (
+                      <div className="text-center py-8 text-red-500">
+                        <p className="text-sm">Error loading members</p>
+                        <button
+                          onClick={() => {
+                            setMemberListError(false);
+                            setUserListOpen(false);
+                          }}
+                          className="text-xs mt-2 text-blue-600 hover:underline"
+                        >
+                          Close and retry
+                        </button>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Placeholder for the button that opens the member list */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            try {
+              setMemberListError(false);
+              setUserListOpen(!userListOpen);
+            } catch (error) {
+              console.error('Error toggling member list:', error);
+              setMemberListError(true);
+            }
+          }}
+          data-member-trigger
+          className={cn(
+            "flex items-center space-x-1",
+            userListOpen && "bg-blue-50 border-blue-200"
+          )}
+        >
+          <Users className="w-4 h-4" />
+          <span className="hidden sm:inline">Members</span>
+        </Button>
       </div>
     </div>
   );
