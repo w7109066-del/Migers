@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { X, MessageCircle, Users, Settings } from "lucide-react";
 import { ChatRoom } from "./chat-room";
 import { cn } from "@/lib/utils";
@@ -59,13 +59,14 @@ export function MultiRoomTabs({
 
   // Ensure activeRoomIndex is valid
   const safeActiveRoomIndex = Math.max(0, Math.min(activeRoomIndex, rooms.length - 1));
-  if (activeRoomIndex !== safeActiveRoomIndex) {
-    console.log('MultiRoomTabs: Correcting activeRoomIndex from', activeRoomIndex, 'to', safeActiveRoomIndex);
-    // Use the safe index without causing a re-render loop
-    React.useEffect(() => {
+  
+  // Use useEffect to handle activeRoomIndex correction safely
+  useEffect(() => {
+    if (activeRoomIndex !== safeActiveRoomIndex && rooms.length > 0) {
+      console.log('MultiRoomTabs: Correcting activeRoomIndex from', activeRoomIndex, 'to', safeActiveRoomIndex);
       onSwitchRoom(safeActiveRoomIndex);
-    }, [safeActiveRoomIndex, onSwitchRoom]);
-  }
+    }
+  }, [activeRoomIndex, safeActiveRoomIndex, onSwitchRoom, rooms.length]);
 
   // Sync room states across tabs using localStorage
   useEffect(() => {
@@ -276,14 +277,10 @@ export function MultiRoomTabs({
 
         <div className="relative w-full h-full overflow-hidden">
           {rooms.map((room, index) => {
-            // Enhanced room validation
+            // Enhanced room validation with better error handling
             if (!room || typeof room !== 'object' || !room.id || !room.name) {
               console.error('MultiRoomTabs: Invalid room data at index', index, room);
-              return (
-                <div key={`invalid-room-${index}`} className="hidden">
-                  Invalid room data
-                </div>
-              );
+              return null; // Return null instead of rendering invalid content
             }
 
             const isActive = safeActiveRoomIndex === index;
@@ -493,19 +490,21 @@ export function MultiRoomTabs({
                     {/* Chat Room Content */}
                     <div className="flex-1 overflow-hidden">
                       {room && room.id && room.name ? (
-                        <ChatRoom
-                          key={`chat-${room.id}`}
-                          roomId={room.id}
-                          roomName={room.name}
-                          onUserClick={onUserClick || (() => {})}
-                          onLeaveRoom={() => onCloseRoom(index)}
-                          savedMessages={Array.isArray(room.messages) ? room.messages : []}
-                          onSaveMessages={(messages) => onSaveMessages(room.id, messages)}
-                          isUserListOpen={isUserListOpen && safeActiveRoomIndex === index}
-                          onSetUserListOpen={setIsUserListOpen}
-                          isSettingsOpen={isSettingsOpen && safeActiveRoomIndex === index}
-                          onSetSettingsOpen={setIsSettingsOpen}
-                        />
+                        <div key={`chat-wrapper-${room.id}`}>
+                          <ChatRoom
+                            key={`chat-${room.id}`}
+                            roomId={room.id}
+                            roomName={room.name}
+                            onUserClick={onUserClick || (() => {})}
+                            onLeaveRoom={() => onCloseRoom(index)}
+                            savedMessages={Array.isArray(room.messages) ? room.messages : []}
+                            onSaveMessages={(messages) => onSaveMessages(room.id, messages)}
+                            isUserListOpen={isUserListOpen && safeActiveRoomIndex === index}
+                            onSetUserListOpen={setIsUserListOpen}
+                            isSettingsOpen={isSettingsOpen && safeActiveRoomIndex === index}
+                            onSetSettingsOpen={setIsSettingsOpen}
+                          />
+                        </div>
                       ) : (
                         <div className="h-full flex items-center justify-center">
                           <div className="text-center text-gray-500">

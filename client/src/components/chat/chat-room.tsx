@@ -161,6 +161,7 @@ export function ChatRoom({
 
       if (!roomId || !roomName) {
         console.warn('ChatRoom not initialized - missing roomId or roomName:', { roomId, roomName });
+        setMessages([]); // Clear messages if room is invalid
         return;
       }
 
@@ -506,7 +507,8 @@ export function ChatRoom({
   }, [roomId, refetchMembers, messages, blockedUsers]); // Added messages and blockedUsers to dependencies
 
   const handleSendMessage = (content: string) => {
-    if (roomId) {
+    if (roomId && content.trim()) {
+      console.log('Sending message:', content, 'to room:', roomId);
       sendChatMessage(content, roomId);
     }
   };
