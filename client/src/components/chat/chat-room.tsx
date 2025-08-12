@@ -952,45 +952,7 @@ export function ChatRoom({
 
   return (
     <div className="h-full flex flex-col bg-gray-50 relative">
-      {/* Room Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2">
-            <Hash className="w-4 h-4 text-gray-500" />
-            <h2 className="font-semibold text-gray-900">{roomName}</h2>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            {roomMembers?.length || 0} members
-          </Badge>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setUserListOpen(!userListOpen)}
-            data-member-trigger
-            className={cn(
-              "flex items-center space-x-1",
-              userListOpen && "bg-blue-50 border-blue-200"
-            )}
-          >
-            <Users className="w-4 h-4" />
-            <span className="hidden sm:inline">Members</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSettingsOpen(!settingsOpen)}
-            className={cn(
-              "flex items-center space-x-1",
-              settingsOpen && "bg-blue-50 border-blue-200"
-            )}
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Settings</span>
-          </Button>
-        </div>
-      </div>
+      
 
       {/* Messages List and Input - Full height */}
       <div className="flex-1 flex flex-col">
