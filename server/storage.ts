@@ -1280,12 +1280,30 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('Updating merchant status for user:', userId, 'to:', isMerchant);
 
+      // Check if user is already a merchant
+      const existingUser = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!existingUser[0]) {
+        throw new Error('User not found');
+      }
+
+      // If already a merchant and trying to set to merchant again, don't update registration date
+      const updateData: any = { isMerchant };
+      if (isMerchant && !existingUser[0].isMerchant) {
+        // Only set registration date if user is becoming a merchant for the first time
+        updateData.merchantRegisteredAt = new Date();
+      } else if (!isMerchant) {
+        // Reset registration date if removing merchant status
+        updateData.merchantRegisteredAt = null;
+      }
+
       const [updatedUser] = await this.db
         .update(users)
-        .set({
-          isMerchant,
-          merchantRegisteredAt: isMerchant ? new Date() : null
-        })
+        .set(updateData)
         .where(eq(users.id, userId))
         .returning();
 

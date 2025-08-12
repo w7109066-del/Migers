@@ -374,9 +374,16 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
           <>
             <Card className="border-red-200 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20">
               <CardHeader>
-                <CardTitle className="text-red-800 dark:text-red-200 flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-red-600" />
-                  <span>Mentor Dashboard</span>
+                <CardTitle className="text-red-800 dark:text-red-200 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Star className="w-5 h-5 text-red-600" />
+                    <span>Mentor Dashboard</span>
+                  </div>
+                  {user.isMerchant && (
+                    <Badge className="bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200">
+                      🛍️ Merchant
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -447,8 +454,8 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                         <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200">
                           Your Merchant Status
                         </h3>
-                        <Badge className={getMerchantStatusColor(user as Mentor)}>
-                          Active Merchant
+                        <Badge className="bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200">
+                          🛍️ Active Merchant
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -458,7 +465,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             <span className="text-sm font-medium">Registered:</span>
                           </div>
                           <p className="text-sm text-purple-600 dark:text-purple-400">
-                            {formatDate(user.merchant_registered_at)}
+                            {formatDate(user.merchantRegisteredAt)}
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -467,7 +474,7 @@ export function MentorPage({ open, onClose }: MentorPageProps) {
                             <span className="text-sm font-medium">Last Recharge:</span>
                           </div>
                           <p className="text-sm text-purple-600 dark:text-purple-400">
-                            {formatDate(user.last_recharge_at)}
+                            {formatDate(user.lastRechargeAt)}
                           </p>
                         </div>
                       </div>
