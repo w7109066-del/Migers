@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import AuthPage from "@/pages/auth-page";
 import HomePage from "@/pages/home-page";
 import { NotFoundPage } from "@/pages/not-found";
+import TopRankPage from "@/pages/top-rank";
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
 
@@ -38,6 +40,7 @@ function App() {
             <Route path="/app/*" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/rooms" element={<Navigate to="/app" replace />} />
             <Route path="/" element={<Navigate to="/app" replace />} />
+            <Route path="/toprank" element={<TopRankPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { User } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
-import { RefreshCw, Search, Bell } from "lucide-react";
+import { RefreshCw, Search, Bell, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { NotificationDropdown } from "../ui/notification-dropdown";
@@ -182,16 +182,26 @@ export function FriendsList({ onUserClick, onMessageClick, showRefreshButton = f
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-xl font-bold text-gray-800">Friends</h1>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="text-primary border-primary hover:bg-primary hover:text-white"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.location.href = '/toprank'}
+              className="text-yellow-600 border-yellow-600 hover:bg-yellow-600 hover:text-white"
+            >
+              <Trophy className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="text-primary border-primary hover:bg-primary hover:text-white"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
         </div>
         <div className="flex items-center space-x-4">
           {/* Search Input */}
