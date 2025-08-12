@@ -117,6 +117,11 @@ function HomePageContent() {
   const [activeTab, setActiveTab] = useState<'friends' | 'chatroom' | 'feed' | 'settings' | 'dm'>('friends');
   const [showMobileMenu, setShowMobileMenu] = useState(false); // State to control mobile menu visibility
 
+  // State for header search
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [headerSearchResults, setHeaderSearchResults] = useState<MiniProfileData[]>([]);
+  const [showHeaderSearch, setShowHeaderSearch] = useState(false);
+
   // Multi-room state
   const [openRooms, setOpenRooms] = useState<Array<{ id: string; name: string; messages: any[] }>>([]);
   const [activeRoomIndex, setActiveRoomIndex] = useState(0);
@@ -174,6 +179,29 @@ function HomePageContent() {
     setShowAdmin(true);
   };
 
+  // Function to search users in the header
+  const searchUsersInHeader = async (query: string) => {
+    if (!query || query.length < 2) {
+      setHeaderSearchResults([]);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const results = await response.json();
+        setHeaderSearchResults(results);
+      } else {
+        console.error('Failed to search users:', response.status);
+        setHeaderSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setHeaderSearchResults([]);
+    }
+  };
 
   // Emojis data for comments
   const emojis = [
@@ -869,95 +897,91 @@ function HomePageContent() {
         <div className={cn("h-full flex flex-col", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
           {/* Header with user info, notifications, and search */}
           <div className={cn("border-b px-4 py-3 flex-shrink-0", isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                {/* User Avatar and Info */}
-                <div className="flex items-center space-x-3">
-                  <UserAvatar
-                    username={user.username}
-                    size="md"
-                    isOnline={user.isOnline || false}
-                    profilePhotoUrl={user.profilePhotoUrl}
+            {/* Search Header */}
+            <div className="flex items-center space-x-3 w-full">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search users..."
+                    value={userSearchQuery}
+                    onChange={(e) => {
+                      setUserSearchQuery(e.target.value);
+                      if (e.target.value.trim().length >= 2) {
+                        searchUsersInHeader(e.target.value);
+                      } else {
+                        setHeaderSearchResults([]);
+                      }
+                    }}
+                    className={cn(
+                      "pl-10 pr-10 rounded-full border-gray-300 focus:ring-primary focus:border-primary",
+                      isDarkMode ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-gray-100"
+                    )}
+                    onFocus={() => setShowHeaderSearch(true)}
                   />
-                  <div>
-                    <div className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>{user.username}</div>
-                    <div className="flex items-center space-x-2">
-                      <div className="relative">
-                        <Badge variant="secondary" className={cn(
-                          "text-white border-0 text-xs font-medium px-1.5 py-0.5 shadow-sm transform transition-all duration-300 hover:scale-105 w-4 h-4 flex items-center justify-center",
-                          isDarkMode
-                            ? "bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500"
-                            : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400"
-                        )}>
-                          <span className="text-xs leading-none">{user.level || 1}</span>
-                        </Badge>
-                        {/* Sparkle effect */}
-                        <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-yellow-400 rounded-full animate-ping"></div>
-                        <div className="absolute -top-0.25 -right-0.25 w-0.5 h-0.5 bg-yellow-300 rounded-full"></div>
-                      </div>
-                      {/* Status Dropdown */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                            <div className={`w-2 h-2 rounded-full mr-1 ${getStatusColor(userStatus)}`} />
-                            {getStatusText(userStatus)}
-                            <ChevronDown className="w-3 h-3 ml-1" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-40">
-                          <DropdownMenuItem onClick={() => handleStatusChange('online')}>
-                            <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-                            Online
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange('away')}>
-                            <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
-                            Away
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange('busy')}>
-                            <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
-                            Busy
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange('offline')}>
-                            <div className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
-                            Offline
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setShowStatusUpdate(true)}>
-                            <Edit className="w-3 h-3 mr-2" />
-                            Custom Status
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
+                  {userSearchQuery && (
+                    <button
+                      onClick={() => {
+                        setUserSearchQuery('');
+                        setHeaderSearchResults([]);
+                        setShowHeaderSearch(false);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Right side - Notifications, Search, and Coins */}
-              <div className="flex flex-col items-end space-y-1">
-                <div className="flex items-center space-x-2">
-                  {/* Search Button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowUserSearch(true)}
-                    className={cn("p-2", isDarkMode ? "text-gray-300" : "text-gray-600")}
-                  >
-                    <Search className="w-5 h-5" />
-                  </Button>
-
-                  {/* Notification Dropdown */}
-                  <NotificationDropdown />
-                </div>
-
-                {/* Coins Display */}
-                <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 shadow-sm">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.736 6.979C9.208 6.193 9.696 6 10 6s.792.193 1.264.979a1 1 0 001.715-1.029C12.279 4.784 11.232 4 10 4s-2.279.784-2.979 1.95c-.285.475-.507 1.001-.67 1.567.013.043-.024.086-.034.13-.264 1.143-.264 2.4 0 3.543.01.044.021.087.034.13.163.566.385 1.092.67 1.567C7.721 13.216 8.768 14 10 14s2.279-.784 2.979-1.95a1 1 0 10-1.715-1.029C10.792 11.807 10.304 12 10 12s-.792-.193-1.264-.979c-.18-.299-.307-.61-.397-.933a4.484 4.484 0 010-2.176c.09-.323.217-.634.397-.933z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-xs font-bold text-white">{user.coins || 0}</span>
-                </div>
+              {/* User Avatar - moved to right side */}
+              <div className="flex items-center space-x-2">
+                <NotificationDropdown />
+                <UserAvatar
+                  username={user.username}
+                  size="sm"
+                  isOnline={user.isOnline || false}
+                  profilePhotoUrl={user.profilePhotoUrl}
+                />
               </div>
             </div>
+
+            {/* Display search results if input has focus and there are results */}
+            {showHeaderSearch && headerSearchResults.length > 0 && (
+              <Card className="absolute top-full left-0 right-0 z-10 mt-2 shadow-lg">
+                <CardContent className="p-3 max-h-72 overflow-y-auto">
+                  {headerSearchResults.map((profile) => (
+                    <div
+                      key={profile.id}
+                      onClick={() => {
+                        handleUserProfileClick(profile);
+                        setShowHeaderSearch(false); // Close search on selection
+                      }}
+                      className={cn(
+                        "flex items-center space-x-3 p-3 rounded cursor-pointer transition-colors",
+                        isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                      )}
+                    >
+                      <UserAvatar
+                        username={profile.username}
+                        size="sm"
+                        isOnline={profile.isOnline}
+                        profilePhotoUrl={profile.profilePhotoUrl}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm truncate" title={profile.username}>
+                          {profile.username}
+                        </div>
+                        <div className={cn("text-xs truncate", isDarkMode ? "text-gray-300" : "text-gray-500")}>
+                          {profile.status || 'No status'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Friends List Content */}
