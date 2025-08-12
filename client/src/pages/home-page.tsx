@@ -142,10 +142,38 @@ function HomePageContent() {
 
   // Update local status when user data changes
   React.useEffect(() => {
-    if (user?.status) {
+    if (user && user.status) {
       setUserStatus(user.status);
     }
   }, [user?.status]);
+
+  const handleCreditsClick = () => {
+    console.log('Credits button clicked');
+    // Close all other modals first
+    setShowSettings(false);
+    setShowProfile(false);
+    setShowMentorPage(false);
+    setShowAdmin(false);
+    setShowEditProfile(false);
+    setShowUserSearch(false);
+    setShowStatusUpdate(false);
+    setShowPrivacySecurity(false);
+    setShowHelpSupport(false);
+    // Then open credits
+    setShowCredits(true);
+  };
+
+  const handleAdminClick = () => {
+    console.log('Admin button clicked, setting showAdmin to true');
+    // Close any other open modals/panels first
+    setShowSettings(false);
+    setShowProfile(false);
+    setShowCredits(false);
+    setShowMentorPage(false);
+    // Then open admin panel
+    setShowAdmin(true);
+  };
+
 
   // Emojis data for comments
   const emojis = [
@@ -1688,33 +1716,6 @@ function HomePageContent() {
 
   ];
 
-  const handleAdminClick = () => {
-    console.log('Admin button clicked, setting showAdmin to true');
-    // Close any other open modals/panels first
-    setShowSettings(false);
-    setShowProfile(false);
-    setShowCredits(false);
-    setShowMentorPage(false);
-    // Then open admin panel
-    setShowAdmin(true);
-  };
-
-  const handleCreditsClick = () => {
-    console.log('Credits button clicked');
-    // Close all other modals first
-    setShowSettings(false);
-    setShowProfile(false);
-    setShowMentorPage(false);
-    setShowAdmin(false);
-    setShowEditProfile(false);
-    setShowUserSearch(false);
-    setShowStatusUpdate(false);
-    setShowPrivacySecurity(false);
-    setShowHelpSupport(false);
-    // Then open credits
-    setShowCredits(true);
-  };
-
   // Update active tab based on currentRoom changes
   useEffect(() => {
     if (currentRoom && activeTab !== 'chatroom') {
@@ -1729,7 +1730,7 @@ function HomePageContent() {
   // Auto-switch to room list when no rooms are open
   useEffect(() => {
     if (openRooms.length === 0 && activeTab === 'chatroom') {
-      // No rooms open, ensure we show room list
+      // No rooms open, ensure fullscreen is off
       setIsFullscreenMode(false);
       // Stay in chatroom tab but show room list instead of switching to friends
     }
