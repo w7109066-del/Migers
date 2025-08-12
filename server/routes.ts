@@ -2872,23 +2872,33 @@ export function registerRoutes(app: Express): Server {
           // Leave the Socket.IO room
           socket.leave(data.roomId);
 
-          // Broadcast user leave message
-          io.to(data.roomId).emit('new_message', {
-            message: {
-              id: `system-leave-${Date.now()}`,
-              content: `${user?.username || 'User'} has left the room.`,
-              senderId: 'system',
-              roomId: data.roomId,
-              recipientId: null,
-              messageType: 'system',
-              createdAt: new Date().toISOString(),
-              sender: {
-                id: 'system',
-                username: 'System',
-                level: 0,
-                isOnline: true,
-              }
+          // Broadcast user leave message and user_left event
+          const leaveMessage = {
+            id: `system-leave-${Date.now()}`,
+            content: `${user?.username || 'User'} has left the room.`,
+            senderId: 'system',
+            roomId: data.roomId,
+            recipientId: null,
+            messageType: 'system',
+            createdAt: new Date().toISOString(),
+            sender: {
+              id: 'system',
+              username: 'System',
+              level: 0,
+              isOnline: true,
             }
+          };
+
+          // Broadcast leave message to all users in room
+          io.to(data.roomId).emit('new_message', {
+            message: leaveMessage
+          });
+
+          // Also emit user_left event for member list updates
+          io.to(data.roomId).emit('user_left', {
+            userId: userId,
+            username: user?.username || 'User',
+            roomId: data.roomId
           });
 
           console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
@@ -3444,22 +3454,32 @@ export function registerRoutes(app: Express): Server {
 
                     // Only broadcast leave message for unexpected disconnects (not manual)
                     if (disconnectedUser && disconnectedUser.username && reason !== 'client namespace disconnect') {
-                      io.to(currentRoomId).emit('new_message', {
-                        message: {
-                          id: `system-leave-${Date.now()}`,
-                          content: `${disconnectedUser.username} has left the room.`,
-                          senderId: 'system',
-                          roomId: currentRoomId,
-                          recipientId: null,
-                          messageType: 'system',
-                          createdAt: new Date().toISOString(),
-                          sender: {
-                            id: 'system',
-                            username: 'System',
-                            level: 0,
-                            isOnline: true,
-                          }
+                      const leaveMessage = {
+                        id: `system-leave-${Date.now()}`,
+                        content: `${disconnectedUser.username} has left the room.`,
+                        senderId: 'system',
+                        roomId: currentRoomId,
+                        recipientId: null,
+                        messageType: 'system',
+                        createdAt: new Date().toISOString(),
+                        sender: {
+                          id: 'system',
+                          username: 'System',
+                          level: 0,
+                          isOnline: true,
                         }
+                      };
+
+                      // Broadcast leave message
+                      io.to(currentRoomId).emit('new_message', {
+                        message: leaveMessage
+                      });
+
+                      // Also emit user_left event
+                      io.to(currentRoomId).emit('user_left', {
+                        userId: userId,
+                        username: disconnectedUser.username,
+                        roomId: currentRoomId
                       });
                     }
 

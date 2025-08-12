@@ -129,8 +129,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     socket.current.on('user_left', (data) => {
+      console.log('Socket.IO user_left event received:', data);
       window.dispatchEvent(new CustomEvent('userLeft', {
         detail: {
+          userId: data.userId,
           username: data.username || 'User',
           roomId: data.roomId
         }

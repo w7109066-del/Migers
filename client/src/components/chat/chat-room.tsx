@@ -410,10 +410,10 @@ export function ChatRoom({
           });
 
           // Check if message already exists (prevent duplicates)
-          const messageExists = filteredMessages.some(msg => 
-            msg.id === newMessage.id || 
-            (msg.senderId === newMessage.senderId && 
-             msg.content === newMessage.content && 
+          const messageExists = filteredMessages.some(msg =>
+            msg.id === newMessage.id ||
+            (msg.senderId === newMessage.senderId &&
+             msg.content === newMessage.content &&
              Math.abs(new Date(msg.createdAt).getTime() - new Date(newMessage.createdAt).getTime()) < 1000)
           );
 
@@ -468,26 +468,39 @@ export function ChatRoom({
     };
 
     const handleUserLeave = (event: CustomEvent) => {
-      const { username, roomId: eventRoomId } = event.detail;
+      const { username, roomId: eventRoomId, userId: leftUserId } = event.detail;
+      console.log('User leave event received:', { username, eventRoomId, leftUserId, currentRoomId: roomId });
+
       if (eventRoomId === roomId && username && username !== 'undefined') {
+        // Don't show leave message for current user
+        if (leftUserId === user?.id) {
+          console.log('Skipping leave message for current user');
+          return;
+        }
+
         // Check if we already have a recent leave message for this user to prevent duplicates
         const recentLeaveMessages = messages.filter(msg =>
-          msg.content.includes(`${username} has left`) &&
-          Date.now() - new Date(msg.createdAt).getTime() < 5000 // within 5 seconds
+          (msg.content.includes(`${username} has left`) || msg.content.includes(`${username} has left the room`)) &&
+          Date.now() - new Date(msg.createdAt).getTime() < 3000 // within 3 seconds
         );
+
+        console.log('Recent leave messages found:', recentLeaveMessages.length);
 
         if (recentLeaveMessages.length === 0) {
           const leaveMessage = {
             id: `leave-${Date.now()}-${username}`,
-            content: `${username} has left`,
+            content: `${username} has left the room`,
             senderId: 'system',
             createdAt: new Date().toISOString(),
             sender: { id: 'system', username: 'System', level: 0, isOnline: true },
             messageType: 'system'
           };
+          console.log('Adding leave message:', leaveMessage);
           setMessages(prev => [...prev, leaveMessage]);
         }
-        setTimeout(() => refetchMembers(), 100);
+
+        // Refresh member list after a short delay
+        setTimeout(() => refetchMembers(), 500);
       }
     };
 
