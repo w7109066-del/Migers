@@ -167,7 +167,7 @@ export default function TopRankPage() {
               : "text-white/80 hover:text-white"
           }`}
         >
-          gift
+          Gift
         </button>
       </div>
 
