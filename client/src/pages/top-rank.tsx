@@ -79,11 +79,11 @@ export default function TopRankPage() {
       case 1:
         return <Crown className="w-6 h-6 text-yellow-500" />;
       case 2:
-        return <Medal className="w-6 h-6 text-gray-400" />;
+        return <Medal className="w-6 h-6 text-gray-500" />;
       case 3:
         return <Award className="w-6 h-6 text-orange-500" />;
       default:
-        return <div className="w-6 h-6 flex items-center justify-center text-lg font-bold text-gray-600">{rank}</div>;
+        return <div className="w-6 h-6 flex items-center justify-center text-lg font-bold text-gray-700">{rank}</div>;
     }
   };
 
@@ -106,38 +106,19 @@ export default function TopRankPage() {
 
   if (isLoading) {
     return (
-      <div 
-        className="h-full w-full flex items-center justify-center relative"
-        style={{
-          backgroundImage: `url('/attached_assets/images (1)_1754997560869.jpeg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      >
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="text-center bg-white/10 backdrop-blur-md rounded-lg p-6 border border-white/20 relative z-10">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-          <p className="text-white">Loading rankings...</p>
+      <div className="h-full w-full bg-white flex items-center justify-center">
+        <div className="text-center bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-2"></div>
+          <p className="text-gray-800">Loading rankings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div 
-      className="h-full w-full flex flex-col relative"
-      style={{
-        backgroundImage: `url('/attached_assets/images (1)_1754997560869.jpeg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
-      {/* Dark overlay for better readability */}
-      <div className="absolute inset-0 bg-black/40 z-0"></div>
+    <div className="h-full w-full bg-white flex flex-col">
       {/* Header */}
-      <div className="bg-red-600/90 backdrop-blur-sm px-4 py-3 flex items-center justify-between text-white flex-shrink-0 relative z-10">
+      <div className="bg-red-600 px-4 py-3 flex items-center justify-between text-white flex-shrink-0 shadow-sm">
         <Button
           variant="ghost"
           size="sm"
@@ -157,33 +138,33 @@ export default function TopRankPage() {
       </div>
 
       {/* Tabs */}
-      <div className="px-4 py-3 flex space-x-4 relative z-10">
+      <div className="px-4 py-3 flex space-x-4 bg-gray-50 border-b border-gray-200">
         <button
           onClick={() => setActiveTab("daily")}
-          className={`px-4 py-2 rounded-full text-sm font-medium ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             activeTab === "daily"
-              ? "bg-white text-orange-600"
-              : "text-white/80 hover:text-white"
+              ? "bg-red-600 text-white"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
           }`}
         >
           Harian
         </button>
         <button
           onClick={() => setActiveTab("weekly")}
-          className={`px-4 py-2 rounded-full text-sm font-medium ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             activeTab === "weekly"
-              ? "bg-white text-orange-600"
-              : "text-white/80 hover:text-white"
+              ? "bg-red-600 text-white"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
           }`}
         >
           Mingguan
         </button>
         <button
           onClick={() => setActiveTab("monthly")}
-          className={`px-4 py-2 rounded-full text-sm font-medium ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             activeTab === "monthly"
-              ? "bg-white text-orange-600"
-              : "text-white/80 hover:text-white"
+              ? "bg-red-600 text-white"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"
           }`}
         >
           Gift
@@ -192,7 +173,7 @@ export default function TopRankPage() {
 
       {/* Top 3 Display */}
       {topUsers.length > 0 && (
-        <div className="px-4 py-6 flex justify-center relative z-10 bg-white/10 backdrop-blur-md mx-4 rounded-lg border border-white/20">
+        <div className="px-4 py-6 flex justify-center bg-gradient-to-b from-gray-50 to-white border-b border-gray-200">
           <div className="text-center">
             {/* Winner */}
             <div className="relative mb-4">
@@ -211,8 +192,8 @@ export default function TopRankPage() {
                   {getRankBadge(1)}
                 </Badge>
               )}
-              <h3 className="text-white font-bold text-lg">{topUsers[0].username}</h3>
-              <div className="text-yellow-300 font-semibold">
+              <h3 className="text-gray-900 font-bold text-lg">{topUsers[0].username}</h3>
+              <div className="text-orange-600 font-semibold">
                 🔥 {topUsers[0].coins.toLocaleString()}
               </div>
             </div>
@@ -221,10 +202,10 @@ export default function TopRankPage() {
       )}
 
       {/* Rankings List */}
-      <div className="flex-1 px-4 pb-4 overflow-y-auto relative z-10">
-        <div className="space-y-3">
+      <div className="flex-1 px-4 pb-4 overflow-y-auto bg-white">
+        <div className="space-y-3 py-4">
           {topUsers.map((user, index) => (
-            <Card key={user.id} className="bg-white/20 backdrop-blur-md border border-white/30">
+            <Card key={user.id} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-3">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center justify-center w-8">
@@ -246,7 +227,7 @@ export default function TopRankPage() {
 
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-white font-semibold">{user.username}</span>
+                      <span className="text-gray-900 font-semibold">{user.username}</span>
                       {user.rank <= 3 && getRankBadge(user.rank) && (
                         <Badge className={`text-xs ${
                           user.rank === 1 ? 'bg-yellow-500' :
@@ -257,7 +238,7 @@ export default function TopRankPage() {
                         </Badge>
                       )}
                     </div>
-                    <div className="text-yellow-300 text-sm font-medium">
+                    <div className="text-orange-600 text-sm font-medium">
                       🔥 {user.coins.toLocaleString()}
                     </div>
                   </div>
@@ -269,8 +250,8 @@ export default function TopRankPage() {
 
         {/* User's current position if not in top */}
         {user && !topUsers.find(u => u.id === user.id) && (
-          <div className="mt-6 pt-4 border-t border-white/20 bg-white/5 rounded-lg p-4 backdrop-blur-sm">
-            <div className="text-white text-center text-sm">
+          <div className="mt-6 pt-4 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
+            <div className="text-gray-600 text-center text-sm">
               Saya belum ada dalam daftar, dibutuhkan ~6980 untuk masuk daftar
             </div>
           </div>
