@@ -4,10 +4,11 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { UserAvatar } from "@/components/user/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, UserPlus, Loader2 } from "lucide-react";
+import { MessageCircle, UserPlus, Loader2, Search } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 // Define a UserStatus component to display online/offline status
 const UserStatus = ({ isOnline }: { isOnline: boolean }) => (
@@ -44,17 +45,24 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
     queryFn: async () => {
       if (searchQuery.trim().length < 1) return [];
 
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
-        credentials: 'include',
-      });
+      try {
+        const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+          credentials: 'include',
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to search users');
+        if (!response.ok) {
+          throw new Error('Failed to search users');
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error('Search error:', error);
+        return [];
       }
-
-      return response.json();
     },
     enabled: searchQuery.trim().length >= 1,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const handleAddFriend = async (userId: string, username: string) => {
@@ -166,9 +174,9 @@ export function UserSearchModal({ isOpen, onClose, onUserSelect, onMessageClick 
           )}
 
           {searchResults && searchResults.length > 0 && (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            <div className={cn("divide-y", isDarkMode ? "divide-gray-700" : "divide-gray-100")}>
               {searchResults.map((user: User) => (
-                <div key={user.id} className={cn("px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors")}>
+                <div key={user.id} className={cn("px-4 py-3 hover:bg-gray-50 transition-colors", isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-50")}>
                   <div className="flex items-center justify-between">
                     <div 
                       className="flex items-center space-x-3 cursor-pointer flex-1"
