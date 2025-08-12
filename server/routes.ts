@@ -366,6 +366,42 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get member counts for all rooms
+  app.get("/api/rooms/member-counts", requireAuth, async (req, res) => {
+    try {
+      const memberCounts: Record<string, number> = {};
+
+      // Get counts for mock rooms (1-4)
+      for (const roomId of ['1', '2', '3', '4']) {
+        const roomMembers = mockRoomMembers.get(roomId);
+        memberCounts[roomId] = roomMembers ? roomMembers.size : 0;
+      }
+
+      // Get counts for real rooms
+      try {
+        const allRooms = await storage.getAllRooms();
+        if (allRooms && Array.isArray(allRooms)) {
+          for (const room of allRooms) {
+            try {
+              const members = await storage.getRoomMembers(room.id);
+              memberCounts[room.id] = members?.length || 0;
+            } catch (error) {
+              console.error(`Error getting members for room ${room.id}:`, error);
+              memberCounts[room.id] = 0;
+            }
+          }
+        }
+      } catch (dbError) {
+        console.error('Error fetching rooms for member counts:', dbError);
+      }
+
+      res.json(memberCounts);
+    } catch (error) {
+      console.error("Failed to fetch room member counts:", error);
+      res.status(500).json({ error: "Failed to fetch room member counts" });
+    }
+  });
+
   // Room members endpoint
   app.get("/api/rooms/:roomId/members", requireAuth, async (req, res) => {
     try {
@@ -2785,6 +2821,19 @@ export function registerRoutes(app: Express): Server {
           });
 
           console.log(`User ${user.username} successfully joined room ${data.roomId}`);
+
+          // Broadcast updated member count
+          setTimeout(async () => {
+            try {
+              const currentCount = await getRoomMemberCount(data.roomId);
+              io.emit('room_member_count_updated', {
+                roomId: data.roomId,
+                memberCount: currentCount
+              });
+            } catch (countError) {
+              console.error(`Error broadcasting member count for ${data.roomId}:`, countError);
+            }
+          }, 500);
         } else {
           // Already in room, send confirmation
           socket.emit('room_joined', {
@@ -2843,6 +2892,19 @@ export function registerRoutes(app: Express): Server {
           });
 
           console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
+
+          // Broadcast updated member count
+          setTimeout(async () => {
+            try {
+              const currentCount = await getRoomMemberCount(data.roomId);
+              io.emit('room_member_count_updated', {
+                roomId: data.roomId,
+                memberCount: currentCount
+              });
+            } catch (countError) {
+              console.error(`Error broadcasting member count for ${data.roomId}:`, countError);
+            }
+          }, 500);
         } else {
           console.log(`User ${userId} not in room ${data.roomId}, skipping leave`);
         }

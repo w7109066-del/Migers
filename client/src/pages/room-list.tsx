@@ -130,6 +130,29 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
     retry: false // Disable retry to see errors immediately
   });
 
+  // Fetch member counts for all rooms
+  const { data: memberCounts, refetch: refetchMemberCounts } = useQuery<Record<string, number>>({
+    queryKey: ["/api/rooms/member-counts"],
+    refetchInterval: 3000,
+    staleTime: 1000,
+    enabled: !!rooms,
+  });
+
+  // Listen for real-time member count updates
+  useEffect(() => {
+    const handleMemberCountUpdate = (event: CustomEvent) => {
+      console.log('Member count updated:', event.detail);
+      // Refetch member counts when updates are received
+      refetchMemberCounts();
+    };
+
+    window.addEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
+    };
+  }, [refetchMemberCounts]);
+
   const joinRoomMutation = useMutation({
     mutationFn: async (roomData: Room) => {
       const response = await fetch(`/api/rooms/${roomData.id}/join`, {
@@ -382,7 +405,7 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
                     <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
                       <Users className="w-4 h-4" />
                       <span className="text-sm">
-                        {roomMemberCounts[room.id] !== undefined ? roomMemberCounts[room.id] : room.memberCount}/{room.capacity}
+                        {memberCounts?.[room.id] || 0}/{room.capacity}
                       </span>
                     </div>
                     {room.isPrivate && (

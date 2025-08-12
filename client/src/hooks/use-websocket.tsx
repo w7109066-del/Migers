@@ -160,7 +160,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     socket.current.on('error', (data) => {
       console.log('Socket error:', data);
-      
+
       // Show toast notification for critical errors
       if (data.message && data.message.includes('banned')) {
         toast({
@@ -177,7 +177,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           duration: 3000,
         });
       }
-      
+
       // Dispatch custom event for chat room to handle
       window.dispatchEvent(new CustomEvent('socketError', { 
         detail: data 
