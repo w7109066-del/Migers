@@ -41,6 +41,7 @@ interface ChatRoomProps {
   onSetUserListOpen?: (open: boolean) => void;
   isSettingsOpen?: boolean;
   onSetSettingsOpen?: (open: boolean) => void;
+  isDarkMode?: boolean;
 }
 
 interface Message {
@@ -80,7 +81,8 @@ export function ChatRoom({
   isUserListOpen = false,
   onSetUserListOpen,
   isSettingsOpen = false,
-  onSetSettingsOpen
+  onSetSettingsOpen,
+  isDarkMode = false
 }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [localUserListOpen, setLocalUserListOpen] = useState(false);
@@ -297,7 +299,7 @@ export function ChatRoom({
       // CRITICAL: NEVER call leaveRoom here - this would cause "left room" messages
       // Room connections are managed by localStorage and should persist across tab switches
       // Only explicit user action (clicking Leave Room button) should trigger actual room leave
-      console.log('Chat room cleanup completed - WebSocket connection preserved');
+      console.log('ChatRoom cleanup completed - WebSocket connection preserved');
     };
   }, [roomId, roomName, isConnected, joinRoom, savedMessages.length]);
 
