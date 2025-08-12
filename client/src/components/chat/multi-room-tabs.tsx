@@ -374,10 +374,16 @@ export function MultiRoomTabs({
                       <div className="flex items-center space-x-3">
                         <div className={cn("w-3 h-3 rounded-full bg-green-500")} />
                         <div>
-                          <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800", isMerchant && "text-purple-500")}>
-                            {room?.name || 'Unknown Room'}
-                            {isMerchant && <Crown className="w-4 h-4 inline-block ml-1 text-purple-500" />}
-                          </h2>
+                          <div className="flex items-center space-x-2">
+                            <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
+                              {room?.name || 'Unknown Room'}
+                            </h2>
+                            {isMerchant && (
+                              <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-2 py-0.5 dark:bg-purple-900/20 dark:text-purple-200">
+                                🛍️
+                              </Badge>
+                            )}
+                          </div>
                           <p className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
                             Online members
                           </p>
@@ -610,10 +616,16 @@ export function MultiRoomTabs({
           isDarkMode ? "bg-gray-900 border-gray-700 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-500"
         )}>
           <div className="flex items-center space-x-2">
-            <span className={cn("font-medium", user?.isMerchant && "text-purple-500")}>
-              {(rooms && rooms[safeActiveRoomIndex] && rooms[safeActiveRoomIndex].name) || 'No Room'}
-              {user?.isMerchant && <Crown className="w-3 h-3 inline-block ml-1 text-purple-500" />}
-            </span>
+            <div className="flex items-center space-x-1">
+              <span className="font-medium">
+                {(rooms && rooms[safeActiveRoomIndex] && rooms[safeActiveRoomIndex].name) || 'No Room'}
+              </span>
+              {user?.isMerchant && (
+                <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
+                  🛍️
+                </Badge>
+              )}
+            </div>
             <span className="text-gray-400">•</span>
             <span>
               {safeActiveRoomIndex + 1} of {rooms?.length || 0}

@@ -384,13 +384,13 @@ export function ChatRoom({
     const handleNewMessage = (event: CustomEvent) => {
       const newMessage = event.detail;
       console.log('ChatRoom: Received new message event:', newMessage);
-      
+
       if (newMessage.roomId === roomId) {
         // Don't show messages from blocked users
         if (blockedUsers.has(newMessage.senderId)) {
           return;
         }
-        
+
         // Check for duplicate messages (remove optimistic message if real one arrives)
         setMessages(prev => {
           // Remove any temporary/optimistic messages from the same user with similar content
@@ -399,7 +399,7 @@ export function ChatRoom({
             const isSameUser = msg.senderId === newMessage.senderId;
             const isSimilarContent = msg.content.trim() === newMessage.content.trim();
             const isRecent = Date.now() - new Date(msg.createdAt).getTime() < 5000; // within 5 seconds
-            
+
             // Remove optimistic message if real message matches
             if (isOptimistic && isSameUser && isSimilarContent && isRecent) {
               console.log('Removing optimistic message:', msg.id);
@@ -407,7 +407,7 @@ export function ChatRoom({
             }
             return true;
           });
-          
+
           // Check if message already exists (prevent duplicates)
           const messageExists = filteredMessages.some(msg => 
             msg.id === newMessage.id || 
@@ -415,12 +415,12 @@ export function ChatRoom({
              msg.content === newMessage.content && 
              Math.abs(new Date(msg.createdAt).getTime() - new Date(newMessage.createdAt).getTime()) < 1000)
           );
-          
+
           if (messageExists) {
             console.log('Message already exists, skipping:', newMessage.id);
             return filteredMessages;
           }
-          
+
           console.log('Adding new message to chat:', newMessage.id);
           return [...filteredMessages, newMessage];
         });
@@ -546,7 +546,7 @@ export function ChatRoom({
   const handleSendMessage = (content: string) => {
     if (roomId && content.trim() && user) {
       console.log('Sending message:', content, 'to room:', roomId);
-      
+
       // Create optimistic message for immediate UI feedback
       const optimisticMessage = {
         id: `temp-${Date.now()}-${user.id}`,
@@ -561,13 +561,13 @@ export function ChatRoom({
         },
         messageType: 'chat'
       };
-      
+
       // Add optimistic message to local state immediately
       setMessages(prev => [...prev, optimisticMessage]);
-      
+
       // Send message via WebSocket
       sendChatMessage(content, roomId);
-      
+
       console.log('Message sent and added optimistically:', optimisticMessage);
     }
   };
@@ -1237,238 +1237,248 @@ export function ChatRoom({
               </DialogHeader>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span>Room Information</span>
-                  <Badge variant="outline">
-                    <Hash className="w-3 h-3 mr-1" />
-                    {roomName}
-                  </Badge>
-                </div>
+                  <div className="flex items-center space-x-3">
+                    <div className={cn("w-3 h-3 rounded-full bg-green-500")} />
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
+                          {roomName || 'Unknown Room'}
+                        </h2>
+                        {user?.isMerchant && (
+                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-2 py-0.5 dark:bg-purple-900/20 dark:text-purple-200">
+                            🛍️
+                          </Badge>
+                        )}
+                      </div>
+                      <p className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
+                        Online members
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleBackToRoomList}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Back to Room List
-                  </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleBackToRoomList}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Back to Room List
+                </Button>
 
-                  {/* Kick User Menu - Only for level 1+ users */}
-                  {(user?.level || 0) >= 1 && (
-                    <Sheet>
-                      <SheetTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-orange-600 hover:text-orange-700">
-                          <UserMinus className="w-4 h-4 mr-2" />
-                          Kick User
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="right" className="w-80">
-                        <SheetHeader>
-                          <SheetTitle>Kick User from Room</SheetTitle>
-                        </SheetHeader>
-                        <div className="mt-4 space-y-2">
-                          {isLoadingMembers ? (
-                            <div className="flex items-center justify-center py-8">
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                            </div>
-                          ) : memberListError ? (
-                            <div className="text-center py-8 text-red-500">
-                              <p className="text-sm">Error loading members</p>
-                              <button
-                                onClick={() => {
-                                  setMemberListError(false);
-                                  setUserListOpen(false);
-                                }}
-                                className="text-xs mt-2 text-blue-600 hover:underline"
-                              >
-                                Close
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex-1 overflow-y-auto p-4">
-                              <div className="space-y-3">
-                                {(() => {
-                                  try {
-                                    if (!roomMembers || roomMembers.length === 0) {
+                {/* Kick User Menu - Only for level 1+ users */}
+                {(user?.level || 0) >= 1 && (
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-orange-600 hover:text-orange-700">
+                        <UserMinus className="w-4 h-4 mr-2" />
+                        Kick User
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-80">
+                      <SheetHeader>
+                        <SheetTitle>Kick User from Room</SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-4 space-y-2">
+                        {isLoadingMembers ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                          </div>
+                        ) : memberListError ? (
+                          <div className="text-center py-8 text-red-500">
+                            <p className="text-sm">Error loading members</p>
+                            <button
+                              onClick={() => {
+                                setMemberListError(false);
+                                setUserListOpen(false);
+                              }}
+                              className="text-xs mt-2 text-blue-600 hover:underline"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex-1 overflow-y-auto p-4">
+                            <div className="space-y-3">
+                              {(() => {
+                                try {
+                                  if (!roomMembers || roomMembers.length === 0) {
+                                    return (
+                                      <div className="text-center py-8 text-gray-500">
+                                        <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                        <p className="text-sm">No other members found</p>
+                                      </div>
+                                    );
+                                  }
+
+                                  return roomMembers
+                                    .filter(member => member.user.id !== user?.id) // Don't show current user
+                                    .map((member) => {
+                                      if (!member || !member.user) {
+                                        return null;
+                                      }
                                       return (
-                                        <div className="text-center py-8 text-gray-500">
-                                          <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                          <p className="text-sm">No other members found</p>
-                                        </div>
-                                      );
-                                    }
-
-                                    return roomMembers
-                                      .filter(member => member.user.id !== user?.id) // Don't show current user
-                                      .map((member) => {
-                                        if (!member || !member.user) {
-                                          return null;
-                                        }
-                                        return (
-                                          <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
-                                            <div className="flex items-center justify-between">
-                                              <div className="flex items-center space-x-3">
-                                                <UserAvatar
-                                                  username={member.user.username || 'Unknown'}
-                                                  size="sm"
-                                                  isOnline={member.user.isOnline || false}
-                                                  profilePhotoUrl={member.user.profilePhotoUrl}
-                                                  isAdmin={(member.user.level || 0) >= 5}
-                                                />
-                                                <div>
-                                                  <div className="flex items-center space-x-2">
-                                                    <span className={cn(
-                                                      "font-medium text-sm truncate",
-                                                      ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
-                                                    )}>
-                                                      {member.user.username || 'Unknown'}
-                                                    </span>
-                                                    <div className="flex items-center space-x-1">
-                                                      {/* Crown only for owner in managed rooms */}
-                                                      {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                                        <Crown className="w-3 h-3 text-yellow-500" />
-                                                      )}
-                                                      {/* Merchant badge */}
-                                                      {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                                        <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                                          🛍️
-                                                        </Badge>
-                                                      )}
-                                                      {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
-                                                        <Badge variant="destructive" className="text-xs bg-red-600">
-                                                          Admin
-                                                        </Badge>
-                                                      )}
-                                                    </div>
-                                                    <Badge variant="outline" className="text-xs">
-                                                      Level {member.user.level || 1}
-                                                    </Badge>
+                                        <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                              <UserAvatar
+                                                username={member.user.username || 'Unknown'}
+                                                size="sm"
+                                                isOnline={member.user.isOnline || false}
+                                                profilePhotoUrl={member.user.profilePhotoUrl}
+                                                isAdmin={(member.user.level || 0) >= 5}
+                                              />
+                                              <div>
+                                                <div className="flex items-center space-x-2">
+                                                  <span className={cn(
+                                                    "font-medium text-sm truncate",
+                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                                  )}>
+                                                    {member.user.username || 'Unknown'}
+                                                  </span>
+                                                  <div className="flex items-center space-x-1">
+                                                    {/* Crown only for owner in managed rooms */}
+                                                    {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                                      <Crown className="w-3 h-3 text-yellow-500" />
+                                                    )}
+                                                    {/* Merchant badge */}
+                                                    {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                                        🛍️
+                                                      </Badge>
+                                                    )}
+                                                    {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                                      <Badge variant="destructive" className="text-xs bg-red-600">
+                                                        Admin
+                                                      </Badge>
+                                                    )}
                                                   </div>
+                                                  <Badge variant="outline" className="text-xs">
+                                                    Level {member.user.level || 1}
+                                                  </Badge>
                                                 </div>
                                               </div>
-                                              <div className="flex space-x-2">
-                                                {/* Vote Kick Button */}
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="text-xs text-orange-600 hover:bg-orange-50"
-                                                  onClick={() => handleVoteKick(member.user.id)}
-                                                >
-                                                  Vote Kick
-                                                </Button>
-                                                {/* Direct Kick Button - Only for admins (level 1+) */}
-                                                {(user?.level || 0) >= 1 && (
-                                                  <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                      <Button
-                                                        size="sm"
-                                                        variant="destructive"
-                                                        className="text-xs"
-                                                      >
-                                                        Kick
-                                                      </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                      <AlertDialogHeader>
-                                                        <AlertDialogTitle>Kick User</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                          Are you sure you want to kick {member.user.username} from {roomName}?
-                                                          This action will immediately remove them from the room.
-                                                        </AlertDialogDescription>
-                                                      </AlertDialogHeader>
-                                                      <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction
-                                                          onClick={() => handleKickUser(member.user.id, member.user.username)}
-                                                          className="bg-red-600 hover:bg-red-700"
-                                                        >
-                                                          Kick User
-                                                        </AlertDialogAction>
-                                                      </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                  </AlertDialog>
-                                                )}
-                                              </div>
                                             </div>
-                                          </Card>
-                                        );
-                                      }).filter(Boolean);
-                                    } catch (error) {
-                                      console.error('Error rendering member list for kick menu:', error);
-                                      setMemberListError(true);
-                                      return (
-                                        <div className="text-center py-8 text-red-500">
-                                          <p className="text-sm">Error loading members</p>
-                                          <button
-                                            onClick={() => {
-                                              setMemberListError(false);
-                                              setUserListOpen(false);
-                                            }}
-                                            className="text-xs mt-2 text-blue-600 hover:underline"
-                                          >
-                                            Close
-                                          </button>
-                                        </div>
+                                            <div className="flex space-x-2">
+                                              {/* Vote Kick Button */}
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="text-xs text-orange-600 hover:bg-orange-50"
+                                                onClick={() => handleVoteKick(member.user.id)}
+                                              >
+                                                Vote Kick
+                                              </Button>
+                                              {/* Direct Kick Button - Only for admins (level 1+) */}
+                                              {(user?.level || 0) >= 1 && (
+                                                <AlertDialog>
+                                                  <AlertDialogTrigger asChild>
+                                                    <Button
+                                                      size="sm"
+                                                      variant="destructive"
+                                                      className="text-xs"
+                                                    >
+                                                      Kick
+                                                    </Button>
+                                                  </AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                      <AlertDialogTitle>Kick User</AlertDialogTitle>
+                                                      <AlertDialogDescription>
+                                                        Are you sure you want to kick {member.user.username} from {roomName}?
+                                                        This action will immediately remove them from the room.
+                                                      </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                      <AlertDialogAction
+                                                        onClick={() => handleKickUser(member.user.id, member.user.username)}
+                                                        className="bg-red-600 hover:bg-red-700"
+                                                      >
+                                                        Kick User
+                                                      </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                                </AlertDialog>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </Card>
                                       );
-                                    }
-                                  })()}
-                              </div>
+                                    }).filter(Boolean);
+                                  } catch (error) {
+                                    console.error('Error rendering member list for kick menu:', error);
+                                    setMemberListError(true);
+                                    return (
+                                      <div className="text-center py-8 text-red-500">
+                                        <p className="text-sm">Error loading members</p>
+                                        <button
+                                          onClick={() => {
+                                            setMemberListError(false);
+                                            setUserListOpen(false);
+                                          }}
+                                          className="text-xs mt-2 text-blue-600 hover:underline"
+                                        >
+                                          Close
+                                        </button>
+                                      </div>
+                                    );
+                                  }
+                                })()}
                             </div>
-                          )}
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                  )}
+                          </div>
+                        )}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                )}
 
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Leave Room
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Leave Room</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to leave {roomName}? You will need to rejoin to continue chatting.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleLeaveRoom} className="bg-red-600 hover:bg-red-700">
+                        Leave Room
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {isAdmin && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Leave Room
+                      <Button variant="destructive" className="w-full justify-start">
+                        <X className="w-4 h-4 mr-2" />
+                        Close Room
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Leave Room</AlertDialogTitle>
+                        <AlertDialogTitle>Close Room</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to leave {roomName}? You will need to rejoin to continue chatting.
+                          Are you sure you want to close {roomName}? This action cannot be undone and will remove all members.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleLeaveRoom} className="bg-red-600 hover:bg-red-700">
-                          Leave Room
+                        <AlertDialogAction onClick={handleCloseRoom} className="bg-red-600 hover:bg-red-700">
+                          Close Room
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-
-                  {isAdmin && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="w-full justify-start">
-                          <X className="w-4 h-4 mr-2" />
-                          Close Room
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Close Room</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to close {roomName}? This action cannot be undone and will remove all members.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleCloseRoom} className="bg-red-600 hover:bg-red-700">
-                            Close Room
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
+                )}
               </div>
             </DialogContent>
         </Dialog>
