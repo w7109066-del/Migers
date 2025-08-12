@@ -378,6 +378,11 @@ export function MultiRoomTabs({
                             <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
                               {room?.name || 'Unknown Room'}
                             </h2>
+                            {user?.isMentor && (
+                              <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-2 py-0.5 dark:bg-red-900/20 dark:text-red-200">
+                                📚 Mentor
+                              </Badge>
+                            )}
                             {isMerchant && (
                               <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-2 py-0.5 dark:bg-purple-900/20 dark:text-purple-200">
                                 🛍️
@@ -620,6 +625,11 @@ export function MultiRoomTabs({
               <span className="font-medium">
                 {(rooms && rooms[safeActiveRoomIndex] && rooms[safeActiveRoomIndex].name) || 'No Room'}
               </span>
+              {user?.isMentor && (
+                <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                  📚
+                </Badge>
+              )}
               {user?.isMerchant && (
                 <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
                   🛍️

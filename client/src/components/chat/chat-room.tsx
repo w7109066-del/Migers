@@ -67,6 +67,7 @@ interface RoomMember {
     isMerchant?: boolean;
     merchantRegisteredAt?: string;
     lastRechargeAt?: string;
+    isMentor?: boolean; // Added isMentor property
   };
   role?: string;
 }
@@ -1239,20 +1240,20 @@ export function ChatRoom({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className={cn("w-3 h-3 rounded-full bg-green-500")} />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
-                          {roomName || 'Unknown Room'}
-                        </h2>
-                        {user?.isMerchant && (
-                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-2 py-0.5 dark:bg-purple-900/20 dark:text-purple-200">
-                            🛍️
-                          </Badge>
-                        )}
-                      </div>
-                      <p className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
-                        Online members
-                      </p>
+                    <div className="flex items-center space-x-2">
+                      <h2 className={cn("font-semibold", isDarkMode ? "text-gray-200" : "text-gray-800")}>
+                        {roomName}
+                      </h2>
+                      {user?.isMentor && (
+                        <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-2 py-0.5 dark:bg-red-900/20 dark:text-red-200">
+                          📚 Mentor
+                        </Badge>
+                      )}
+                      {user?.isMerchant && (
+                        <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-2 py-0.5 dark:bg-purple-900/20 dark:text-purple-200">
+                          🛍️
+                        </Badge>
+                      )}
                     </div>
                   </div>
 

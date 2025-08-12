@@ -21,13 +21,15 @@ interface Message {
     level: number;
     isOnline: boolean;
     profilePhotoUrl?: string; // Added profilePhotoUrl to sender interface
+    isMentor?: boolean; // Added isMentor property
+    isMerchant?: boolean; // Added isMerchant property
   };
   messageType?: 'action' | 'normal'; // Added messageType for '/me' commands
 }
 
 interface MessageListProps {
   messages: Message[];
-  onUserClick?: (user: { id: string; username: string; level: number; isOnline: boolean; profilePhotoUrl?: string }) => void;
+  onUserClick?: (user: { id: string; username: string; level: number; isOnline: boolean; profilePhotoUrl?: string; isMentor?: boolean; isMerchant?: boolean }) => void;
   roomName?: string;
   isAdmin?: boolean;
   currentUserId?: string;
@@ -48,6 +50,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hiddenGiftMessages, setHiddenGiftMessages] = useState<Set<string>>(new Set());
   const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
+  const isDarkMode = true; // Assuming dark mode is active, adjust as needed
 
   useEffect(() => {
     scrollToBottom();
@@ -608,7 +611,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
         username: user.username,
         level: user.level,
         isOnline: user.isOnline,
-        profilePhotoUrl: user.profilePhotoUrl
+        profilePhotoUrl: user.profilePhotoUrl,
+        isMentor: user.isMentor,
+        isMerchant: user.isMerchant
       });
     }
   };
@@ -837,13 +842,27 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                                 level: message.sender.level,
                                 status: "Available for chat", // Assuming a default status if not provided
                                 isOnline: message.sender.isOnline,
-                                profilePhotoUrl: message.sender.profilePhotoUrl
+                                profilePhotoUrl: message.sender.profilePhotoUrl,
+                                isMentor: message.sender.isMentor,
+                                isMerchant: message.sender.isMerchant
                               });
                             }
                           }}
                         >
                           {message.sender.username}:
                         </span>
+                        {/* Mentor badge added here */}
+                        {message.sender.isMentor && (
+                          <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                            📚
+                          </Badge>
+                        )}
+                        {/* Merchant badge */}
+                        {message.sender.isMerchant && (
+                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
+                            🛍️
+                          </Badge>
+                        )}
                         <div
                           className="text-sm break-words"
                           dangerouslySetInnerHTML={{

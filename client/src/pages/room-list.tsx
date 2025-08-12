@@ -12,6 +12,7 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils"; // Assuming cn is imported from lib/utils
 
 interface Room {
   id: string;
@@ -257,7 +258,7 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
     console.log('Back to room list clicked - staying connected to room');
     // Just hide the room view without leaving the room
     setSelectedRoom(null);
-    
+
     // Dispatch event to notify parent component that we're back to room list
     window.dispatchEvent(new CustomEvent('backToRoomList'));
   };
