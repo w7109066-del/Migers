@@ -2872,29 +2872,32 @@ export function registerRoutes(app: Express): Server {
           // Leave the Socket.IO room
           socket.leave(data.roomId);
 
-          // Broadcast user leave message and user_left event
-          const leaveMessage = {
-            id: `system-leave-${Date.now()}`,
-            content: `${user?.username || 'User'} has left the room.`,
-            senderId: 'system',
-            roomId: data.roomId,
-            recipientId: null,
-            messageType: 'system',
-            createdAt: new Date().toISOString(),
-            sender: {
-              id: 'system',
-              username: 'System',
-              level: 0,
-              isOnline: true,
-            }
-          };
+          // Only broadcast leave message if it's an explicit leave (not tab switch)
+          if (data.explicit) {
+            // Broadcast user leave message and user_left event
+            const leaveMessage = {
+              id: `system-leave-${Date.now()}`,
+              content: `${user?.username || 'User'} has left the room.`,
+              senderId: 'system',
+              roomId: data.roomId,
+              recipientId: null,
+              messageType: 'system',
+              createdAt: new Date().toISOString(),
+              sender: {
+                id: 'system',
+                username: 'System',
+                level: 0,
+                isOnline: true,
+              }
+            };
 
-          // Broadcast leave message to all users in room
-          io.to(data.roomId).emit('new_message', {
-            message: leaveMessage
-          });
+            // Broadcast leave message to all users in room
+            io.to(data.roomId).emit('new_message', {
+              message: leaveMessage
+            });
+          }
 
-          // Also emit user_left event for member list updates
+          // Always emit user_left event for member list updates
           io.to(data.roomId).emit('user_left', {
             userId: userId,
             username: user?.username || 'User',

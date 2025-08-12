@@ -323,6 +323,10 @@ export function ChatRoom({
         console.log('Auto-saving messages for room switch:', previousRoomIdRef.current);
         onSaveMessages(messages);
       }
+
+      // Clear UI state when switching rooms
+      setUserListOpen(false);
+      setSettingsOpen(false);
     }
   }, [roomId, isRoomJoined, messages, onSaveMessages]);
 
@@ -472,11 +476,14 @@ export function ChatRoom({
       console.log('User leave event received:', { username, eventRoomId, leftUserId, currentRoomId: roomId });
 
       if (eventRoomId === roomId && username && username !== 'undefined') {
-        // Don't show leave message for current user unless they are leaving
+        // If current user is leaving, clear everything immediately
         if (leftUserId === user?.id) {
-          console.log('Current user is leaving, clearing room state');
-          // Clear messages when current user leaves
+          console.log('Current user is leaving, clearing all room state');
+          // Clear messages and localStorage immediately
           setMessages([]);
+          const localStorageKey = `chatMessages-${roomId}`;
+          localStorage.removeItem(localStorageKey);
+          console.log('Cleared messages and localStorage for current user leaving room:', roomId);
           return;
         }
 
@@ -956,20 +963,29 @@ export function ChatRoom({
         localStorage.removeItem(localStorageKey);
         console.log('Cleared localStorage cache for room:', roomId);
 
-        // Clear any room-specific state
+        // Clear all room-specific state immediately
         setMessages([]);
         setIsRoomJoined(false);
+        setUserListOpen(false);
+        setSettingsOpen(false);
+
+        // Clear any cached room data from query client
+        try {
+          const { queryClient } = require('@/lib/queryClient');
+          queryClient.removeQueries({ queryKey: ["/api/rooms", roomId] });
+          queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+        } catch (error) {
+          console.log('Query client not available, skipping cache clear');
+        }
 
         // Actually leave the room via WebSocket with forceLeave=true
         leaveRoom(roomId, true); // Force leave the room
         console.log('User explicitly left room:', roomId);
 
-        // Add a small delay to ensure leave message is sent before navigation
-        setTimeout(() => {
-          if (onLeaveRoom) {
-            onLeaveRoom();
-          }
-        }, 100);
+        // Immediate navigation to prevent any state persistence
+        if (onLeaveRoom) {
+          onLeaveRoom();
+        }
       } else {
         if (onLeaveRoom) {
           onLeaveRoom();
