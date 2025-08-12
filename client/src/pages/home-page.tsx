@@ -727,31 +727,42 @@ function HomePageContent() {
   };
 
   const handleCloseRoom = (roomIndex: number) => {
-    console.log('HomePage: Closing room at index:', roomIndex);
-
-    const roomToClose = openRooms[roomIndex];
-    if (!roomToClose) return;
+    console.log('HomePage: Closing room at index:', roomIndex, 'Total rooms:', openRooms.length);
 
     // Save messages before closing
-    if (roomToClose.messages.length > 0) {
-      setRoomMessages(prev => ({
-        ...prev,
-        [roomToClose.id]: roomToClose.messages
-      }));
-      console.log('HomePage: Saved messages for room:', roomToClose.id, roomToClose.messages.length);
+    const roomToClose = openRooms[roomIndex];
+    if (roomToClose && roomToClose.messages && roomToClose.messages.length > 0) {
+      console.log('HomePage: Saving messages before closing room:', roomToClose.id);
+      handleSaveRoomMessages(roomToClose.id, roomToClose.messages);
     }
 
+    // Remove room from openRooms array
     const updatedRooms = openRooms.filter((_, index) => index !== roomIndex);
     setOpenRooms(updatedRooms);
 
-    // Adjust active room index
+    // Adjust active room index and handle empty state
     if (updatedRooms.length === 0) {
+      // No rooms left - reset everything
       setActiveRoomIndex(0);
-      setIsFullscreenMode(false); // Disable fullscreen when no rooms are open
+      setCurrentRoom(null);
+      setRoomName('');
+      setIsFullscreenMode(false);
+
+      console.log('HomePage: All rooms closed, navigation should work normally now');
     } else if (activeRoomIndex >= updatedRooms.length) {
-      setActiveRoomIndex(updatedRooms.length - 1);
+      // Set to last available room
+      const newIndex = updatedRooms.length - 1;
+      setActiveRoomIndex(newIndex);
+      setCurrentRoom(updatedRooms[newIndex]);
+      setRoomName(updatedRooms[newIndex].name);
     } else if (roomIndex <= activeRoomIndex) {
-      setActiveRoomIndex(Math.max(0, activeRoomIndex - 1));
+      // Adjust index if we closed a room before or at current active room
+      const newIndex = Math.max(0, activeRoomIndex - 1);
+      setActiveRoomIndex(newIndex);
+      if (updatedRooms[newIndex]) {
+        setCurrentRoom(updatedRooms[newIndex]);
+        setRoomName(updatedRooms[newIndex].name);
+      }
     }
 
     console.log('HomePage: Room closed. Remaining rooms:', updatedRooms.length);

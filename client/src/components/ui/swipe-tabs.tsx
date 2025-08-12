@@ -12,9 +12,10 @@ interface SwipeTabsProps {
   tabs: Tab[];
   className?: string;
   isDarkMode?: boolean;
+  onTabChange?: (tabId: string) => void;
 }
 
-export function SwipeTabs({ tabs, className, isDarkMode }: SwipeTabsProps) {
+export function SwipeTabs({ tabs, className, isDarkMode, onTabChange }: SwipeTabsProps) {
   const [activeTab, setActiveTab] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
@@ -24,6 +25,7 @@ export function SwipeTabs({ tabs, className, isDarkMode }: SwipeTabsProps) {
     if (tabIndex < 0 || tabIndex >= tabs.length) return;
 
     setActiveTab(tabIndex);
+    onTabChange?.(tabs[tabIndex].id); // Call onTabChange with the new tab's ID
 
     if (containerRef.current) {
       const tabWidth = containerRef.current.clientWidth;
@@ -67,9 +69,13 @@ export function SwipeTabs({ tabs, className, isDarkMode }: SwipeTabsProps) {
   };
 
   useEffect(() => {
-    // Auto-scroll to active tab on mount
-    switchTab(0);
-  }, []);
+    // Auto-scroll to active tab on mount or when tabs change
+    if (tabs.length > 0) {
+      switchTab(0);
+    } else {
+      setActiveTab(-1); // Reset active tab if no tabs are present
+    }
+  }, [tabs]); // Re-run effect if tabs array changes
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
@@ -104,15 +110,17 @@ export function SwipeTabs({ tabs, className, isDarkMode }: SwipeTabsProps) {
       )}>
         <div className="flex items-center justify-around relative">
           {/* Tab Indicator */}
-          <div
-            className={cn("absolute top-0 h-1 rounded-full transition-all duration-300",
-              isDarkMode ? "bg-primary" : "bg-primary"
-            )}
-            style={{
-              width: `calc(100% / ${tabs.length})`,
-              left: `calc(${activeTab} * (100% / ${tabs.length}))`,
-            }}
-          />
+          {tabs.length > 0 && (
+            <div
+              className={cn("absolute top-0 h-1 rounded-full transition-all duration-300",
+                isDarkMode ? "bg-primary" : "bg-primary"
+              )}
+              style={{
+                width: `calc(100% / ${tabs.length})`,
+                left: `calc(${activeTab} * (100% / ${tabs.length}))`,
+              }}
+            />
+          )}
 
           {tabs.map((tab, index) => (
             <button
