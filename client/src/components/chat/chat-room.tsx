@@ -964,6 +964,11 @@ export function ChatRoom({
         <Sheet open={userListOpen} onOpenChange={(open) => {
           console.log('Member list sheet state change:', open);
           try {
+            // Check if user is connected and in the room before opening member list
+            if (open && !isConnected) {
+              alert('⚠️ You are not in the chatroom. Please reconnect to view member list.');
+              return;
+            }
             setMemberListError(false);
             setUserListOpen(open);
           } catch (error) {
@@ -1519,6 +1524,11 @@ export function ChatRoom({
           size="sm"
           onClick={() => {
             try {
+              // Check if user is connected and in the room before opening member list
+              if (!isConnected) {
+                alert('⚠️ You are not in the chatroom. Please reconnect to view member list.');
+                return;
+              }
               setMemberListError(false);
               setUserListOpen(!userListOpen);
             } catch (error) {

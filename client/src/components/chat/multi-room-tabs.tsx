@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAuth } from "@/hooks/use-auth";
 import { Crown } from "lucide-react"; // Import Crown for merchant badge
+import { Button } from "@/components/ui/button"; // Assuming Button component is in ui/button
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"; // Assuming Sheet components are in ui/sheet
 
 interface Room {
   id: string;
@@ -37,12 +39,13 @@ export function MultiRoomTabs({
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [isUserListOpen, setIsUserListOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [userListOpen, setUserListOpen] = useState(false); // Renamed for clarity with Sheet component
+  const [settingsOpen, setSettingsOpen] = useState(false); // Renamed for clarity with Sheet component
   const [typingUsers, setTypingUsers] = useState<Map<string, string[]>>(new Map()); // roomId -> array of usernames
   const [hasNewMessages, setHasNewMessages] = useState<Map<string, boolean>>(new Map()); // roomId -> has new messages
   const { isConnected } = useWebSocket();
   const { user } = useAuth();
+  const [memberListError, setMemberListError] = useState(false); // State for member list error
 
   // Add safety checks with better error handling
   if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
@@ -59,7 +62,7 @@ export function MultiRoomTabs({
 
   // Ensure activeRoomIndex is valid
   const safeActiveRoomIndex = Math.max(0, Math.min(activeRoomIndex, rooms.length - 1));
-  
+
   // Use useEffect to handle activeRoomIndex correction safely
   useEffect(() => {
     if (activeRoomIndex !== safeActiveRoomIndex && rooms.length > 0) {
@@ -318,7 +321,20 @@ export function MultiRoomTabs({
                       <div className="flex items-center space-x-2">
                         {/* Member List Button */}
                         <button
-                          onClick={() => setIsUserListOpen(true)}
+                          onClick={() => {
+                            try {
+                              // Check if user is connected and in the room before opening member list
+                              if (!isConnected) {
+                                alert('⚠️ You are not in the chatroom. Please reconnect to view member list.');
+                                return;
+                              }
+                              setMemberListError(false);
+                              setUserListOpen(true);
+                            } catch (error) {
+                              console.error('Error toggling member list:', error);
+                              setMemberListError(true);
+                            }
+                          }}
                           className={cn(
                             "p-2 rounded-md flex items-center justify-center transition-colors",
                             isDarkMode ? "hover:bg-gray-700 text-gray-400 hover:text-gray-200" : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
@@ -330,7 +346,7 @@ export function MultiRoomTabs({
 
                         {/* Settings Button */}
                         <button
-                          onClick={() => setIsSettingsOpen(true)}
+                          onClick={() => setSettingsOpen(true)}
                           className={cn(
                             "p-2 rounded-md flex items-center justify-center transition-colors",
                             isDarkMode ? "hover:bg-gray-700 text-gray-400 hover:text-gray-200" : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
@@ -499,10 +515,10 @@ export function MultiRoomTabs({
                             onLeaveRoom={() => onCloseRoom(index)}
                             savedMessages={Array.isArray(room.messages) ? room.messages : []}
                             onSaveMessages={(messages) => onSaveMessages(room.id, messages)}
-                            isUserListOpen={isUserListOpen && safeActiveRoomIndex === index}
-                            onSetUserListOpen={setIsUserListOpen}
-                            isSettingsOpen={isSettingsOpen && safeActiveRoomIndex === index}
-                            onSetSettingsOpen={setIsSettingsOpen}
+                            isUserListOpen={userListOpen && safeActiveRoomIndex === index}
+                            onSetUserListOpen={setUserListOpen}
+                            isSettingsOpen={settingsOpen && safeActiveRoomIndex === index}
+                            onSetSettingsOpen={setSettingsOpen}
                           />
                         </div>
                       ) : (
@@ -547,7 +563,7 @@ export function MultiRoomTabs({
                     <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                   <span className="text-[10px]">
-                    {rooms && rooms[safeActiveRoomIndex] && typingUsers.get(rooms[safeActiveRoomIndex].id) ? 
+                    {rooms && rooms[safeActiveRoomIndex] && typingUsers.get(rooms[safeActiveRoomIndex].id) ?
                       typingUsers.get(rooms[safeActiveRoomIndex].id)!.join(', ') : ''} typing...
                   </span>
                 </div>
@@ -560,6 +576,89 @@ export function MultiRoomTabs({
           </div>
         </div>
       )}
+
+      {/* Member List Sheet */}
+      <Sheet open={userListOpen} onOpenChange={(open) => {
+          console.log('Member list sheet state change:', open);
+          try {
+            // Check if user is connected and in the room before opening member list
+            if (open && !isConnected) {
+              alert('⚠️ You are not in the chatroom. Please reconnect to view member list.');
+              return;
+            }
+            setMemberListError(false);
+            setUserListOpen(open);
+          } catch (error) {
+            console.error('Error handling member list sheet toggle:', error);
+            setMemberListError(true);
+          }
+        }}>
+        <SheetContent className={cn(isDarkMode ? "bg-gray-900 text-white" : "")}>
+          <SheetHeader>
+            <SheetTitle className={cn(isDarkMode ? "text-white" : "")}>Members</SheetTitle>
+          </SheetHeader>
+          {memberListError && (
+            <div className="text-red-500 text-center my-4">
+              Error loading member list. Please try again.
+            </div>
+          )}
+          {!memberListError && (
+            <div className="mt-4">
+              {/* Member list content will be rendered here */}
+              <p>Member list goes here...</p>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Settings Sheet */}
+      <Sheet open={settingsOpen} onOpenChange={(open) => {
+          console.log('Settings sheet state change:', open);
+          try {
+            setSettingsOpen(open);
+          } catch (error) {
+            console.error('Error handling settings sheet toggle:', error);
+          }
+        }}>
+        <SheetContent className={cn(isDarkMode ? "bg-gray-900 text-white" : "")}>
+          <SheetHeader>
+            <SheetTitle className={cn(isDarkMode ? "text-white" : "")}>Room Settings</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            {/* Room settings content will be rendered here */}
+            <p>Room settings go here...</p>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Placeholder for the button that opens the member list */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            try {
+              // Check if user is connected and in the room before opening member list
+              if (!isConnected) {
+                alert('⚠️ You are not in the chatroom. Please reconnect to view member list.');
+                return;
+              }
+              setMemberListError(false);
+              setUserListOpen(!userListOpen);
+            } catch (error) {
+              console.error('Error toggling member list:', error);
+              setMemberListError(true);
+            }
+          }}
+          className={cn(
+            "p-2 rounded-md flex items-center justify-center transition-colors",
+            isDarkMode ? "hover:bg-gray-700 text-gray-400 hover:text-gray-200" : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          )}
+          title="Member List"
+        >
+          <Users className="w-5 h-5" />
+        </Button>
+      </div>
     </div>
   );
 }
