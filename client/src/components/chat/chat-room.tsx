@@ -1245,10 +1245,10 @@ export function ChatRoom({
                         {roomName}
                       </h2>
                       {user?.isMentor && (
-                        <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-2 py-0.5 dark:bg-red-900/20 dark:text-red-200">
-                          📚 Mentor
-                        </Badge>
-                      )}
+                          <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-2 py-0.5 dark:bg-red-900/20 dark:text-red-200">
+                            M Mentor
+                          </Badge>
+                        )}
                       {user?.isMerchant && (
                         <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-2 py-0.5 dark:bg-purple-900/20 dark:text-purple-200">
                           🛍️

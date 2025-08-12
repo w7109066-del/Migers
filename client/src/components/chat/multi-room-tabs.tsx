@@ -380,7 +380,7 @@ export function MultiRoomTabs({
                             </h2>
                             {user?.isMentor && (
                               <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-2 py-0.5 dark:bg-red-900/20 dark:text-red-200">
-                                📚 Mentor
+                                M Mentor
                               </Badge>
                             )}
                             {isMerchant && (
@@ -627,7 +627,7 @@ export function MultiRoomTabs({
               </span>
               {user?.isMentor && (
                 <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
-                  📚
+                  M
                 </Badge>
               )}
               {user?.isMerchant && (
