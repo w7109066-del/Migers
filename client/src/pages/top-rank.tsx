@@ -21,7 +21,7 @@ interface RankedUser {
 const mockTopUsers: RankedUser[] = [
   {
     id: "1",
-    username: "Rizza One",
+    username: "dev",
     level: 84750,
     coins: 84750,
     rank: 1,
@@ -30,7 +30,7 @@ const mockTopUsers: RankedUser[] = [
   },
   {
     id: "2", 
-    username: "Dimas",
+    username: "dimas",
     level: 83439,
     coins: 83439,
     rank: 2,
@@ -39,7 +39,7 @@ const mockTopUsers: RankedUser[] = [
   },
   {
     id: "3",
-    username: "Yukandar Yukand",
+    username: "asu",
     level: 78160,
     coins: 78160,
     rank: 3,
@@ -48,7 +48,7 @@ const mockTopUsers: RankedUser[] = [
   },
   {
     id: "4",
-    username: "MiuXinh Husband",
+    username: "bob_al",
     level: 75820,
     coins: 75820,
     rank: 4,
@@ -128,7 +128,7 @@ export default function TopRankPage() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <h1 className="text-lg font-bold">🇮🇩 Daftar daerah</h1>
+        <h1 className="text-lg font-bold">🇮🇩 TOP RANK</h1>
         <Button
           variant="ghost"
           size="sm"
@@ -168,7 +168,7 @@ export default function TopRankPage() {
               : "text-white/80 hover:text-white"
           }`}
         >
-          daftar cinta
+          gift
         </button>
       </div>
 
