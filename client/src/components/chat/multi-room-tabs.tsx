@@ -55,7 +55,7 @@ export function MultiRoomTabs({
   // State for managing members and loading status
   const [roomMembers, setRoomMembers] = useState<any[]>([]); // Assuming member data structure
   const [isLoadingMembers, setIsLoadingMembers] = useState(false); // Loading state for members
-  
+
   // State for active kick votes and their timers
   const [activeKickVotes, setActiveKickVotes] = useState<{ [key: string]: { voters: Set<string>; remainingTime: number; targetUser: any } }>({});
   const kickVoteDuration = 60; // seconds
@@ -566,7 +566,7 @@ export function MultiRoomTabs({
                           >
                             <Settings className="w-5 h-5" />
                           </button>
-                          
+
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>Room Settings</DialogTitle>
@@ -637,8 +637,8 @@ export function MultiRoomTabs({
                                 </Sheet>
                               )}
 
-                              {/* Kick User Menu - Available for mentors and all users level 1+ */}
-                              {(user?.isMentor || (user?.level || 0) >= 1) && (
+                              {/* Kick User Menu - Available for level 1+ users */}
+                              {(user?.level || 0) >= 1 && (
                                 <Sheet>
                                   <SheetTrigger asChild>
                                     <Button variant="outline" className="w-full justify-start text-orange-600 hover:text-orange-700">
@@ -662,7 +662,7 @@ export function MultiRoomTabs({
                                               .filter(member => member.user.id !== user?.id) // Don't show current user
                                               .map((member) => {
                                                 if (!member || !member.user) return null;
-                                                
+
                                                 return (
                                                   <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
                                                     <div className="flex items-center justify-between">
@@ -715,8 +715,8 @@ export function MultiRoomTabs({
                                                           variant="outline"
                                                           className={cn(
                                                             "text-xs",
-                                                            activeKickVotes[member.user.id]?.voters.has(user?.id || '') 
-                                                              ? "bg-orange-100 text-orange-600 border-orange-300" 
+                                                            activeKickVotes[member.user.id]?.voters.has(user?.id || '')
+                                                              ? "bg-orange-100 text-orange-600 border-orange-300"
                                                               : "text-orange-600 hover:bg-orange-50"
                                                           )}
                                                           onClick={() => {
@@ -727,13 +727,13 @@ export function MultiRoomTabs({
                                                             }
                                                           }}
                                                         >
-                                                          {activeKickVotes[member.user.id] 
+                                                          {activeKickVotes[member.user.id]
                                                             ? `Vote ${activeKickVotes[member.user.id].voters.size}/${Math.ceil((roomMembers?.length || 1) / 2)}`
                                                             : 'Start Vote'
                                                           }
                                                         </Button>
-                                                        {/* Direct Kick Button - For mentors and admins */}
-                                                        {(user?.isMentor || (user?.level || 0) >= 5) && (
+                                                        {/* Direct Kick Button - For level 1+ users */}
+                                                        {(user?.level || 0) >= 1 && (
                                                           <AlertDialog>
                                                             <AlertDialogTrigger asChild>
                                                               <Button
@@ -795,18 +795,18 @@ export function MultiRoomTabs({
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Leave Room</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to leave {rooms[safeActiveRoomIndex]?.name}? 
+                                      Are you sure you want to leave {rooms[safeActiveRoomIndex]?.name}?
                                       {user?.isMentor && " As a mentor, you can rejoin anytime to continue mentoring."}
                                       {!user?.isMentor && " You will need to rejoin to continue chatting."}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
+                                    <AlertDialogAction
                                       onClick={() => {
                                         setSettingsOpen(false);
                                         onCloseRoom(safeActiveRoomIndex);
-                                      }} 
+                                      }}
                                       className="bg-red-600 hover:bg-red-700"
                                     >
                                       {user?.isMentor ? "Leave as Mentor" : "Leave Room"}
@@ -942,14 +942,14 @@ export function MultiRoomTabs({
                                       // Clear main chat messages
                                       const localStorageKey = `chatMessages-${roomToClose.id}`;
                                       localStorage.removeItem(localStorageKey);
-                                      
+
                                       // Clear saved room states
                                       const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
                                       if (savedRoomStates[roomToClose.id]) {
                                         delete savedRoomStates[roomToClose.id];
                                         localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
                                       }
-                                      
+
                                       // Clear multi-room state
                                       if (user) {
                                         const multiRoomStateKey = `multiRoomState-${user.id}`;
@@ -959,7 +959,7 @@ export function MultiRoomTabs({
                                           localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
                                         }
                                       }
-                                      
+
                                       console.log('Cleared ALL localStorage data for closed room:', roomToClose.id);
                                     }
                                     onCloseRoom(tabIndex);

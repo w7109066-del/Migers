@@ -466,9 +466,9 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Check if kicker has permission (admin or room moderator)
-      const kickerUser = await storage.getUser(kickerUserId); // Assuming getUserById exists
-      if (!kickerUser || kickerUser.level < 1) { // Assuming level 1+ are admins who can kick
+      // Check if kicker has permission (level 1+ can kick)
+      const kickerUser = await storage.getUser(kickerUserId);
+      if (!kickerUser || (kickerUser.level || 0) < 1) {
         return res.status(403).json({ error: 'Insufficient permissions to kick users' });
       }
 
@@ -1445,7 +1445,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/admin/ban', requireAdmin, async (req, res) => {
+  app.post('/api/admin/ban', requireAuth, async (req, res) => {
     try {
       const { userId } = req.body;
 
@@ -1453,14 +1453,20 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
+      // Check if user has level 1+ permission to ban
+      const bannerUser = req.user;
+      if (!bannerUser || (bannerUser.level || 0) < 1) {
+        return res.status(403).json({ message: 'Insufficient permissions to ban users. Level 1+ required.' });
+      }
+
       // Prevent admin from banning themselves
       if (userId === req.user?.id) {
         return res.status(400).json({ message: 'Cannot ban yourself' });
       }
 
-      // Prevent banning admin users
+      // Prevent banning admin users (level 5+)
       const targetUser = await storage.getUser(userId);
-      if (targetUser && targetUser.level >= 5) {
+      if (targetUser && (targetUser.level || 0) >= 5) {
         return res.status(403).json({ message: 'Cannot ban admin users' });
       }
 
@@ -1472,12 +1478,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/admin/unban', requireAdmin, async (req, res) => {
+  app.post('/api/admin/unban', requireAuth, async (req, res) => {
     try {
       const { userId } = req.body;
 
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      // Check if user has level 1+ permission to unban
+      const unbannerUser = req.user;
+      if (!unbannerUser || (unbannerUser.level || 0) < 1) {
+        return res.status(403).json({ message: 'Insufficient permissions to unban users. Level 1+ required.' });
       }
 
       const updatedUser = await storage.unbanUser(userId);
