@@ -555,6 +555,26 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get banned users - Admin only
+  app.get('/api/admin/banned-users', requireAdmin, async (req, res) => {
+    try {
+      const bannedUsers = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        level: users.level,
+        isBanned: users.isBanned,
+        profilePhotoUrl: users.profilePhotoUrl,
+        createdAt: users.createdAt
+      }).from(users).where(eq(users.isBanned, true));
+
+      res.json(bannedUsers);
+    } catch (error) {
+      console.error('Error fetching banned users:', error);
+      res.status(500).json({ message: 'Failed to fetch banned users' });
+    }
+  });
+
   // Get room info
   app.get("/api/rooms/:roomId/info", requireRoomAccess, async (req, res) => {
     const { roomId } = req.params;

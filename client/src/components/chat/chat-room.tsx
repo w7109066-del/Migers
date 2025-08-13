@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,7 +27,8 @@ import {
   Crown,
   LogOut,
   EyeOff,
-  Info
+  Info,
+  Ban
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -180,7 +182,7 @@ export function ChatRoom({
         try {
           const parsedMessages = JSON.parse(storedMessages);
           console.log('Restoring messages from localStorage for room:', roomId, parsedMessages.length);
-          
+
           // Check if welcome messages exist in stored messages
           const hasWelcomeMessage = parsedMessages.some(msg => 
             msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
@@ -201,7 +203,7 @@ export function ChatRoom({
         }
       } else if (savedMessages.length > 0) {
         console.log('Restoring saved messages for room:', roomId, savedMessages.length);
-        
+
         // Check if welcome messages exist in saved messages
         const hasWelcomeMessage = savedMessages.some(msg => 
           msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
@@ -299,7 +301,7 @@ export function ChatRoom({
 
         const finalMessages = [...welcomeMessages, ...existingMessages];
         setMessages(finalMessages);
-        
+
         // Save updated messages to localStorage
         localStorage.setItem(localStorageKey, JSON.stringify(finalMessages));
         console.log('Generated and saved welcome messages for room:', roomId);
@@ -533,21 +535,21 @@ export function ChatRoom({
         // If current user is leaving, clear everything immediately
         if (leftUserId === user?.id) {
           console.log('Current user is leaving, clearing all room state and localStorage');
-          
+
           // Clear messages state immediately
           setMessages([]);
-          
+
           // Clear all localStorage related to this room
           const localStorageKey = `chatMessages-${roomId}`;
           localStorage.removeItem(localStorageKey);
-          
+
           // Clear saved room states
           const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
           if (savedRoomStates[roomId]) {
             delete savedRoomStates[roomId];
             localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
           }
-          
+
           // Clear multi-room state if exists
           if (user) {
             const multiRoomStateKey = `multiRoomState-${user.id}`;
@@ -557,7 +559,7 @@ export function ChatRoom({
               localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
             }
           }
-          
+
           console.log('Cleared all localStorage data for user leaving room:', roomId);
           return;
         }
@@ -1037,14 +1039,14 @@ export function ChatRoom({
         // Clear main chat messages
         const localStorageKey = `chatMessages-${roomId}`;
         localStorage.removeItem(localStorageKey);
-        
+
         // Clear saved room states
         const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
         if (savedRoomStates[roomId]) {
           delete savedRoomStates[roomId];
           localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
         }
-        
+
         // Clear multi-room state
         if (user) {
           const multiRoomStateKey = `multiRoomState-${user.id}`;
@@ -1054,7 +1056,7 @@ export function ChatRoom({
             localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
           }
         }
-        
+
         console.log('Cleared ALL localStorage cache for room:', roomId);
 
         // Clear all room-specific state immediately

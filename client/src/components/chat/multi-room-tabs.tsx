@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { X, MessageCircle, Users, Settings, UserMinus, LogOut, Eye } from "lucide-react";
+import { X, MessageCircle, Users, Settings, UserMinus, LogOut, Eye, Ban } from "lucide-react";
 import { ChatRoom } from "./chat-room";
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -608,6 +608,34 @@ export function MultiRoomTabs({
                                 <Eye className="w-4 h-4 mr-2" />
                                 Back to Room List
                               </Button>
+
+                              {/* Banned User Menu - Available for admins only */}
+                              {(user?.isAdmin || (user?.level || 0) >= 5) && (
+                                <Sheet>
+                                  <SheetTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      Manage Banned Users
+                                    </Button>
+                                  </SheetTrigger>
+                                  <SheetContent side="right" className="w-80">
+                                    <SheetHeader>
+                                      <SheetTitle>Banned Users Management</SheetTitle>
+                                    </SheetHeader>
+                                    <div className="mt-4 space-y-4">
+                                      <div className="text-sm text-gray-600">
+                                        Users banned from all chat rooms
+                                      </div>
+                                      {/* This would need a separate API endpoint to fetch banned users */}
+                                      <div className="space-y-2">
+                                        <div className="text-xs text-gray-500">
+                                          Banned users list would appear here
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </SheetContent>
+                                </Sheet>
+                              )}
 
                               {/* Kick User Menu - Available for mentors and all users level 1+ */}
                               {(user?.isMentor || (user?.level || 0) >= 1) && (
