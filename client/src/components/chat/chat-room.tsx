@@ -982,6 +982,54 @@ export function ChatRoom({
     }
   };
 
+  const handleBlockUser = async (userId: string, username: string) => {
+    try {
+      const response = await fetch(`/api/admin/ban`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        // Show success message
+        const blockMessage = {
+          id: `block-${Date.now()}`,
+          content: `${username} has been blocked from all chat rooms`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, blockMessage]);
+        setTimeout(() => refetchMembers(), 100); // Refresh members after block
+      } else {
+        const errorMessage = await response.json();
+        const blockFailMessage = {
+          id: `block-fail-${Date.now()}`,
+          content: `Failed to block ${username}: ${errorMessage.message || 'Unknown error'}`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        };
+        setMessages(prev => [...prev, blockFailMessage]);
+      }
+    } catch (error) {
+      console.error('Failed to block user:', error);
+      const blockFailMessage = {
+        id: `block-fail-${Date.now()}`,
+        content: `An error occurred while trying to block ${username}.`,
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+        messageType: 'system'
+      };
+      setMessages(prev => [...prev, blockFailMessage]);
+    }
+  };
+
   const handleKickUser = async (userId: string, username: string) => {
     try {
       const response = await fetch(`/api/rooms/${roomId}/kick`, {
@@ -1412,6 +1460,174 @@ export function ChatRoom({
                 <Eye className="w-4 h-4 mr-2" />
                 Back to Room List
               </Button>
+
+              {/* Block User Menu - Available for level 1+ users */}
+              {(user?.level || 0) >= 1 && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                      <Ban className="w-4 h-4 mr-2" />
+                      Block User
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-80">
+                    <SheetHeader>
+                      <SheetTitle>Block User from Rooms</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 space-y-2">
+                      {isLoadingMembers ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        </div>
+                      ) : memberListError ? (
+                        <div className="text-center py-8 text-red-500">
+                          <p className="text-sm">Error loading members</p>
+                          <button
+                            onClick={() => {
+                              setMemberListError(false);
+                              setUserListOpen(false);
+                            }}
+                            className="text-xs mt-2 text-blue-600 hover:underline"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex-1 overflow-y-auto p-4">
+                          <div className="space-y-3">
+                            {(() => {
+                              try {
+                                if (!roomMembers || roomMembers.length === 0) {
+                                  return (
+                                    <div className="text-center py-8 text-gray-500">
+                                      <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                      <p className="text-sm">No other members found</p>
+                                    </div>
+                                  );
+                                }
+
+                                return roomMembers
+                                  .filter(member => member.user.id !== user?.id) // Don't show current user
+                                  .map((member) => {
+                                    if (!member || !member.user) {
+                                      return null;
+                                    }
+                                    return (
+                                      <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center space-x-3">
+                                            <UserAvatar
+                                              username={member.user.username || 'Unknown'}
+                                              size="sm"
+                                              isOnline={member.user.isOnline || false}
+                                              profilePhotoUrl={member.user.profilePhotoUrl}
+                                              isAdmin={(member.user.level || 0) >= 5}
+                                            />
+                                            <div>
+                                              <div className="flex items-center space-x-2 mb-1">
+                                                <div className="flex items-center space-x-1">
+                                                  <span className={cn(
+                                                    "font-medium text-sm truncate",
+                                                    member.user.isMentor ? "text-red-600" :
+                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                                  )}>
+                                                    {member.user.username || 'Unknown'}
+                                                  </span>
+                                                  <div className="flex items-center space-x-1">
+                                                    {/* Crown only for owner in managed rooms */}
+                                                    {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                                      <Crown className="w-3 h-3 text-yellow-500" />
+                                                    )}
+                                                    {/* Mentor badge */}
+                                                    {member.user.isMentor && (
+                                                      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                                                        M
+                                                      </Badge>
+                                                    )}
+                                                    {/* Merchant badge */}
+                                                    {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                                        🛍️
+                                                      </Badge>
+                                                    )}
+                                                    {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                                      <Badge variant="destructive" className="text-xs bg-red-600">
+                                                        Admin
+                                                      </Badge>
+                                                    )}
+                                                  </div>
+                                                  <Badge variant="outline" className="text-xs">
+                                                    Level {member.user.level || 1}
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="flex space-x-2">
+                                            {/* Block Button - Only for level 1+ users */}
+                                            {(user?.level || 0) >= 1 && (
+                                              <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    className="text-xs"
+                                                    disabled={(member.user.level || 0) >= 5} // Disable for admins
+                                                  >
+                                                    {(member.user.level || 0) >= 5 ? 'Admin' : 'Block'}
+                                                  </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                    <AlertDialogTitle>Block User from Rooms</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                      Are you sure you want to block {member.user.username} from all chat rooms?
+                                                      This action will prevent them from accessing any chat rooms.
+                                                    </AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                      onClick={() => handleBlockUser(member.user.id, member.user.username)}
+                                                      className="bg-red-600 hover:bg-red-700"
+                                                    >
+                                                      Block User
+                                                    </AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                              </AlertDialog>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    );
+                                  }).filter(Boolean);
+                                } catch (error) {
+                                  console.error('Error rendering member list for block menu:', error);
+                                  setMemberListError(true);
+                                  return (
+                                    <div className="text-center py-8 text-red-500">
+                                      <p className="text-sm">Error loading members</p>
+                                      <button
+                                        onClick={() => {
+                                          setMemberListError(false);
+                                          setUserListOpen(false);
+                                        }}
+                                        className="text-xs mt-2 text-blue-600 hover:underline"
+                                      >
+                                        Close
+                                      </button>
+                                    </div>
+                                  );
+                                }
+                              })()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
 
               {/* Kick User Menu - Available for level 1+ users */}
               {(user?.level || 0) >= 1 && (

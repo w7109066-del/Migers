@@ -412,6 +412,44 @@ export function MultiRoomTabs({
     }));
   };
 
+  const handleBlockUser = async (userId: string, username: string) => {
+    try {
+      const response = await fetch(`/api/admin/ban`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        alert(`${username} has been blocked from all chat rooms`);
+        // Refresh members after block
+        const currentRoomId = rooms[safeActiveRoomIndex]?.id;
+        if (currentRoomId) {
+          const fetchRoomMembers = async () => {
+            try {
+              const response = await fetch(`/api/rooms/${currentRoomId}/members`);
+              if (response.ok) {
+                const data = await response.json();
+                setRoomMembers(data);
+              }
+            } catch (error) {
+              console.error("Failed to refresh room members:", error);
+            }
+          };
+          setTimeout(fetchRoomMembers, 100);
+        }
+      } else {
+        const errorMessage = await response.json();
+        alert(`Failed to block ${username}: ${errorMessage.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to block user:', error);
+      alert(`An error occurred while trying to block ${username}.`);
+    }
+  };
+
   const handleKickUser = async (userId: string, username: string) => {
     try {
       const currentRoomId = rooms[safeActiveRoomIndex]?.id;
@@ -608,6 +646,122 @@ export function MultiRoomTabs({
                                 <Eye className="w-4 h-4 mr-2" />
                                 Back to Room List
                               </Button>
+
+                              {/* Block User Menu - Available for level 1+ users */}
+                              {(user?.level || 0) >= 1 && (
+                                <Sheet>
+                                  <SheetTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      Block User
+                                    </Button>
+                                  </SheetTrigger>
+                                  <SheetContent side="right" className="w-80">
+                                    <SheetHeader>
+                                      <SheetTitle>Block User from Rooms</SheetTitle>
+                                    </SheetHeader>
+                                    <div className="mt-4 space-y-2">
+                                      {isLoadingMembers ? (
+                                        <div className="flex items-center justify-center py-8">
+                                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex-1 overflow-y-auto p-4">
+                                          <div className="space-y-3">
+                                            {roomMembers
+                                              .filter(member => member.user.id !== user?.id) // Don't show current user
+                                              .map((member) => {
+                                                if (!member || !member.user) return null;
+
+                                                return (
+                                                  <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                                    <div className="flex items-center justify-between">
+                                                      <div className="flex items-center space-x-3">
+                                                        <UserAvatar
+                                                          username={member.user.username || 'Unknown'}
+                                                          size="sm"
+                                                          isOnline={member.user.isOnline || false}
+                                                          profilePhotoUrl={member.user.profilePhotoUrl}
+                                                          isAdmin={(member.user.level || 0) >= 5}
+                                                        />
+                                                        <div>
+                                                          <div className="flex items-center space-x-2 mb-1">
+                                                            <div className="flex items-center space-x-1">
+                                                              <span className={cn(
+                                                                "font-medium text-sm truncate",
+                                                                member.user.isMentor ? "text-red-600" :
+                                                                ((member.user.level || 0) >= 5) ? "text-orange-600" : "text-gray-800"
+                                                              )}>
+                                                                {member.user.username || 'Unknown'}
+                                                              </span>
+                                                              <div className="flex items-center space-x-1">
+                                                                {member.user.isMentor && (
+                                                                  <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0">
+                                                                    M
+                                                                  </Badge>
+                                                                )}
+                                                                {member.user.isMerchant && (
+                                                                  <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                                                    🛍️
+                                                                  </Badge>
+                                                                )}
+                                                                {(member.user.level || 0) >= 5 && (
+                                                                  <Badge variant="destructive" className="text-xs bg-red-600">
+                                                                    Admin
+                                                                  </Badge>
+                                                                )}
+                                                              </div>
+                                                              <Badge variant="outline" className="text-xs">
+                                                                Level {member.user.level || 1}
+                                                              </Badge>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex space-x-2">
+                                                        {/* Block Button */}
+                                                        <AlertDialog>
+                                                          <AlertDialogTrigger asChild>
+                                                            <Button
+                                                              size="sm"
+                                                              variant="destructive"
+                                                              className="text-xs"
+                                                              disabled={(member.user.level || 0) >= 5} // Disable for admins
+                                                            >
+                                                              {(member.user.level || 0) >= 5 ? 'Admin' : 'Block'}
+                                                            </Button>
+                                                          </AlertDialogTrigger>
+                                                          <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                              <AlertDialogTitle>Block User from Rooms</AlertDialogTitle>
+                                                              <AlertDialogDescription>
+                                                                Are you sure you want to block {member.user.username} from all chat rooms?
+                                                                This action will prevent them from accessing any chat rooms.
+                                                              </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                              <AlertDialogAction
+                                                                onClick={() => handleBlockUser(member.user.id, member.user.username)}
+                                                                className="bg-red-600 hover:bg-red-700"
+                                                              >
+                                                                Block User
+                                                              </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                          </AlertDialogContent>
+                                                        </AlertDialog>
+                                                      </div>
+                                                    </div>
+                                                  </Card>
+                                                );
+                                              })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </SheetContent>
+                                </Sheet>
+                              )}
 
                               {/* Banned User Menu - Available for admins only */}
                               {(user?.isAdmin || (user?.level || 0) >= 5) && (
