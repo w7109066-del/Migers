@@ -733,9 +733,6 @@ export function MultiRoomTabs({
                                                           </AlertDialogTrigger>
                                                           <AlertDialogContent>
                                                             <AlertDialogHeader>
-                                                              <AlertDialogTitle>Block User from Rooms</AlertDialogTitle></old_str>
-                                                          <AlertDialogContent>
-                                                            <AlertDialogHeader>
                                                               <AlertDialogTitle>Block User from Rooms</AlertDialogTitle>
                                                               <AlertDialogDescription>
                                                                 Are you sure you want to block {member.user.username} from all chat rooms?
