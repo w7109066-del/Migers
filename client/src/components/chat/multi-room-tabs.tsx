@@ -550,16 +550,31 @@ export function MultiRoomTabs({
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // Save messages for the room being closed and clear localStorage
+                                    // Clear ALL localStorage for the room being closed
                                     const roomToClose = rooms[tabIndex];
                                     if (roomToClose) {
-                                      if (roomToClose.messages.length > 0) {
-                                        onSaveMessages(roomToClose.id, roomToClose.messages);
-                                      }
-                                      // Clear localStorage cache for the closed room
+                                      // Clear main chat messages
                                       const localStorageKey = `chatMessages-${roomToClose.id}`;
                                       localStorage.removeItem(localStorageKey);
-                                      console.log('Cleared localStorage cache for closed room:', roomToClose.id);
+                                      
+                                      // Clear saved room states
+                                      const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
+                                      if (savedRoomStates[roomToClose.id]) {
+                                        delete savedRoomStates[roomToClose.id];
+                                        localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
+                                      }
+                                      
+                                      // Clear multi-room state
+                                      if (user) {
+                                        const multiRoomStateKey = `multiRoomState-${user.id}`;
+                                        const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
+                                        if (multiRoomState.rooms) {
+                                          multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomToClose.id);
+                                          localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+                                        }
+                                      }
+                                      
+                                      console.log('Cleared ALL localStorage data for closed room:', roomToClose.id);
                                     }
                                     onCloseRoom(tabIndex);
                                   }}

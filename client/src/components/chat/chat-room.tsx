@@ -532,12 +532,33 @@ export function ChatRoom({
       if (eventRoomId === roomId && username && username !== 'undefined') {
         // If current user is leaving, clear everything immediately
         if (leftUserId === user?.id) {
-          console.log('Current user is leaving, clearing all room state');
-          // Clear messages and localStorage immediately
+          console.log('Current user is leaving, clearing all room state and localStorage');
+          
+          // Clear messages state immediately
           setMessages([]);
+          
+          // Clear all localStorage related to this room
           const localStorageKey = `chatMessages-${roomId}`;
           localStorage.removeItem(localStorageKey);
-          console.log('Cleared messages and localStorage for current user leaving room:', roomId);
+          
+          // Clear saved room states
+          const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
+          if (savedRoomStates[roomId]) {
+            delete savedRoomStates[roomId];
+            localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
+          }
+          
+          // Clear multi-room state if exists
+          if (user) {
+            const multiRoomStateKey = `multiRoomState-${user.id}`;
+            const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
+            if (multiRoomState.rooms) {
+              multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomId);
+              localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+            }
+          }
+          
+          console.log('Cleared all localStorage data for user leaving room:', roomId);
           return;
         }
 
@@ -1011,11 +1032,30 @@ export function ChatRoom({
     // Show confirmation before leaving
     const confirmLeave = window.confirm(`Are you sure you want to leave ${roomName}?`);
     if (confirmLeave) {
-      // Clear localStorage cache for this room when explicitly leaving
+      // Clear ALL localStorage cache for this room when explicitly leaving
       if (roomId) {
+        // Clear main chat messages
         const localStorageKey = `chatMessages-${roomId}`;
         localStorage.removeItem(localStorageKey);
-        console.log('Cleared localStorage cache for room:', roomId);
+        
+        // Clear saved room states
+        const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
+        if (savedRoomStates[roomId]) {
+          delete savedRoomStates[roomId];
+          localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
+        }
+        
+        // Clear multi-room state
+        if (user) {
+          const multiRoomStateKey = `multiRoomState-${user.id}`;
+          const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
+          if (multiRoomState.rooms) {
+            multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomId);
+            localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+          }
+        }
+        
+        console.log('Cleared ALL localStorage cache for room:', roomId);
 
         // Clear all room-specific state immediately
         setMessages([]);

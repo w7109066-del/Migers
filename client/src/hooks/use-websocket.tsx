@@ -442,11 +442,30 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       // Remove from joined rooms tracking
       joinedRoomsRef.current.delete(roomId);
 
-      // Update localStorage
+      // Clear ALL localStorage data related to this room
+      const localStorageKey = `chatMessages-${roomId}`;
+      localStorage.removeItem(localStorageKey);
+      
+      // Clear saved room states
+      const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
+      if (savedRoomStates[roomId]) {
+        delete savedRoomStates[roomId];
+        localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
+      }
+      
+      // Clear multi-room state
+      const multiRoomStateKey = `multiRoomState-${user.id}`;
+      const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
+      if (multiRoomState.rooms) {
+        multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomId);
+        localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+      }
+
+      // Update joined rooms localStorage
       const joinedRoomsArray = Array.from(joinedRoomsRef.current);
       localStorage.setItem(`joinedRooms-${user.id}`, JSON.stringify(joinedRoomsArray));
 
-      console.log('Left room and removed from localStorage:', roomId);
+      console.log('Left room and cleared ALL localStorage data:', roomId);
     } else {
       console.log('UI tab switch detected - NOT leaving room:', roomId);
     }
