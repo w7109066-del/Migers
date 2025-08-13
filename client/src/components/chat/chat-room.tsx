@@ -174,25 +174,55 @@ export function ChatRoom({
       const localStorageKey = `chatMessages-${roomId}`;
       const storedMessages = localStorage.getItem(localStorageKey);
 
+      let shouldShowWelcome = false;
+
       if (storedMessages) {
         try {
           const parsedMessages = JSON.parse(storedMessages);
           console.log('Restoring messages from localStorage for room:', roomId, parsedMessages.length);
-          setMessages(parsedMessages);
+          
+          // Check if welcome messages exist in stored messages
+          const hasWelcomeMessage = parsedMessages.some(msg => 
+            msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
+          );
+          const hasManagedByMessage = parsedMessages.some(msg => 
+            msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
+          );
+
+          // If welcome messages are missing, we need to regenerate them
+          if (!hasWelcomeMessage || !hasManagedByMessage) {
+            shouldShowWelcome = true;
+          } else {
+            setMessages(parsedMessages);
+          }
         } catch (error) {
           console.error('Failed to parse stored messages for room:', roomId, error);
-          // Fall back to saved messages or default
+          shouldShowWelcome = true;
         }
+      } else if (savedMessages.length > 0) {
+        console.log('Restoring saved messages for room:', roomId, savedMessages.length);
+        
+        // Check if welcome messages exist in saved messages
+        const hasWelcomeMessage = savedMessages.some(msg => 
+          msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
+        );
+        const hasManagedByMessage = savedMessages.some(msg => 
+          msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
+        );
+
+        if (!hasWelcomeMessage || !hasManagedByMessage) {
+          shouldShowWelcome = true;
+        } else {
+          setMessages(savedMessages);
+          localStorage.setItem(localStorageKey, JSON.stringify(savedMessages));
+        }
+      } else {
+        shouldShowWelcome = true;
       }
 
-      // If no localStorage messages, check if we have saved messages for this room
-      if (!storedMessages && savedMessages.length > 0) {
-        console.log('Restoring saved messages for room:', roomId, savedMessages.length);
-        setMessages(savedMessages);
-        // Also save to localStorage for future use
-        localStorage.setItem(localStorageKey, JSON.stringify(savedMessages));
-      } else if (!storedMessages && savedMessages.length === 0) {
-        // Set welcome messages for new room entry only if this is a completely new room
+      // Generate welcome messages if needed
+      if (shouldShowWelcome) {
+        // Generate welcome messages
         const welcomeMessages = [
           {
             id: `welcome-${roomId}`,
@@ -210,7 +240,7 @@ export function ChatRoom({
             const response = await fetch(`/api/rooms/${roomId}/info`);
             if (response.ok) {
               const roomData = await response.json();
-              console.log('Room data received:', roomData); // Debug log
+              console.log('Room data received:', roomData);
               const creatorName = roomData.createdBy || 'Unknown';
               welcomeMessages.push({
                 id: `room-managed-${roomId}`,
@@ -223,7 +253,6 @@ export function ChatRoom({
             }
           } catch (error) {
             console.error('Failed to fetch room creator info:', error);
-            // Fallback message if API call fails
             welcomeMessages.push({
               id: `room-managed-${roomId}`,
               content: `This room is managed by room creator`,
@@ -245,10 +274,35 @@ export function ChatRoom({
           });
         }
 
-        setMessages(welcomeMessages);
-        // Save welcome messages to localStorage
-        localStorage.setItem(localStorageKey, JSON.stringify(welcomeMessages));
-        console.log('Set welcome messages for room and saved to localStorage:', roomId);
+        // Merge with existing messages if any (excluding old welcome messages)
+        let existingMessages = [];
+        if (storedMessages) {
+          try {
+            const parsedMessages = JSON.parse(storedMessages);
+            existingMessages = parsedMessages.filter(msg => 
+              !msg.id.startsWith('welcome-') && 
+              !msg.id.startsWith('room-managed-') &&
+              !msg.content.includes('Welcome to') &&
+              !msg.content.includes('managed by')
+            );
+          } catch (error) {
+            console.error('Error parsing stored messages:', error);
+          }
+        } else if (savedMessages.length > 0) {
+          existingMessages = savedMessages.filter(msg => 
+            !msg.id.startsWith('welcome-') && 
+            !msg.id.startsWith('room-managed-') &&
+            !msg.content.includes('Welcome to') &&
+            !msg.content.includes('managed by')
+          );
+        }
+
+        const finalMessages = [...welcomeMessages, ...existingMessages];
+        setMessages(finalMessages);
+        
+        // Save updated messages to localStorage
+        localStorage.setItem(localStorageKey, JSON.stringify(finalMessages));
+        console.log('Generated and saved welcome messages for room:', roomId);
       }
 
       // Join room logic - only if connected and not already joined/attempting
