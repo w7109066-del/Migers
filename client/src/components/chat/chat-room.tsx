@@ -1572,9 +1572,9 @@ export function ChatRoom({
                                                     size="sm"
                                                     variant="destructive"
                                                     className="text-xs"
-                                                    disabled={(member.user.level || 0) >= 5} // Disable for admins
+                                                    disabled={(member.user.level || 0) >= 1} // Disable for level 1+ admins
                                                   >
-                                                    {(member.user.level || 0) >= 5 ? 'Admin' : 'Block'}
+                                                    {(member.user.level || 0) >= 1 ? 'Admin' : 'Block'}
                                                   </Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
