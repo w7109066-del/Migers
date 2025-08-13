@@ -897,34 +897,6 @@ export function ChatRoom({
     }
   };
 
-  const handleBlockUser = (targetUser: any) => {
-    const newBlockedUsers = new Set(blockedUsers);
-    if (newBlockedUsers.has(targetUser.id)) {
-      newBlockedUsers.delete(targetUser.id);
-      const blockMessage = {
-        id: `unblock-${Date.now()}`,
-        content: `You have unblocked ${targetUser.username}`,
-        senderId: 'system',
-        createdAt: new Date().toISOString(),
-        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-        messageType: 'system'
-      };
-      setMessages(prev => [...prev, blockMessage]);
-    } else {
-      newBlockedUsers.add(targetUser.id);
-      const blockMessage = {
-        id: `block-${Date.now()}`,
-        content: `You have blocked ${targetUser.username}. You will no longer see their messages.`,
-        senderId: 'system',
-        createdAt: new Date().toISOString(),
-        sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-        messageType: 'system'
-      };
-      setMessages(prev => [...prev, blockMessage]);
-    }
-    setBlockedUsers(newBlockedUsers);
-  };
-
   const handleReportUser = async (targetUser: any) => {
     try {
       const reportMessage = `🚨 REPORT: User ${user?.username} reported ${targetUser.username} in room ${roomName} (${roomId}). Please investigate.`;
