@@ -730,7 +730,10 @@ export function MultiRoomTabs({
                                                             >
                                                               {(member.user.level || 0) >= 1 ? 'Admin' : 'Block'}
                                                             </Button>
-                                                          </AlertDialogTrigger></old_str>
+                                                          </AlertDialogTrigger>
+                                                          <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                              <AlertDialogTitle>Block User from Rooms</AlertDialogTitle></old_str>
                                                           <AlertDialogContent>
                                                             <AlertDialogHeader>
                                                               <AlertDialogTitle>Block User from Rooms</AlertDialogTitle>
