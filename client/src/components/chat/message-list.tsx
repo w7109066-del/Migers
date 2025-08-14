@@ -734,14 +734,46 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           );
         }
 
+        // Bot message rendering - handle both bot messageType and bot sender names
+        if (isBotMessage || message.sender.username === 'LowCardBot') {
+          return (
+            <div key={message.id} className="flex items-start space-x-3 mb-3">
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                🎮
+              </div>
+              <div className="flex-1 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="font-semibold text-blue-700">
+                    {message.sender.username}
+                  </span>
+                  <span className="text-xs text-blue-500">
+                    {formatTime(message.createdAt)}
+                  </span>
+                </div>
+                <div className="text-sm text-blue-800">
+                  {message.content}
+                </div>
+                {message.cardImage && (
+                  <div className="mt-2">
+                    <img 
+                      src={message.cardImage} 
+                      alt="Card" 
+                      className="w-16 h-24 object-contain border rounded"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
         // System message rendering
         if (isSystemMessage) {
           const isWelcomeMessage = message.content.includes('Welcome to');
           const isCurrentlyInRoom = message.content.includes('Currently in the room:');
           const isRoomManaged = message.content.includes('This room is managed by');
           const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left');
-          const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User');
-          const isLowcardBotMessage = message.content.startsWith('LowcardBot ready') || message.content.includes('LowcardBot has joined');
+          const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User');) || message.content.includes('LowcardBot has joined');
 
           return (
             <div key={message.id} className="mb-2">

@@ -193,8 +193,9 @@ io.on("connection", async (socket: Socket) => {
 
       // Check if message is a bot command
       if (data.message.startsWith('/add bot lowcard')) {
+        // Don't save this command to database - just emit bot message
         io.to(data.roomId).emit('bot_message', 'LowCardBot', 'LowCardBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
-        return;
+        return; // Exit early - don't save command message
       }
 
       // Check if message is a LowCard command

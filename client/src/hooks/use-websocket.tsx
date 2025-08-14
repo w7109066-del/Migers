@@ -162,6 +162,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     // Handle bot messages
     socket.current.on('bot_message', (botName, message, cardImage, roomId) => {
+      console.log('Bot message received:', { botName, message, cardImage, roomId });
       window.dispatchEvent(new CustomEvent('botMessage', {
         detail: {
           botName,

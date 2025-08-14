@@ -3006,6 +3006,13 @@ export function registerRoutes(app: Express): Server {
         }
 
         if (data.roomId) {
+          // Check if message is /add bot lowcard command
+          if (data.content.startsWith('/add bot lowcard')) {
+            // Don't save this command to database - emit bot message instead
+            io.to(data.roomId).emit('bot_message', 'LowCardBot', '🎮 LowCardBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
+            return; // Exit early - don't save command message
+          }
+
           // Check if message is a kick command
           const kickCommandRegex = /^\/kick\s+(.+)$/i;
           const kickMatch = data.content.match(kickCommandRegex);

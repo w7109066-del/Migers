@@ -292,6 +292,21 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
 
       // Check if we have a valid connection before sending
       console.log('Attempting to send message:', message.trim());
+      // Check if message is /add bot command
+      if (message.startsWith('/add bot lowcard')) {
+        // Send the command but don't show it in chat
+        onSendMessage(message);
+        setMessage("");
+        setShowEmojis(false);
+        setShowGifts(false);
+
+        // Reset submission state after a short delay
+        setTimeout(() => {
+          setIsSubmitting(false);
+        }, 100);
+        return;
+      }
+
       // Check if message is a whois command
       const whoisCommandRegex = /^\/whois\s+(.+)$/i;
       const whoisMatch = message.match(whoisCommandRegex);
