@@ -10,7 +10,7 @@ import http from "http";
 import { createServer } from "http";
 import { handleLowCardBot } from "./bots/lowcard";
 import * as db from "./db";
-import { messages } from "./db/schema";
+import { messages } from "../shared/schema";
 
 
 const PostgresSessionStore = connectPg(session);
@@ -200,10 +200,10 @@ io.on("connection", async (socket: Socket) => {
       // Save message to database
       await db.insert(messages).values({
         content: data.message,
-        authorId: socket.userId,
+        senderId: socket.userId,
         roomId: data.roomId,
-        gift: data.gift || null,
-        media: data.media ? `/uploads/${data.media.filename}` : null
+        messageType: data.gift ? 'gift' : data.media ? 'image' : 'text',
+        metadata: data.gift ? { gift: data.gift } : data.media ? { media: `/uploads/${data.media.filename}` } : null
       });
 
       // Emit to all users in the room
