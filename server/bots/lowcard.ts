@@ -131,12 +131,19 @@ function finishRound(io: Server, room: string): void {
     io.to(room).emit('bot_message', 'LowCardBot', `${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
   }
 
+  // Show Final Results first
+  io.to(room).emit('bot_message', 'LowCardBot', `Final Results:`, null, room);
+  sorted.forEach(player => {
+    const status = player.username === finalLoser.username ? " (LOSER)" : "";
+    io.to(room).emit('bot_message', 'LowCardBot', `${player.username}: ${player.card!.value.toUpperCase()}${player.card!.suit.toUpperCase()}${status}`, `/cards/${player.card!.filename}`, room);
+  });
+
   // Calculate winnings
   const totalBet = data.players.reduce((sum, p) => sum + p.bet, 0);
   const housecut = totalBet * 0.1; // 10% house cut
   const winAmount = totalBet - housecut;
 
-  // Determine winner (highest card among remaining players)
+  // Show winner info second
   const remainingPlayers = data.players.filter(p => p.username !== finalLoser.username);
   if (remainingPlayers.length === 1) {
     const winner = remainingPlayers[0];
@@ -150,13 +157,7 @@ function finishRound(io: Server, room: string): void {
     io.to(room).emit('bot_message', 'LowCardBot', `${winner.username} wins with the highest card! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
   }
 
-  // Show all cards
-  io.to(room).emit('bot_message', 'LowCardBot', `Final Results:`, null, room);
-  sorted.forEach(player => {
-    const status = player.username === finalLoser.username ? " (LOSER)" : "";
-    io.to(room).emit('bot_message', 'LowCardBot', `${player.username}: ${player.card!.value.toUpperCase()}${player.card!.suit.toUpperCase()}${status}`, `/cards/${player.card!.filename}`, room);
-  });
-
+  // Show House cut last
   io.to(room).emit('bot_message', 'LowCardBot', `House cut: ${housecut.toFixed(1)} COIN`, null, room);
   io.to(room).emit('bot_message', 'LowCardBot', `Type !start <bet> to play again!`, null, room);
 
