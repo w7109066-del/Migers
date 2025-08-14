@@ -75,35 +75,21 @@ const mockRoomsFallback: Room[] = [
 ];
 
 export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPageProps = {}) {
+  // All state hooks must be at the top and called unconditionally
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [roomMemberCounts, setRoomMemberCounts] = useState<Record<string, number>>({});
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomDescription, setNewRoomDescription] = useState("");
-  // Persistent message storage for each room
   const [roomMessages, setRoomMessages] = useState<Record<string, any[]>>({});
+
+  // All context hooks must be called unconditionally
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Real-time updates disabled for debugging
-  // useEffect(() => {
-  //   const handleRoomMemberCountUpdate = (event: CustomEvent) => {
-  //     const { roomId, memberCount } = event.detail;
-  //     setRoomMemberCounts(prev => ({
-  //       ...prev,
-  //       [roomId]: memberCount
-  //     }));
-  //   };
-
-  //   window.addEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
-
-  //   return () => {
-  //     window.removeEventListener('room_member_count_updated', handleRoomMemberCountUpdate as EventListener);
-  //   };
-  // }, []);
-
+  // All query hooks must be called unconditionally
   const { data: rooms = mockRoomsFallback, isLoading, error } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
     queryFn: async () => {
@@ -125,33 +111,17 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
       return data;
     },
     enabled: true,
-    refetchInterval: false, // Disable auto-refresh
-    staleTime: Infinity, // Keep data fresh
-    retry: false // Disable retry to see errors immediately
+    refetchInterval: false,
+    staleTime: Infinity,
+    retry: false
   });
 
-  // Fetch member counts for all rooms
   const { data: memberCounts, refetch: refetchMemberCounts } = useQuery<Record<string, number>>({
     queryKey: ["/api/rooms/member-counts"],
     refetchInterval: 3000,
     staleTime: 1000,
     enabled: !!rooms,
   });
-
-  // Listen for real-time member count updates
-  useEffect(() => {
-    const handleMemberCountUpdate = (event: CustomEvent) => {
-      console.log('Member count updated:', event.detail);
-      // Refetch member counts when updates are received
-      refetchMemberCounts();
-    };
-
-    window.addEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
-
-    return () => {
-      window.removeEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
-    };
-  }, [refetchMemberCounts]);
 
   const joinRoomMutation = useMutation({
     mutationFn: async (roomData: Room) => {
@@ -185,14 +155,12 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-      // Call onRoomSelect here if it exists
       if (typeof onRoomSelect === 'function' && data) {
         onRoomSelect({ id: data.id, name: data.name });
       }
     },
     onError: (error: Error) => {
       console.error('Room join mutation error:', error);
-      // Don't show additional toast here since we already show it in mutationFn
     },
   });
 
@@ -227,8 +195,6 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
         title: "Room Created",
         description: "Your room has been created successfully!",
       });
-      // Call onRoomSelect here if it exists and the created room is to be selected immediately
-      // For now, we don't automatically select it upon creation.
     },
     onError: (error: Error) => {
       toast({
@@ -239,19 +205,40 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
     },
   });
 
-  // Log any errors for debugging
-  if (error) {
-    console.error('Room fetch error:', error);
-  }
+  // All useEffect hooks must be called unconditionally
+  useEffect(() => {
+    const handleMemberCountUpdate = (event: CustomEvent) => {
+      console.log('Member count updated:', event.detail);
+      refetchMemberCounts();
+    };
 
-  // Show actual data or fallback, but log what we're using
+    window.addEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
+    };
+  }, [refetchMemberCounts]);
+
+  useEffect(() => {
+    if (!selectedRoom && rooms && rooms.length === 0 && !isLoading && !error) {
+      console.log('RoomList: No rooms available, forcing refetch');
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    }
+  }, [selectedRoom, rooms, isLoading, error, queryClient]);
+
+  // Process data after all hooks are called
   const displayRooms = rooms && rooms.length > 0 ? rooms : mockRoomsFallback;
+  
   console.log('Using rooms data:', {
     hasRoomsData: !!rooms,
     roomsLength: rooms?.length,
     usingFallback: !rooms || rooms.length === 0,
     error: error?.message
   });
+
+  if (error) {
+    console.error('Room fetch error:', error);
+  }
 
   const filteredRooms = displayRooms.filter((room: Room) =>
     room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -537,13 +524,7 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
     game: safeFilteredRooms.filter((room: Room) => room.category === "game")
   };
 
-  // Additional safety check to prevent blank screen
-  useEffect(() => {
-    if (!selectedRoom && safeDisplayRooms.length === 0 && !isLoading && !error) {
-      console.log('RoomList: No rooms available, forcing refetch');
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-    }
-  }, [selectedRoom, safeDisplayRooms.length, isLoading, error, queryClient]);
+  
 
   return (
     <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">
