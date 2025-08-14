@@ -514,7 +514,7 @@ export function registerRoutes(app: Express): Server {
         // Send kick notification message visible to all users in room
         const kickNotificationMessage = {
           id: `kick-notification-${Date.now()}-${userId}`,
-          content: `${kickedUser.username} has been kicked by admin ${kickerUser.username} and temporarily banned for 5 minutes`,
+          content: `You has been kicked by admin ${kickerUser.username}`,
           senderId: 'system',
           roomId: roomId,
           recipientId: null,

@@ -766,7 +766,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isRoomManaged = message.content.includes('This room is managed by');
           const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left') || message.content.includes('has left the room');
           const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User') || message.content.includes('LowcardBot has joined');
-          const isKickMessage = message.content.includes('has been kicked') || message.content.includes('kick vote') || message.content.includes('Vote expires');
+          const isKickMessage = message.content.includes('has been kicked') || message.content.includes('kick vote') || message.content.includes('Vote expires') || message.content.includes('You has been kicked by admin');
           const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage;
 
           return (
@@ -800,9 +800,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                 )}
                 {isKickMessage && (
                   <div className="flex items-center justify-center">
-                    <div className="bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
-                      <span className="text-orange-600 font-medium text-xs">{roomName || 'System'}: </span>
-                      <span className="text-orange-800 text-xs">{message.content}</span>
+                    <div className="bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                      <span className="text-red-600 font-medium text-xs">{roomName || 'System'}: </span>
+                      <span className="text-red-800 text-xs font-semibold">{message.content}</span>
                     </div>
                   </div>
                 )}
