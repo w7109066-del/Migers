@@ -250,8 +250,8 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
           return;
         }
 
-        if (data.players.length >= 8) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game is full! Maximum 8 players.`, null, room);
+        if (data.players.length >= 200) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game is full! Maximum 200 players.`, null, room);
           return;
         }
 
