@@ -59,23 +59,33 @@ export function UserAvatar({
   const colorIndex = (username || "?").charCodeAt(0) % colorVariants.length;
   const gradientColor = colorVariants[colorIndex];
 
+  // Handle profile photo URL - ensure it's a valid string and not null/undefined
+  const validProfilePhotoUrl = profilePhotoUrl && typeof profilePhotoUrl === 'string' && profilePhotoUrl.trim() !== '' ? profilePhotoUrl : null;
+
   return (
     <div className="relative">
       <div
         className={cn(
           "rounded-full flex items-center justify-center text-white font-semibold overflow-hidden relative",
           sizeClasses[size],
-          !profilePhotoUrl && `bg-gradient-to-br ${gradientColor}`,
+          !validProfilePhotoUrl && `bg-gradient-to-br ${gradientColor}`,
           onClick && "cursor-pointer hover:scale-105 transition-transform",
           className
         )}
         onClick={onClick}
       >
-        {profilePhotoUrl ? (
+        {validProfilePhotoUrl ? (
           <img 
-            src={profilePhotoUrl} 
+            src={validProfilePhotoUrl} 
             alt={username || "User"} 
             className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement!.classList.add(`bg-gradient-to-br`, gradientColor);
+              target.parentElement!.innerHTML = `<span>${initials}</span>`;
+            }}
           />
         ) : (
           <span>{initials}</span>

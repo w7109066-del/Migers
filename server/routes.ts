@@ -10,7 +10,7 @@ import { storage } from "./storage";
 import { insertChatRoomSchema, insertMessageSchema, insertFriendshipSchema, insertPostSchema, insertCommentSchema } from "@shared/schema";
 import { eq, desc, and, or, sql, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
-import { directMessages, users, messages, friendships, notifications, gifts, posts, postLikes, postComments, customEmojis } from "@shared/schema";
+import { directMessages, users, messages, friendships, notifications, gifts, posts, postLikes, postComments, customEmojis, roomMembers } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
@@ -2450,7 +2450,7 @@ export function registerRoutes(app: Express): Server {
     const { filename } = req.params;
     const filePath = path.join('uploads/gifts', filename);
 
-    if (fs.existsExists(filePath)) {
+    if (fs.existsSync(filePath)) {
       res.sendFile(path.resolve(filePath));
     } else {
       res.status(404).json({ message: 'Image not found' });
@@ -2607,7 +2607,7 @@ export function registerRoutes(app: Express): Server {
 
   // Access temp bans from global scope
   const tempBans = global.tempBans || new Map();
-  
+
   // Initialize global muted users map
   if (!global.mutedUsers) {
     global.mutedUsers = new Map();
@@ -2928,7 +2928,7 @@ export function registerRoutes(app: Express): Server {
           // Leave the Socket.IO room
           socket.leave(data.roomId);
 
-          // Only broadcast leave message for explicit disconnects
+          // Only broadcast leave message for unexpected disconnects (not manual)
           if (data.explicit) {
             // Only emit user_left event with consistent format - no separate message
             socket.to(data.roomId).emit('user_left', {
@@ -2970,7 +2970,7 @@ export function registerRoutes(app: Express): Server {
         // Check if user is muted
         const mutedUsers = global.mutedUsers || new Map();
         const muteData = mutedUsers.get(userId);
-        
+
         if (muteData) {
           if (Date.now() < muteData.muteExpiration) {
             const remainingTime = Math.ceil((muteData.muteExpiration - Date.now()) / 1000 / 60);
@@ -3215,7 +3215,7 @@ export function registerRoutes(app: Express): Server {
             // Add user to muted users list
             const mutedUsers = global.mutedUsers || (global.mutedUsers = new Map());
             const muteExpiration = Date.now() + (muteTime * 60 * 1000); // Convert minutes to milliseconds
-            
+
             mutedUsers.set(targetUser.id, {
               username: targetUser.username,
               mutedBy: senderUser.username,

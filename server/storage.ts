@@ -991,12 +991,12 @@ export class DatabaseStorage implements IStorage {
         sender: {
           id: sender.id,
           username: sender.username,
-          level: sender.level,
-          isOnline: sender.isOnline,
-          profilePhotoUrl: sender.profilePhotoUrl,
-          isAdmin: sender.isAdmin,
-          isMentor: sender.isMentor,
-          isMerchant: sender.isMerchant,
+          level: sender.level || 1,
+          isOnline: sender.isOnline || false,
+          profilePhotoUrl: sender.profilePhotoUrl || null,
+          isAdmin: sender.isAdmin || false,
+          isMentor: sender.isMentor || false,
+          isMerchant: sender.isMerchant || false,
         }
       };
     } catch (error) {
