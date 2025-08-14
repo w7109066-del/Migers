@@ -809,9 +809,6 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     </div>
                   </div>
                 )}
-                {isLowcardBotMessage && (
-                  <div className="text-red-500 font-medium">LowcardBot: <span className="text-gray-800">{message.content}</span></div>
-                )}
               </div>
             </div>
           );
