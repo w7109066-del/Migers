@@ -9,7 +9,7 @@ import { AddGiftModal } from '@/components/ui/add-gift-modal';
 import { AddCustomEmojiModal } from '@/components/ui/add-custom-emoji-modal';
 import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2, X, Smile, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
