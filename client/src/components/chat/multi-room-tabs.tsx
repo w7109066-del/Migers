@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAuth } from "@/hooks/use-auth";
 import { Crown } from "lucide-react"; // Import Crown for merchant badge
-import { UserAvatar } from "./user-avatar"; // Assuming UserAvatar component exists
+import UserAvatar from './user-avatar'; // Assuming UserAvatar component exists
 import { Badge } from "@/components/ui/badge"; // Assuming Badge component exists
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
