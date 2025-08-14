@@ -14,7 +14,7 @@
 
 /* Ensure proper scrolling behavior */
 .chat-container {
-  height: 100%;
+  height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -23,12 +23,44 @@
 .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
+  max-height: calc(100vh - 120px);
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .room-content {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Fix for message list scrolling */
+.message-list-container {
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem;
+  scroll-behavior: smooth;
+}
+
+/* Ensure chat room main container can scroll */
+.chat-room-main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-room-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
   -webkit-overflow-scrolling: touch;
 }
 

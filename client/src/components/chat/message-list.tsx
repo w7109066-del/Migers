@@ -673,7 +673,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
+    <div className="message-list-container h-full overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(100vh - 120px)' }}>
       {messages.map((message) => {
         const isCurrentUser = message.senderId === user?.id;
         const isSystemMessage = message.senderId === 'system';

@@ -1159,7 +1159,7 @@ export function ChatRoom({
   console.log('ChatRoom: Rendering main component', { roomId, roomName, isConnected, messagesCount: messages.length });
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 relative">
+    <div className="chat-room-main h-full flex flex-col bg-gray-50 relative" style={{ height: '100vh', maxHeight: '100vh' }}>
 
 
       {/* Messages List and Input - Full height */}
@@ -1815,7 +1815,7 @@ export function ChatRoom({
         </Dialog>
 
         {/* Messages List - Takes remaining space */}
-        <div className="flex-1 min-h-0">
+        <div className="chat-room-messages flex-1 min-h-0 overflow-hidden">
           <MessageList
             messages={messages}
             onUserClick={handleChatUser}
