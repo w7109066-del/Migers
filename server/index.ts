@@ -5,6 +5,13 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 import './bots/lowcard';
+import { Server, Socket } from "socket.io";
+import http from "http";
+import { createServer } from "http";
+import { handleLowCardBot } from "./bots/lowcard";
+import * as db from "./db";
+import { messages } from "./db/schema";
+
 
 const PostgresSessionStore = connectPg(session);
 
@@ -113,3 +120,108 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
 })();
+
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.NODE_ENV === 'production'
+      ? ["https://your-domain.com"]
+      : ["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000"],
+    credentials: true
+  }
+});
+
+// Socket.IO connection handling
+io.on("connection", async (socket: Socket) => {
+  console.log("A user connected:", socket.id);
+
+  // Authenticate user and attach user info to socket
+  const cookieString = socket.handshake.headers.cookie;
+  if (cookieString) {
+    try {
+      const session = await getSessionFromCookie(cookieString);
+      if (session && session.user) {
+        socket.userId = session.user.id;
+        socket.username = session.user.username;
+        console.log(`User authenticated: ${socket.username} (ID: ${socket.userId})`);
+      } else {
+        console.log("User session not found or invalid for socket:", socket.id);
+      }
+    } catch (error) {
+      console.error("Error authenticating socket user:", error);
+    }
+  } else {
+    console.log("No cookie found for socket:", socket.id);
+  }
+
+  // Handle room joining
+  socket.on('join_room', (roomId: string) => {
+    socket.join(roomId);
+    console.log(`User ${socket.username} joined room ${roomId}`);
+
+    // Notify others in the room
+    socket.to(roomId).emit('user_joined', {
+      userId: socket.userId,
+      username: socket.username
+    });
+  });
+
+  // Handle room leaving
+  socket.on('leave_room', (roomId: string) => {
+    socket.leave(roomId);
+    console.log(`User ${socket.username} left room ${roomId}`);
+
+    // Notify others in the room
+    socket.to(roomId).emit('user_left', {
+      userId: socket.userId,
+      username: socket.username
+    });
+  });
+
+  // Initialize LowCard bot
+  handleLowCardBot(io, socket);
+
+  // Handle sending messages
+  socket.on('send_message', async (data: {
+    roomId: string;
+    message: string;
+    media?: Express.Multer.File;
+    gift?: { name: string; quantity: number }
+  }) => {
+    try {
+      console.log('Received message data:', data);
+
+      // Check if message is a LowCard command
+      if (data.message.startsWith('!')) {
+        socket.emit('command', data.roomId, data.message);
+        return;
+      }
+
+      // Save message to database
+      await db.insert(messages).values({
+        content: data.message,
+        authorId: socket.userId,
+        roomId: data.roomId,
+        gift: data.gift || null,
+        media: data.media ? `/uploads/${data.media.filename}` : null
+      });
+
+      // Emit to all users in the room
+      io.to(data.roomId).emit('message', {
+        message: data.message,
+        username: socket.username,
+        userId: socket.userId,
+        timestamp: new Date().toISOString(),
+        gift: data.gift,
+        media: data.media ? `/uploads/${data.media.filename}` : null
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      socket.emit('error', { message: 'Failed to send message' });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});

@@ -58,6 +58,7 @@ interface Message {
     isOnline: boolean;
   };
   messageType?: string;
+  cardImage?: string; // Added for LowCard game
 }
 
 interface RoomMember {
@@ -100,7 +101,7 @@ export function ChatRoom({
   const setSettingsOpen = onSetSettingsOpen || setLocalSettingsOpen;
   const [voteKicks, setVoteKicks] = useState<Map<string, Set<string>>>(new Map()); // userId -> Set of voter IDs
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
-  const { sendChatMessage, joinRoom, isConnected, leaveRoom } = useWebSocket();
+  const { sendChatMessage, joinRoom, isConnected, leaveRoom, socket } = useWebSocket(); // Added socket to destructure
   const { user } = useAuth();
 
   // State for active kick votes and their timers
@@ -184,10 +185,10 @@ export function ChatRoom({
           console.log('Restoring messages from localStorage for room:', roomId, parsedMessages.length);
 
           // Check if welcome messages exist in stored messages
-          const hasWelcomeMessage = parsedMessages.some(msg => 
+          const hasWelcomeMessage = parsedMessages.some(msg =>
             msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
           );
-          const hasManagedByMessage = parsedMessages.some(msg => 
+          const hasManagedByMessage = parsedMessages.some(msg =>
             msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
           );
 
@@ -205,10 +206,10 @@ export function ChatRoom({
         console.log('Restoring saved messages for room:', roomId, savedMessages.length);
 
         // Check if welcome messages exist in saved messages
-        const hasWelcomeMessage = savedMessages.some(msg => 
+        const hasWelcomeMessage = savedMessages.some(msg =>
           msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
         );
-        const hasManagedByMessage = savedMessages.some(msg => 
+        const hasManagedByMessage = savedMessages.some(msg =>
           msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
         );
 
@@ -281,20 +282,20 @@ export function ChatRoom({
         if (storedMessages) {
           try {
             const parsedMessages = JSON.parse(storedMessages);
-            existingMessages = parsedMessages.filter(msg => 
-              !msg.id.startsWith('welcome-') && 
+            existingMessages = parsedMessages.filter(msg =>
+              !msg.id.startsWith('welcome-') &&
               !msg.id.startsWith('room-managed-') &&
-              !msg.content.includes('Welcome to') &&
+              !msg.content.includes(`Welcome to ${roomName}`) &&
               !msg.content.includes('managed by')
             );
           } catch (error) {
             console.error('Error parsing stored messages:', error);
           }
         } else if (savedMessages.length > 0) {
-          existingMessages = savedMessages.filter(msg => 
-            !msg.id.startsWith('welcome-') && 
+          existingMessages = savedMessages.filter(msg =>
+            !msg.id.startsWith('welcome-') &&
             !msg.id.startsWith('room-managed-') &&
-            !msg.content.includes('Welcome to') &&
+            !msg.content.includes(`Welcome to ${roomName}`) &&
             !msg.content.includes('managed by')
           );
         }
@@ -624,6 +625,22 @@ export function ChatRoom({
       }
     };
 
+    // Add event listener for the bot message
+    const handleBotMessage = (event: CustomEvent) => {
+      const { botName, message, cardImage, roomId: eventRoomId } = event.detail;
+      if (eventRoomId === roomId) {
+        setMessages(prev => [...prev, {
+          id: `bot-${Date.now()}-${botName}`,
+          content: message,
+          senderId: 'system', // Or a dedicated bot ID
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: botName, level: 0, isOnline: true },
+          messageType: 'bot',
+          cardImage: cardImage // Pass the card image here
+        }]);
+      }
+    };
+
     window.addEventListener('newMessage', handleNewMessage as EventListener);
     window.addEventListener('userJoined', handleUserJoin as EventListener);
     window.addEventListener('userLeft', handleUserLeave as EventListener);
@@ -631,6 +648,7 @@ export function ChatRoom({
     window.addEventListener('userKicked', handleUserKicked as EventListener);
     window.addEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
     window.addEventListener('socketError', handleSocketError as EventListener);
+    window.addEventListener('botMessage', handleBotMessage as EventListener); // Listen for bot messages
 
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
@@ -640,6 +658,7 @@ export function ChatRoom({
       window.removeEventListener('userKicked', handleUserKicked as EventListener);
       window.removeEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
       window.removeEventListener('socketError', handleSocketError as EventListener);
+      window.removeEventListener('botMessage', handleBotMessage as EventListener); // Remove listener for bot messages
     };
   }, [roomId, refetchMembers, messages, blockedUsers]); // Added messages and blockedUsers to dependencies
 
@@ -1789,7 +1808,7 @@ export function ChatRoom({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Leave Room</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to leave {roomName}? 
+                      Are you sure you want to leave {roomName}?
                       {user?.isMentor && " As a mentor, you can rejoin anytime to continue mentoring."}
                       {!user?.isMentor && " You will need to rejoin to continue chatting."}
                     </AlertDialogDescription>
