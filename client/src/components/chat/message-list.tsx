@@ -737,28 +737,22 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
         // Bot message rendering - handle both bot messageType and bot sender names
         if (isBotMessage || message.sender.username === 'LowCardBot') {
           return (
-            <div key={message.id} className="flex items-start space-x-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                🎮
-              </div>
-              <div className="flex-1 bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <div className="flex items-center space-x-2 mb-1">
-                  <span className="font-semibold text-blue-700">
-                    {message.sender.username}
+            <div key={message.id} className="flex items-start space-x-3 mb-2">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-green-600 text-sm">
+                    {message.sender.username}:
                   </span>
-                  <span className="text-xs text-blue-500">
-                    {formatTime(message.createdAt)}
-                  </span>
-                </div>
-                <div className="text-sm text-blue-800 flex items-center gap-2">
-                  <span>{message.content}</span>
-                  {message.cardImage && (
-                    <img 
-                      src={message.cardImage} 
-                      alt="Card" 
-                      className="w-6 h-8 object-contain inline-block"
-                    />
-                  )}
+                  <div className="text-sm text-gray-700 flex items-center gap-1">
+                    <span>{message.content}</span>
+                    {message.cardImage && (
+                      <img 
+                        src={message.cardImage} 
+                        alt="Card" 
+                        className="w-4 h-6 object-contain inline-block ml-1"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
