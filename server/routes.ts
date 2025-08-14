@@ -3026,51 +3026,10 @@ export function registerRoutes(app: Express): Server {
           if (data.content.startsWith('!')) {
             console.log('Processing LowCard command:', data.content, 'in room:', data.roomId);
 
-            // First, show the user's command in chat
+            // Get user info for bot command processing
             const senderUser = await storage.getUser(userId);
 
-            if (['1', '2', '3', '4'].includes(data.roomId)) {
-              // For mock rooms, create mock message for the command
-              const commandMessage = {
-                id: `command-${Date.now()}`,
-                content: data.content,
-                senderId: userId,
-                roomId: data.roomId,
-                recipientId: null,
-                messageType: 'text',
-                createdAt: new Date().toISOString(),
-                sender: {
-                  id: userId,
-                  username: senderUser?.username || 'User',
-                  level: senderUser?.level || 1,
-                  isOnline: senderUser?.isOnline || true,
-                  profilePhotoUrl: senderUser?.profilePhotoUrl || null
-                }
-              };
-
-              // Broadcast the user's command message first
-              io.to(data.roomId).emit('new_message', {
-                message: commandMessage,
-              });
-            } else {
-              // For real rooms, save the command message
-              const messageData = insertMessageSchema.parse({
-                content: data.content,
-                senderId: userId,
-                roomId: data.roomId,
-                recipientId: null,
-                messageType: 'text',
-              });
-
-              const newMessage = await storage.createMessage(messageData);
-
-              // Broadcast the user's command message first
-              io.to(data.roomId).emit('new_message', {
-                message: newMessage,
-              });
-            }
-
-            // Handle the bot command directly here
+            // Handle the bot command directly without saving or broadcasting the command message
             console.log('Handling bot command directly for user:', senderUser?.username);
             processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             return;
