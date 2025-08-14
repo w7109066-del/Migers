@@ -9,6 +9,7 @@ import { AddGiftModal } from '@/components/ui/add-gift-modal';
 import { AddCustomEmojiModal } from '@/components/ui/add-custom-emoji-modal';
 import { ArrowLeft, Users, Shield, BookOpen, Activity, Ban, UserX, Gift, Plus, Coins, MessageSquare, Trash2, X, Smile, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 
 interface User {
   id: string;
@@ -67,6 +68,75 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [mentorsList, setMentorsList] = useState<any[]>([]);
   const [isCheckingExpired, setIsCheckingExpired] = useState(false);
+  const { toast } = useToast();
+
+  const [merchantAreaInfo, setMerchantAreaInfo] = useState<any>(null);
+  const [merchantAreaLoading, setMerchantAreaLoading] = useState(false);
+
+  const checkMerchantArea = async () => {
+    setMerchantAreaLoading(true);
+    try {
+      const response = await fetch('/api/admin/merchant-area-check', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMerchantAreaInfo(data);
+
+        if (data.found) {
+          toast({
+            title: "Merchant Area Found",
+            description: `Found ${data.stats.totalMembers} users in merchant area`,
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Merchant Area Not Found",
+            description: data.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        throw new Error('Failed to check merchant area');
+      }
+    } catch (error) {
+      console.error('Error checking merchant area:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check merchant area",
+        variant: "destructive",
+      });
+    } finally {
+      setMerchantAreaLoading(false);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string, roomName: string) => {
+    if (!confirm(`Are you sure you want to delete the room "${roomName}"? This action cannot be undone and will remove all messages and members.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/rooms/${roomId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(result.message);
+        loadRooms(); // Refresh rooms list
+      } else {
+        const error = await response.json();
+        console.error('Failed to delete room:', error.message);
+        alert(`Failed to delete room: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      alert('Error deleting room. Please try again.');
+    }
+  };
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -207,32 +277,6 @@ export function AdminPage({ onBack }: AdminPageProps) {
     }
   };
 
-  const deleteRoom = async (roomId: string) => {
-    if (!confirm('Are you sure you want to delete this room? This action cannot be undone and will remove all messages and members.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/admin/rooms/${roomId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log(result.message);
-        loadRooms(); // Refresh rooms list
-      } else {
-        const error = await response.json();
-        console.error('Failed to delete room:', error.message);
-        alert(`Failed to delete room: ${error.message}`);
-      }
-    } catch (error) {
-      console.error('Error deleting room:', error);
-      alert('Error deleting room. Please try again.');
-    }
-  };
-
   const loadMentorsList = async () => {
     try {
       const response = await fetch('/api/admin/mentors', {
@@ -261,11 +305,11 @@ export function AdminPage({ onBack }: AdminPageProps) {
       if (response.ok) {
         const result = await response.json();
         console.log('Expired mentors check result:', result);
-        
+
         // Refresh mentors list and stats
         loadMentorsList();
         loadStats();
-        
+
         alert(`Processed ${result.expiredMentors.length} expired mentors`);
       } else {
         console.error('Failed to check expired mentors');
@@ -680,6 +724,129 @@ export function AdminPage({ onBack }: AdminPageProps) {
           )}
         </div>
 
+        {/* Merchant Area Check */}
+        <Card>
+          <CardHeader>
+            <CardTitle className={cn("text-lg", isDarkMode ? "text-white" : "text-gray-900")}>
+              Merchant Area Check
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Button
+                onClick={checkMerchantArea}
+                disabled={merchantAreaLoading}
+                className="w-full"
+              >
+                {merchantAreaLoading ? "Checking..." : "Check Merchant Area Users"}
+              </Button>
+
+              {merchantAreaInfo && (
+                <div className={cn("p-4 rounded-lg border",
+                  isDarkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                )}>
+                  {merchantAreaInfo.found ? (
+                    <div className="space-y-3">
+                      <h3 className={cn("font-semibold", isDarkMode ? "text-white" : "text-gray-900")}>
+                        Room: {merchantAreaInfo.room.name}
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="text-center">
+                          <div className={cn("text-2xl font-bold", isDarkMode ? "text-blue-400" : "text-blue-600")}>
+                            {merchantAreaInfo.stats.totalMembers}
+                          </div>
+                          <div className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                            Total Users
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className={cn("text-2xl font-bold", isDarkMode ? "text-purple-400" : "text-purple-600")}>
+                            {merchantAreaInfo.stats.merchantMembers}
+                          </div>
+                          <div className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                            Merchants
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className={cn("text-2xl font-bold", isDarkMode ? "text-green-400" : "text-green-600")}>
+                            {merchantAreaInfo.stats.onlineMembers}
+                          </div>
+                          <div className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                            Online
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className={cn("text-2xl font-bold", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                            {merchantAreaInfo.stats.regularMembers}
+                          </div>
+                          <div className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                            Regular
+                          </div>
+                        </div>
+                      </div>
+
+                      {merchantAreaInfo.members.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className={cn("font-medium mb-2", isDarkMode ? "text-white" : "text-gray-900")}>
+                            Members List:
+                          </h4>
+                          <div className="max-h-40 overflow-y-auto space-y-1">
+                            {merchantAreaInfo.members.map((member: any) => (
+                              <div key={member.id} className={cn("flex items-center justify-between p-2 rounded text-sm",
+                                isDarkMode ? "bg-gray-700" : "bg-white"
+                              )}>
+                                <div className="flex items-center space-x-2">
+                                  <div className={cn("w-2 h-2 rounded-full",
+                                    member.isOnline ? "bg-green-500" : "bg-gray-400"
+                                  )} />
+                                  <span className={isDarkMode ? "text-white" : "text-gray-900"}>
+                                    {member.username}
+                                  </span>
+                                  {member.isMerchant && (
+                                    <Badge className="bg-purple-100 text-purple-800 text-xs">🛍️</Badge>
+                                  )}
+                                  {member.isMentor && (
+                                    <Badge className="bg-red-100 text-red-800 text-xs">M</Badge>
+                                  )}
+                                  {member.isAdmin && (
+                                    <Badge variant="destructive" className="text-xs">Admin</Badge>
+                                  )}
+                                </div>
+                                <span className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                                  Level {member.level}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className={cn("text-lg font-medium", isDarkMode ? "text-white" : "text-gray-900")}>
+                        Merchant Area Not Found
+                      </div>
+                      <div className={cn("text-sm mt-2", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                        {merchantAreaInfo.message}
+                      </div>
+                      {merchantAreaInfo.availableRooms && merchantAreaInfo.availableRooms.length > 0 && (
+                        <div className="mt-3">
+                          <div className={cn("text-sm font-medium", isDarkMode ? "text-white" : "text-gray-900")}>
+                            Available Rooms:
+                          </div>
+                          <div className={cn("text-xs mt-1", isDarkMode ? "text-gray-400" : "text-gray-600")}>
+                            {merchantAreaInfo.availableRooms.join(", ")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Room Management */}
         <Card>
           <CardHeader>
@@ -733,7 +900,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                       size="sm"
                       variant="outline"
                       className="text-xs text-red-600 border-red-300 hover:bg-red-50"
-                      onClick={() => deleteRoom(room.id)}
+                      onClick={() => handleDeleteRoom(room.id, room.name)}
                     >
                       <Trash2 className="w-3 h-3 mr-1" />
                       Delete
@@ -782,8 +949,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   )}
                 >
                   <div className="flex items-center space-x-3">
-                    <img 
-                      src={emoji.fileUrl} 
+                    <img
+                      src={emoji.fileUrl}
                       alt={emoji.name}
                       className="w-8 h-8 object-contain"
                     />
@@ -795,8 +962,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
                         {emoji.emojiCode}
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge 
-                          variant={emoji.isActive ? "default" : "secondary"} 
+                        <Badge
+                          variant={emoji.isActive ? "default" : "secondary"}
                           className="text-xs"
                         >
                           {emoji.isActive ? "Active" : "Inactive"}
@@ -962,8 +1129,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
                       <Badge variant="outline" className="text-xs">
                         {mentor.fansCount} fans
                       </Badge>
-                      <Badge 
-                        variant={mentor.isExpired ? "destructive" : mentor.isExpiringSoon ? "secondary" : "default"} 
+                      <Badge
+                        variant={mentor.isExpired ? "destructive" : mentor.isExpiringSoon ? "secondary" : "default"}
                         className={cn(
                           "text-xs",
                           mentor.isExpired ? "bg-red-600 text-white" :
@@ -1257,8 +1424,8 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   rows={3}
                   className={cn(
                     "w-full px-3 py-2 border rounded-md resize-none",
-                    isDarkMode 
-                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
+                    isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                       : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   )}
                 />

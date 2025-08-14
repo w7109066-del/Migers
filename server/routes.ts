@@ -601,6 +601,54 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get room by name
+  app.get("/api/rooms/search/:roomName", requireAuth, async (req, res) => {
+    try {
+      const { roomName } = req.params;
+      
+      // Search for room by name (case insensitive)
+      const rooms = await storage.getAllRooms();
+      const targetRoom = rooms?.find(room => 
+        room.name.toLowerCase() === roomName.toLowerCase()
+      );
+      
+      if (!targetRoom) {
+        return res.status(404).json({ 
+          message: `Room "${roomName}" not found`,
+          memberCount: 0 
+        });
+      }
+      
+      // Get member count
+      const members = await storage.getRoomMembers(targetRoom.id);
+      const memberCount = members?.length || 0;
+      
+      // Get member details
+      const memberDetails = members?.map(member => ({
+        id: member.user.id,
+        username: member.user.username,
+        level: member.user.level || 1,
+        isOnline: member.user.isOnline || false,
+        isMerchant: member.user.isMerchant || false,
+        profilePhotoUrl: member.user.profilePhotoUrl
+      })) || [];
+      
+      res.json({
+        room: {
+          id: targetRoom.id,
+          name: targetRoom.name,
+          description: targetRoom.description,
+          memberCount
+        },
+        members: memberDetails
+      });
+      
+    } catch (error) {
+      console.error("Error searching room:", error);
+      res.status(500).json({ message: "Failed to search room" });
+    }
+  });
+
   // Get room info
   app.get("/api/rooms/:roomId/info", requireRoomAccess, async (req, res) => {
     const { roomId } = req.params;
@@ -1291,6 +1339,75 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error fetching merchants list:', error);
       res.status(500).json({ message: 'Failed to fetch merchants list' });
+    }
+  });
+
+  // Admin: Check merchant area room
+  app.get('/api/admin/merchant-area-check', requireAdmin, async (req, res) => {
+    try {
+      console.log('Checking merchant area room...');
+      
+      // Search for "merchant area" room
+      const rooms = await storage.getAllRooms();
+      const merchantAreaRoom = rooms?.find(room => 
+        room.name.toLowerCase().includes('merchant') && 
+        room.name.toLowerCase().includes('area')
+      );
+      
+      if (!merchantAreaRoom) {
+        return res.json({
+          found: false,
+          message: "Room 'merchant area' tidak ditemukan",
+          totalRooms: rooms?.length || 0,
+          availableRooms: rooms?.map(r => r.name) || []
+        });
+      }
+      
+      // Get all members in merchant area
+      const members = await storage.getRoomMembers(merchantAreaRoom.id);
+      const memberCount = members?.length || 0;
+      
+      // Separate merchants from regular users
+      const merchants = members?.filter(m => m.user.isMerchant) || [];
+      const regularUsers = members?.filter(m => !m.user.isMerchant) || [];
+      
+      // Get detailed member info
+      const memberDetails = members?.map(member => ({
+        id: member.user.id,
+        username: member.user.username,
+        level: member.user.level || 1,
+        isOnline: member.user.isOnline || false,
+        isMerchant: member.user.isMerchant || false,
+        isMentor: member.user.isMentor || false,
+        isAdmin: member.user.isAdmin || false,
+        profilePhotoUrl: member.user.profilePhotoUrl,
+        joinedAt: member.joinedAt || new Date().toISOString()
+      })) || [];
+      
+      res.json({
+        found: true,
+        room: {
+          id: merchantAreaRoom.id,
+          name: merchantAreaRoom.name,
+          description: merchantAreaRoom.description,
+          createdAt: merchantAreaRoom.createdAt,
+          isPublic: merchantAreaRoom.isPublic
+        },
+        stats: {
+          totalMembers: memberCount,
+          merchantMembers: merchants.length,
+          regularMembers: regularUsers.length,
+          onlineMembers: members?.filter(m => m.user.isOnline).length || 0
+        },
+        members: memberDetails
+      });
+      
+    } catch (error) {
+      console.error('Error checking merchant area:', error);
+      res.status(500).json({ 
+        error: 'Failed to check merchant area',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
