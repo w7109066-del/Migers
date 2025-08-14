@@ -186,6 +186,7 @@ export function getBotStatus(roomId: string): string {
 
 export function handleLowCardBot(io: Server, socket: any): void {
   socket.on('command', (room: string, msg: string) => {
+    console.log('LowCard bot received command:', msg, 'in room:', room);
     if (!msg.startsWith('!')) return;
 
     // Ensure bot is present in the room when any command is used
