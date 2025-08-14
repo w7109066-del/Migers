@@ -649,7 +649,7 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
           <Input
             ref={inputRef}
             type="text"
-            placeholder={!isConnected ? "Connecting..." : "Type a message, /whois {username}, /me {action}, or /send {gift} to {user}..."}
+            placeholder={!isConnected ? "Connecting..." : "Type a message, /whois {username}, /me {action}, /send {gift} to {user}, !bot, !start <bet>, !j, !d..."}
             value={message}
             onChange={(e) => {
               setMessage(e.target.value);

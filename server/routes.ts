@@ -14,6 +14,7 @@ import { directMessages, users, messages, friendships, notifications, gifts, pos
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
+import { handleLowCardBot, isBotActiveInRoom, getBotStatus } from './bots/lowcard';
 
 // Helper function to get video duration
 async function getVideoDuration(filePath: string): Promise<number> {
@@ -1212,9 +1213,9 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/mentors/check-expired', requireAdmin, async (req, res) => {
     try {
       const expiredMentors = await storage.checkAndExpireMentors();
-      res.json({ 
+      res.json({
         message: `Processed ${expiredMentors.length} expired mentors`,
-        expiredMentors 
+        expiredMentors
       });
     } catch (error) {
       console.error('Error checking expired mentors:', error);
@@ -1226,7 +1227,7 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/mentors/expire', requireAdmin, async (req, res) => {
     try {
       const { mentorId } = req.body;
-      
+
       if (!mentorId) {
         return res.status(400).json({ message: 'Mentor ID is required' });
       }
@@ -1243,7 +1244,7 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/mentors/recharge', requireAdmin, async (req, res) => {
     try {
       const { mentorId } = req.body;
-      
+
       if (!mentorId) {
         return res.status(400).json({ message: 'Mentor ID is required' });
       }
@@ -2845,12 +2846,20 @@ export function registerRoutes(app: Express): Server {
             success: true
           });
 
-          // Broadcast to room members (excluding sender)
+          // Notify others that user joined
           socket.to(data.roomId).emit('user_joined', {
-            userId,
             username: user.username,
-            roomId: data.roomId,
+            roomId,
+            userId: userId
           });
+
+          // Show bot status to the user who just joined
+          if (isBotActiveInRoom(data.roomId)) {
+            setTimeout(() => {
+              const status = getBotStatus(data.roomId);
+              io.to(socket.id).emit('bot_message', 'LowCardBot', `👋 Welcome ${user.username}! ${status}`, null, data.roomId);
+            }, 1000); // Small delay to ensure user is fully connected
+          }
 
           console.log(`User ${user.username} successfully joined room ${data.roomId}`);
 
@@ -2923,7 +2932,7 @@ export function registerRoutes(app: Express): Server {
               }
             };
 
-            // Broadcast leave message to all users in room
+            // Broadcast leave message
             io.to(data.roomId).emit('new_message', {
               message: leaveMessage
             });
@@ -2979,7 +2988,7 @@ export function registerRoutes(app: Express): Server {
             try {
               const roomMembers = await storage.getRoomMembers(data.roomId);
               const isMember = roomMembers?.some(member => member.user.id === userId);
-              
+
               if (!isMember) {
                 socket.emit('error', {
                   message: 'You are not in the chatroom',
