@@ -1,4 +1,3 @@
-
 import { Server } from 'socket.io';
 
 interface Player {
@@ -99,7 +98,7 @@ function startDrawPhase(io: Server, room: string): void {
         io.to(room).emit('bot_message', 'LowCardBot', `⏱️ ${player.username} auto drew a card.`, `/cards/${player.card.filename}`, room);
       }
     });
-    
+
     const allDrawn = data.players.every(p => p.card);
     if (allDrawn) {
       finishRound(io, room);
@@ -187,7 +186,7 @@ export function getBotStatus(roomId: string): string {
 // Direct command processing function
 export function processLowCardCommand(io: Server, room: string, msg: string, userId: string, username: string): void {
   console.log('Processing LowCard command directly:', msg, 'in room:', room, 'for user:', username);
-  
+
   if (!msg.startsWith('!')) {
     console.log('Not a bot command, ignoring');
     return;
@@ -264,7 +263,7 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
         const player: Player = {
           id: userId,
           username,
-          socketId: socket.id,
+          socketId: '', // This will be populated by socket.id from the socket event listener
           coin: 1000, // This should come from database
           bet: data.bet
         };
@@ -355,13 +354,13 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
 
 export function handleLowCardBot(io: Server, socket: any): void {
   console.log('Setting up LowCard bot command listener for socket:', socket.id);
-  
+
   // Handle the command directly if socket.on is not available
   if (typeof socket.on !== 'function') {
     console.log('Socket.on not available, handling command directly');
     return;
   }
-  
+
   socket.on('command', (room: string, msg: string) => {
     console.log('LowCard bot received command:', msg, 'in room:', room, 'from socket:', socket.id);
     if (!msg.startsWith('!')) {
@@ -376,22 +375,30 @@ export function handleLowCardBot(io: Server, socket: any): void {
     const username = socket.username;
     const userId = socket.userId;
 
+    // When a player joins, their socketId is assigned here
+    if (command === '!j' && rooms[room] && !rooms[room].isRunning) {
+      const player = rooms[room].players.find(p => p.username === username);
+      if (player) {
+        player.socketId = socket.id;
+      }
+    }
+
     handleLowCardCommand(io, room, command, args, userId, username);
   });
 
   socket.on('disconnecting', () => {
     // Handle player disconnect
     Object.entries(rooms).forEach(([room, data]) => {
-      const playerIndex = data.players.findIndex(p => p.socketId === socket.id);
+      const playerIndex = data.players.findIndex(p => p.id === socket.userId);
       if (playerIndex !== -1) {
         const player = data.players[playerIndex];
-        
+
         if (!data.isRunning) {
           // Refund bet if game hasn't started
           tambahCoin(player.id, player.bet);
           data.players.splice(playerIndex, 1);
           io.to(room).emit('bot_message', 'LowCardBot', `👋 ${player.username} disconnected and left the game. Bet refunded.`, null, room);
-          
+
           // Cancel game if not enough players
           if (data.players.length < 2 && data.timeout) {
             clearTimeout(data.timeout);
@@ -404,7 +411,7 @@ export function handleLowCardBot(io: Server, socket: any): void {
             player.card = { value: "2", suit: "c", filename: "lc_2c.png" }; // Worst possible card
           }
           io.to(room).emit('bot_message', 'LowCardBot', `💀 ${player.username} disconnected and auto-loses!`, null, room);
-          
+
           // Check if all remaining have cards
           const allDrawn = data.players.every(p => p.card);
           if (allDrawn) {
