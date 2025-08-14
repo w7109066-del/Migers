@@ -199,16 +199,6 @@ export function registerRoutes(app: Express): Server {
       // Return mock rooms data first (always works)
       const mockRooms = [
         {
-          id: "1",
-          name: "MeChat",
-          description: "Official main chat room",
-          memberCount: 0,
-          capacity: 25,
-          isOfficial: true,
-          category: "official",
-          isPrivate: false
-        },
-        {
           id: "2",
           name: "Indonesia",
           description: "Chat for Indonesian users",
@@ -248,20 +238,56 @@ export function registerRoutes(app: Express): Server {
         const userRooms = await storage.getAllRooms();
         console.log('User rooms fetched:', userRooms?.length || 0);
 
-        if (userRooms && Array.isArray(userRooms)) {
-          // Convert user rooms to the expected format
-          const formattedUserRooms = userRooms.map(room => ({
-            id: room.id,
-            name: room.name || 'Unnamed Room',
-            description: room.description || "",
-            memberCount: 0,
-            capacity: room.maxMembers || 25,
-            isOfficial: false,
-            category: "recent",
-            isPrivate: !room.isPublic
-          }));
+        // Check if MeChat room exists in database, if not create it
+        let meChatRoom = userRooms?.find(room => room.name === 'MeChat' && room.description === 'Official main chat room');
+        
+        if (!meChatRoom) {
+          console.log('Creating MeChat room in database...');
+          try {
+            // Create MeChat room as system room
+            meChatRoom = await storage.createRoom({
+              name: 'MeChat',
+              description: 'Official main chat room',
+              isPublic: true,
+              maxMembers: 25
+            }, 'system'); // Use 'system' as creator ID
+            console.log('MeChat room created:', meChatRoom.id);
+          } catch (createError) {
+            console.error('Failed to create MeChat room:', createError);
+          }
+        }
 
-          allRooms = [...mockRooms, ...formattedUserRooms];
+        // Add MeChat as database room with specific ID "1" for compatibility
+        const meChatDatabaseRoom = {
+          id: "1",
+          name: "MeChat",
+          description: "Official main chat room",
+          memberCount: 0,
+          capacity: 25,
+          isOfficial: true,
+          category: "official",
+          isPrivate: false,
+          databaseId: meChatRoom?.id || null
+        };
+
+        allRooms = [meChatDatabaseRoom, ...mockRooms];
+
+        if (userRooms && Array.isArray(userRooms)) {
+          // Convert user rooms to the expected format, excluding MeChat since it's handled above
+          const formattedUserRooms = userRooms
+            .filter(room => !(room.name === 'MeChat' && room.description === 'Official main chat room'))
+            .map(room => ({
+              id: room.id,
+              name: room.name || 'Unnamed Room',
+              description: room.description || "",
+              memberCount: 0,
+              capacity: room.maxMembers || 25,
+              isOfficial: false,
+              category: "recent",
+              isPrivate: !room.isPublic
+            }));
+
+          allRooms = [...allRooms, ...formattedUserRooms];
           console.log('Total rooms (with user rooms):', allRooms.length);
         }
       } catch (dbError) {
@@ -345,15 +371,15 @@ export function registerRoutes(app: Express): Server {
       const { roomId } = req.params;
       const userId = req.user!.id;
 
-      // For mock rooms, just return success
-      if (['1', '2', '3', '4'].includes(roomId)) {
+      // For mock rooms (excluding MeChat which is now database), just return success
+      if (['2', '3', '4'].includes(roomId)) {
         res.json({
           success: true,
           message: "Successfully joined room",
           roomId
         });
       } else {
-        // For real rooms, use storage
+        // For real rooms including MeChat, use storage
         await storage.joinRoom(roomId, userId);
         res.json({
           success: true,
@@ -372,10 +398,19 @@ export function registerRoutes(app: Express): Server {
     try {
       const memberCounts: Record<string, number> = {};
 
-      // Get counts for mock rooms (1-4)
-      for (const roomId of ['1', '2', '3', '4']) {
+      // Get counts for mock rooms (2-4, excluding MeChat which is now database)
+      for (const roomId of ['2', '3', '4']) {
         const roomMembers = mockRoomMembers.get(roomId);
         memberCounts[roomId] = roomMembers ? roomMembers.size : 0;
+      }
+
+      // Get count for MeChat (room ID "1") from database
+      try {
+        const meChatMembers = await storage.getRoomMembers("1");
+        memberCounts["1"] = meChatMembers?.length || 0;
+      } catch (error) {
+        console.error('Error getting MeChat member count:', error);
+        memberCounts["1"] = 0;
       }
 
       // Get counts for real rooms
@@ -582,16 +617,25 @@ export function registerRoutes(app: Express): Server {
     const userId = req.user!.id; // Authenticated user ID
 
     try {
-      if (['1', '2', '3', '4'].includes(roomId)) {
-        // Mock room info
+      if (roomId === '1') {
+        // MeChat is now a database room
+        res.json({
+          id: roomId,
+          name: 'MeChat',
+          description: 'Official main chat room',
+          createdBy: 'System',
+          createdAt: '2024-01-01T00:00:00Z',
+          capacity: 25,
+          isPrivate: false
+        });
+      } else if (['2', '3', '4'].includes(roomId)) {
+        // Other mock rooms
         const roomNames: { [key: string]: string } = {
-          '1': 'MeChat',
           '2': 'Indonesia',
           '3': 'MeChat',
           '4': 'lowcard'
         };
         const roomDescriptions: { [key: string]: string } = {
-          '1': 'Official main chat room',
           '2': 'Chat for Indonesian users',
           '3': 'Your favorite chat room',
           '4': 'Card game room'
@@ -2827,26 +2871,28 @@ export function registerRoutes(app: Express): Server {
           // Join new room
           socket.join(data.roomId);
 
-          // For mock rooms
-          if (!mockRoomMembers.has(data.roomId)) {
-            mockRoomMembers.set(data.roomId, new Map());
+          // For mock rooms (excluding MeChat)
+          if (['2', '3', '4'].includes(data.roomId)) {
+            if (!mockRoomMembers.has(data.roomId)) {
+              mockRoomMembers.set(data.roomId, new Map());
+            }
+            const roomMembers = mockRoomMembers.get(data.roomId)!;
+
+            // Get fresh user data to ensure profilePhotoUrl is current
+            const freshUser = await storage.getUser(userId);
+            roomMembers.set(userId, {
+              id: userId,
+              username: freshUser?.username || user.username,
+              level: freshUser?.level || user.level || 1,
+              isOnline: freshUser?.isOnline || user.isOnline,
+              profilePhotoUrl: freshUser?.profilePhotoUrl || null,
+              isAdmin: freshUser?.isAdmin || user.isAdmin || false,
+              isMerchant: freshUser?.isMerchant || user.isMerchant,
+              merchantRegisteredAt: freshUser?.merchantRegisteredAt || user.merchantRegisteredAt,
+            });
           }
-          const roomMembers = mockRoomMembers.get(data.roomId)!;
 
-          // Get fresh user data to ensure profilePhotoUrl is current
-          const freshUser = await storage.getUser(userId);
-          roomMembers.set(userId, {
-            id: userId,
-            username: freshUser?.username || user.username,
-            level: freshUser?.level || user.level || 1,
-            isOnline: freshUser?.isOnline || user.isOnline,
-            profilePhotoUrl: freshUser?.profilePhotoUrl || null,
-            isAdmin: freshUser?.isAdmin || user.isAdmin || false,
-            isMerchant: freshUser?.isMerchant || user.isMerchant,
-            merchantRegisteredAt: freshUser?.merchantRegisteredAt || user.merchantRegisteredAt,
-          });
-
-          // Real room
+          // Real room (including MeChat)
           await storage.joinRoom(data.roomId, userId);
 
           // Update user's current room
@@ -3585,8 +3631,8 @@ export function registerRoutes(app: Express): Server {
             return;
           }
 
-          // For mock rooms (1-4), create a mock message instead of using database
-          if (['1', '2', '3', '4'].includes(data.roomId)) {
+          // For mock rooms (2-4), create a mock message instead of using database
+          if (['2', '3', '4'].includes(data.roomId)) {
             // Get user data for the mock message
             const senderUser = await storage.getUser(userId);
 
@@ -3701,8 +3747,8 @@ export function registerRoutes(app: Express): Server {
               try {
                 const disconnectedUser = await storage.getUser(userId);
 
-                // For mock rooms
-                if (['1', '2', '3', '4'].includes(currentRoomId)) {
+                // For mock rooms (excluding MeChat)
+                if (['2', '3', '4'].includes(currentRoomId)) {
                   // Mock room handling
                   if (mockRoomMembers.has(currentRoomId)) {
                     const roomMembersMap = mockRoomMembers.get(currentRoomId)!;
@@ -3783,8 +3829,8 @@ export function registerRoutes(app: Express): Server {
   });
 
   async function getRoomMemberCount(roomId: string): Promise<number> {
-    // For mock rooms, return actual member count
-    if (['1', '2', '3', '4'].includes(roomId)) {
+    // For mock rooms (excluding MeChat), return actual member count
+    if (['2', '3', '4'].includes(roomId)) {
       const roomMembers = mockRoomMembers.get(roomId);
       return roomMembers ? roomMembers.size : 0;
     }
