@@ -37,7 +37,7 @@ export function UserAvatar({
   profilePhotoUrl,
   isAdmin = false
 }: UserAvatarProps) {
-  const initials = username
+  const initials = (username || "?")
     .split(/[\s_]+/)
     .map(word => word[0])
     .join("")
@@ -56,7 +56,7 @@ export function UserAvatar({
     "from-orange-400 to-red-400",
   ];
 
-  const colorIndex = username.charCodeAt(0) % colorVariants.length;
+  const colorIndex = (username || "?").charCodeAt(0) % colorVariants.length;
   const gradientColor = colorVariants[colorIndex];
 
   return (
@@ -74,7 +74,7 @@ export function UserAvatar({
         {profilePhotoUrl ? (
           <img 
             src={profilePhotoUrl} 
-            alt={username} 
+            alt={username || "User"} 
             className="w-full h-full object-cover"
           />
         ) : (
