@@ -865,7 +865,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                 >
                   {message.sender.username}:
                 </span>
-                
+
                 <div className="flex-1 min-w-0">
                   {message.messageType === 'action' ? (
                     <div className="italic text-purple-700 dark:text-purple-400 text-sm">
@@ -884,7 +884,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                       </span>
                     </div>
                   )}
-                  
+
                   {message.cardImage && (
                     <div className="mt-2">
                       <img
