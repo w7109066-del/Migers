@@ -504,7 +504,7 @@ export function MultiRoomTabs({
     <div className="h-full flex flex-col relative">
       {/* Room Content with Swipe Support */}
       <div
-        className="flex-1 overflow-hidden relative"
+        className="flex-1 overflow-auto relative"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -513,8 +513,6 @@ export function MultiRoomTabs({
         onMouseUp={handleMouseUp}
         style={{ touchAction: 'pan-y' }} // Allow vertical scrolling but handle horizontal gestures
       >
-        {/* Swipe indicator removed */}
-
         <div className="relative w-full h-full overflow-hidden">
           {rooms.map((room, index) => {
             // Enhanced room validation with better error handling
@@ -530,7 +528,7 @@ export function MultiRoomTabs({
               <div
                 key={`room-content-${room.id}-${index}`}
                 className={cn(
-                  "absolute inset-0 w-full h-full transition-opacity duration-200",
+                  "absolute inset-0 w-full h-full transition-opacity duration-200 overflow-auto",
                   isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                 )}
                 style={{
