@@ -592,25 +592,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async joinRoom(roomId: string, userId: string): Promise<void> {
-    await this.db
-      .insert(roomMembers)
-      .values({ roomId, userId })
-      .onConflictDoNothing();
+    // Only perform database operations for actual UUID room IDs
+    if (roomId && roomId.length === 36 && roomId.includes('-')) {
+      await this.db
+        .insert(roomMembers)
+        .values({ roomId, userId })
+        .onConflictDoNothing();
+    }
   }
 
   async leaveRoom(roomId: string, userId: string): Promise<void> {
-    await this.db
-      .delete(roomMembers)
-      .where(
-        and(
-          eq(roomMembers.roomId, roomId),
-          eq(roomMembers.userId, userId)
-        )
-      );
+    // Only perform database operations for actual UUID room IDs
+    if (roomId && roomId.length === 36 && roomId.includes('-')) {
+      await this.db
+        .delete(roomMembers)
+        .where(
+          and(
+            eq(roomMembers.roomId, roomId),
+            eq(roomMembers.userId, userId)
+          )
+        );
+    }
   }
 
   async getRoomMembers(roomId: string): Promise<(RoomMember & { user: User })[]> {
     try {
+      // Validate that roomId is a proper UUID format before querying database
+      // Mock room IDs like "1", "2", "3", "4" should not be queried from database
+      if (!roomId || roomId.length !== 36 || !roomId.includes('-')) {
+        console.log(`Skipping database query for non-UUID room ID: ${roomId}`);
+        return [];
+      }
+
       const members = await this.db
         .select({
           id: roomMembers.id,

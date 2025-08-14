@@ -388,29 +388,23 @@ export function registerRoutes(app: Express): Server {
     try {
       const memberCounts: Record<string, number> = {};
 
-      // Get counts for mock rooms (2-4, excluding MeChat which is now database)
-      for (const roomId of ['2', '3', '4']) {
+      // Get counts for ALL mock rooms (1-4) - they use in-memory storage, not database
+      for (const roomId of ['1', '2', '3', '4']) {
         const roomMembers = mockRoomMembers.get(roomId);
         memberCounts[roomId] = roomMembers ? roomMembers.size : 0;
       }
 
-      // Get count for MeChat (room ID "1") from database
-      try {
-        const meChatMembers = await storage.getRoomMembers("1");
-        memberCounts["1"] = meChatMembers?.length || 0;
-      } catch (error) {
-        console.error('Error getting MeChat member count:', error);
-        memberCounts["1"] = 0;
-      }
-
-      // Get counts for real rooms
+      // Get counts for real database rooms only (UUID format)
       try {
         const allRooms = await storage.getAllRooms();
         if (allRooms && Array.isArray(allRooms)) {
           for (const room of allRooms) {
             try {
-              const members = await storage.getRoomMembers(room.id);
-              memberCounts[room.id] = members?.length || 0;
+              // Only query database for actual UUID room IDs, not mock string IDs
+              if (room.id && room.id.length === 36 && room.id.includes('-')) {
+                const members = await storage.getRoomMembers(room.id);
+                memberCounts[room.id] = members?.length || 0;
+              }
             } catch (error) {
               console.error(`Error getting members for room ${room.id}:`, error);
               memberCounts[room.id] = 0;
