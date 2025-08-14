@@ -966,29 +966,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMessage(messageData: InsertMessage): Promise<Message & { sender: User }> {
-    const [message] = await this.db
-      .insert(messages)
-      .values(messageData)
-      .returning();
+    console.log('Creating message with data:', messageData);
 
-    // Get the message with sender info
-    const messageWithSender = await this.db
-      .select({
-        id: messages.id,
-        content: messages.content,
-        senderId: messages.senderId,
-        roomId: messages.roomId,
-        recipientId: messages.recipientId,
-        messageType: messages.messageType,
-        metadata: messages.metadata,
-        createdAt: messages.createdAt,
-        sender: users,
-      })
-      .from(messages)
-      .innerJoin(users, eq(messages.senderId, users.id))
-      .where(eq(messages.id, message.id));
+    try {
+      // For system rooms (1-4), we'll store them with the room ID as-is
+      // The roomId will be stored as a string UUID or the system room ID
+      const [message] = await db.insert(messages).values({
+        content: messageData.content,
+        senderId: messageData.senderId,
+        roomId: messageData.roomId,
+        recipientId: messageData.recipientId || null,
+        messageType: messageData.messageType || 'text',
+        metadata: messageData.metadata || null,
+      }).returning();
 
-    return messageWithSender[0];
+      // Get sender info
+      const sender = await this.getUser(messageData.senderId);
+
+      return {
+        ...message,
+        sender: {
+          id: sender.id,
+          username: sender.username,
+          level: sender.level,
+          isOnline: sender.isOnline,
+          profilePhotoUrl: sender.profilePhotoUrl,
+          isAdmin: sender.isAdmin,
+          isMentor: sender.isMentor,
+          isMerchant: sender.isMerchant,
+        }
+      };
+    } catch (error) {
+      console.error('Error creating message:', error);
+      throw error;
+    }
   }
 
   async createDirectMessage(data: { content: string; senderId: string; recipientId: string; messageType?: string }) {
@@ -1436,7 +1447,7 @@ export class DatabaseStorage implements IStorage {
           const now = new Date();
           const lastRecharge = mentor.lastRechargeAt ? new Date(mentor.lastRechargeAt) : new Date(mentor.createdAt || now);
           const daysSinceRecharge = Math.floor((now.getTime() - lastRecharge.getTime()) / (1000 * 60 * 60 * 24));
-          
+
           return {
             id: mentor.id,
             username: mentor.username,
@@ -1470,28 +1481,28 @@ export class DatabaseStorage implements IStorage {
     try {
       const mentors = await this.getAllMentorsWithRechargeStatus();
       const expiredMentors = mentors.filter(mentor => mentor.isExpired);
-      
+
       const updatedMentors = [];
-      
+
       for (const mentor of expiredMentors) {
         // Remove mentor status for expired mentors
         await this.db
           .update(users)
-          .set({ 
+          .set({
             isMentor: false,
             mentorSpecialty: null
           })
           .where(eq(users.id, mentor.id));
-          
+
         updatedMentors.push({
           id: mentor.id,
           username: mentor.username,
           daysSinceRecharge: mentor.daysSinceRecharge
         });
-        
+
         console.log(`Mentor status expired for ${mentor.username} (${mentor.daysSinceRecharge} days since recharge)`);
       }
-      
+
       return updatedMentors;
     } catch (error) {
       console.error('Error checking expired mentors:', error);

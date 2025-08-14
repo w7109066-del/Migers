@@ -625,7 +625,7 @@ export function ChatRoom({
       }
     };
 
-    // Add event listener for the bot message
+    // Listen for bot message
     const handleBotMessage = (event: CustomEvent) => {
       const { botName, message, cardImage, roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId) {
