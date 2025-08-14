@@ -20,8 +20,13 @@ export default function AuthPage() {
   // Login form state
   const [loginForm, setLoginForm] = useState({
     username: "",
-    password: ""
+    password: "",
+    rememberMe: false
   });
+  
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
 
   // Register form state
   const [registerForm, setRegisterForm] = useState({
@@ -61,6 +66,37 @@ export default function AuthPage() {
       toast({
         title: "Login Failed",
         description: "Invalid username or password",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!forgotPasswordEmail.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // TODO: Implement forgot password API call
+      toast({
+        title: "Password Reset Sent",
+        description: "Check your email for password reset instructions",
+        variant: "default"
+      });
+      setShowForgotPassword(false);
+      setForgotPasswordEmail("");
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send password reset email",
         variant: "destructive"
       });
     }
@@ -184,6 +220,31 @@ export default function AuthPage() {
                     </Button>
                   </div>
                 </div>
+                
+                {/* Remember Me and Forgot Password */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="rememberMe"
+                      checked={loginForm.rememberMe}
+                      onChange={(e) => setLoginForm({ ...loginForm, rememberMe: e.target.checked })}
+                      className="w-4 h-4 text-orange-500 bg-white/10 border-white/20 rounded focus:ring-orange-400 focus:ring-2"
+                    />
+                    <Label htmlFor="rememberMe" className="text-sm text-white cursor-pointer">
+                      Remember me
+                    </Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-sm text-orange-300 hover:text-orange-200 hover:bg-white/10 p-0"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    Forgot password?
+                  </Button>
+                </div>
+                
                 <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white border-none shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" disabled={isLoading}>
                   {isLoading ? (
                     <>
@@ -560,6 +621,55 @@ export default function AuthPage() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md backdrop-blur-md bg-white/15 border border-white/30 shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-white text-center">Forgot Password</CardTitle>
+              <CardDescription className="text-gray-200 text-center">
+                Enter your email to receive password reset instructions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email" className="text-white">Email Address</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    required
+                    className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder-gray-300 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-300"
+                  />
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordEmail("");
+                    }}
+                    className="flex-1 text-white border border-white/20 hover:bg-white/10 transition-all duration-300"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white border-none shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                  >
+                    Send Reset Link
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
