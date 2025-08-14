@@ -2846,11 +2846,12 @@ export function registerRoutes(app: Express): Server {
             success: true
           });
 
-          // Notify others that user joined
+          // Emit user joined event to room
           socket.to(data.roomId).emit('user_joined', {
             username: user.username,
-            roomId,
-            userId: userId
+            userId: user.id,
+            userLevel: user.level || 1,
+            roomId: data.roomId
           });
 
           // Show bot status to the user who just joined
@@ -2938,10 +2939,11 @@ export function registerRoutes(app: Express): Server {
             });
           }
 
-          // Always emit user_left event for member list updates
-          io.to(data.roomId).emit('user_left', {
-            userId: userId,
-            username: user?.username || 'User',
+          // Emit user left event to room (but not to the user who left)
+          socket.to(data.roomId).emit('user_left', {
+            username: user.username,
+            userId: user.id,
+            userLevel: user.level || 1,
             roomId: data.roomId
           });
 
@@ -3541,8 +3543,9 @@ export function registerRoutes(app: Express): Server {
 
                       // Also emit user_left event
                       io.to(currentRoomId).emit('user_left', {
-                        userId: userId,
                         username: disconnectedUser.username,
+                        userId: userId,
+                        userLevel: disconnectedUser.level || 1,
                         roomId: currentRoomId
                       });
                     }

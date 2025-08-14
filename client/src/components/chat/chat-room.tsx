@@ -489,7 +489,7 @@ export function ChatRoom({
     };
 
     const handleUserJoin = (event: CustomEvent) => {
-      const { username, roomId: eventRoomId } = event.detail;
+      const { username, roomId: eventRoomId, userLevel } = event.detail;
       if (eventRoomId === roomId && username && username !== 'undefined') {
         // Check if we already have a recent join message for this user to prevent duplicates
         const recentJoinMessages = messages.filter(msg =>
@@ -500,21 +500,22 @@ export function ChatRoom({
         if (recentJoinMessages.length === 0) {
           const joinMessage = {
             id: `join-${Date.now()}-${username}`,
-            content: `${username} has entered`,
+            content: `${username}[${userLevel || 1}] has entered`,
             senderId: 'system',
             createdAt: new Date().toISOString(),
             sender: { id: 'system', username: 'System', level: 0, isOnline: true },
             messageType: 'system'
           };
           setMessages(prev => [...prev, joinMessage]);
+          console.log('Added join message:', joinMessage);
         }
         setTimeout(() => refetchMembers(), 100);
       }
     };
 
     const handleUserLeave = (event: CustomEvent) => {
-      const { username, roomId: eventRoomId, userId: leftUserId } = event.detail;
-      console.log('User leave event received:', { username, eventRoomId, leftUserId, currentRoomId: roomId });
+      const { username, roomId: eventRoomId, userId: leftUserId, userLevel } = event.detail;
+      console.log('User leave event received:', { username, eventRoomId, leftUserId, currentRoomId: roomId, userLevel });
 
       if (eventRoomId === roomId && username && username !== 'undefined') {
         // If current user is leaving, clear everything immediately
@@ -560,7 +561,7 @@ export function ChatRoom({
         if (recentLeaveMessages.length === 0) {
           const leaveMessage = {
             id: `leave-${Date.now()}-${username}`,
-            content: `${username} has left the room`,
+            content: `${username}[${userLevel || 1}] has left the room`,
             senderId: 'system',
             createdAt: new Date().toISOString(),
             sender: { id: 'system', username: 'System', level: 0, isOnline: true },

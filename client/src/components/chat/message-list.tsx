@@ -764,8 +764,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isWelcomeMessage = message.content.includes('Welcome to');
           const isCurrentlyInRoom = message.content.includes('Currently in the room:');
           const isRoomManaged = message.content.includes('This room is managed by');
-          const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left');
+          const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left') || message.content.includes('has left the room');
           const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User') || message.content.includes('LowcardBot has joined');
+          const isKickMessage = message.content.includes('has been kicked') || message.content.includes('kick vote') || message.content.includes('Vote expires');
+          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage;
 
           return (
             <div key={message.id} className="mb-2">
@@ -789,15 +791,33 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                   </div>
                 )}
                 {isUserEnterLeave && (
-                  <div>
-                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
-                    <span className="text-gray-800">{message.content}</span>
+                  <div className="flex items-center justify-center">
+                    <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                      <span className="text-blue-600 font-medium text-xs">{roomName || 'Room'}: </span>
+                      <span className="text-blue-800 text-xs">{message.content}</span>
+                    </div>
+                  </div>
+                )}
+                {isKickMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+                      <span className="text-orange-600 font-medium text-xs">{roomName || 'System'}: </span>
+                      <span className="text-orange-800 text-xs">{message.content}</span>
+                    </div>
                   </div>
                 )}
                 {isWhoisMessage && (
                   <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
                     <div className="text-blue-700">
                       <pre className="whitespace-pre-wrap font-mono text-sm">{message.content}</pre>
+                    </div>
+                  </div>
+                )}
+                {isOtherSystemMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
+                      <span className="text-gray-600 font-medium text-xs">{roomName || 'System'}: </span>
+                      <span className="text-gray-800 text-xs">{message.content}</span>
                     </div>
                   </div>
                 )}
