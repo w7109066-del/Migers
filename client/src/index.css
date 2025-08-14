@@ -12,6 +12,26 @@
   display: none;
 }
 
+/* Ensure proper scrolling behavior */
+.chat-container {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.room-content {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Custom animations */
 @keyframes fade-in-up {
   from {
