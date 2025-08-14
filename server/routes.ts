@@ -240,7 +240,7 @@ export function registerRoutes(app: Express): Server {
 
         // Check if MeChat room exists in database, if not create it
         let meChatRoom = userRooms?.find(room => room.name === 'MeChat' && room.description === 'Official main chat room');
-        
+
         if (!meChatRoom) {
           console.log('Creating MeChat room in database...');
           try {
@@ -3145,24 +3145,11 @@ export function registerRoutes(app: Express): Server {
             // Find target user in room
             let targetUser = null;
 
-            if (['1', '2', '3', '4'].includes(data.roomId)) {
-              // Search in mock room members
-              const roomMembers = mockRoomMembers.get(data.roomId);
-              if (roomMembers) {
-                for (const [memberId, memberData] of roomMembers) {
-                  if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
-                    targetUser = memberData;
-                    break;
-                  }
-                }
-              }
-            } else {
-              // Search in real room members
-              const roomMembers = await storage.getRoomMembers(data.roomId);
-              targetUser = roomMembers?.find(member =>
-                member.user.username.toLowerCase() === targetUsername.toLowerCase()
-              )?.user;
-            }
+            // Search in room members from database
+            const roomMembers = await storage.getRoomMembers(data.roomId);
+            targetUser = roomMembers?.find(member =>
+              member.user.username.toLowerCase() === targetUsername.toLowerCase()
+            )?.user;
 
             if (!targetUser) {
               const notFoundMessage = {
@@ -3351,24 +3338,11 @@ export function registerRoutes(app: Express): Server {
             // Find target user in room
             let targetUser = null;
 
-            if (['1', '2', '3', '4'].includes(data.roomId)) {
-              // Search in mock room members
-              const roomMembers = mockRoomMembers.get(data.roomId);
-              if (roomMembers) {
-                for (const [memberId, memberData] of roomMembers) {
-                  if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
-                    targetUser = memberData;
-                    break;
-                  }
-                }
-              }
-            } else {
-              // Search in real room members
-              const roomMembers = await storage.getRoomMembers(data.roomId);
-              targetUser = roomMembers?.find(member =>
-                member.user.username.toLowerCase() === targetUsername.toLowerCase()
-              )?.user;
-            }
+            // Search in room members from database
+            const roomMembers = await storage.getRoomMembers(data.roomId);
+            targetUser = roomMembers?.find(member =>
+              member.user.username.toLowerCase() === targetUsername.toLowerCase()
+            )?.user;
 
             if (!targetUser) {
               const notFoundMessage = {
@@ -3496,24 +3470,11 @@ export function registerRoutes(app: Express): Server {
             // Find user in current room
             let targetUser = null;
 
-            if (['1', '2', '3', '4'].includes(data.roomId)) {
-              // Search in mock room members
-              const roomMembers = mockRoomMembers.get(data.roomId);
-              if (roomMembers) {
-                for (const [memberId, memberData] of roomMembers) {
-                  if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
-                    targetUser = memberData;
-                    break;
-                  }
-                }
-              }
-            } else {
-              // Search in real room members
-              const roomMembers = await storage.getRoomMembers(data.roomId);
-              targetUser = roomMembers?.find(member =>
-                member.user.username.toLowerCase() === targetUsername.toLowerCase()
-              )?.user;
-            }
+            // Search in room members from database
+            const roomMembers = await storage.getRoomMembers(data.roomId);
+            targetUser = roomMembers?.find(member =>
+              member.user.username.toLowerCase() === targetUsername.toLowerCase()
+            )?.user;
 
             if (targetUser) {
               // Format creation date
