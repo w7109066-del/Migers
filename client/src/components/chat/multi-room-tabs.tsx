@@ -233,9 +233,14 @@ export function MultiRoomTabs({
           // Update the room's messages
           targetRoom.messages = [...(targetRoom.messages || []), message];
 
-          // Save to localStorage immediately
+          // Save to localStorage immediately with timestamp
           const localStorageKey = `chat_${message.roomId}`;
-          localStorage.setItem(localStorageKey, JSON.stringify(targetRoom.messages));
+          const messagesWithTimestamp = {
+            messages: targetRoom.messages,
+            savedAt: Date.now(),
+            roomId: message.roomId
+          };
+          localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
 
           // If message is for a room that's not currently active, mark it as having new messages
           if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
@@ -257,6 +262,72 @@ export function MultiRoomTabs({
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
     };
   }, [activeRoomIndex, rooms]);
+
+  // Auto-clear expired messages for all rooms every 30 seconds
+  useEffect(() => {
+    const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+    
+    const clearExpiredMessagesForAllRooms = () => {
+      if (!user || rooms.length === 0) return;
+
+      rooms.forEach(room => {
+        if (!room || !room.id) return;
+
+        const localStorageKey = `chat_${room.id}`;
+        const storedData = localStorage.getItem(localStorageKey);
+        
+        if (storedData) {
+          try {
+            const parsedData = JSON.parse(storedData);
+            
+            // Check if this is old format (array) or new format (object with timestamp)
+            if (Array.isArray(parsedData)) {
+              // Old format - clear immediately as we can't determine age
+              console.log('MultiRoomTabs: Clearing old format messages for room:', room.id);
+              localStorage.removeItem(localStorageKey);
+              // Clear messages from room object
+              room.messages = [];
+              return;
+            }
+
+            // New format with timestamp
+            if (parsedData.savedAt && parsedData.messages) {
+              const messageAge = Date.now() - parsedData.savedAt;
+              
+              if (messageAge > MESSAGE_EXPIRY_TIME) {
+                console.log('MultiRoomTabs: Clearing expired messages for room:', room.id, 'Age:', Math.round(messageAge / 1000 / 60), 'minutes');
+                localStorage.removeItem(localStorageKey);
+                
+                // Clear messages from room object
+                room.messages = [];
+                
+                // Save empty state with new timestamp
+                const emptyMessagesWithTimestamp = {
+                  messages: [],
+                  savedAt: Date.now(),
+                  roomId: room.id
+                };
+                localStorage.setItem(localStorageKey, JSON.stringify(emptyMessagesWithTimestamp));
+              }
+            }
+          } catch (error) {
+            console.error('MultiRoomTabs: Error checking message expiry for room:', room.id, error);
+            // If there's an error parsing, clear the corrupted data
+            localStorage.removeItem(localStorageKey);
+            room.messages = [];
+          }
+        }
+      });
+    };
+
+    // Clear expired messages immediately on component mount
+    clearExpiredMessagesForAllRooms();
+    
+    // Set up interval to check for expired messages every 30 seconds
+    const interval = setInterval(clearExpiredMessagesForAllRooms, 30000);
+    
+    return () => clearInterval(interval);
+  }, [rooms, user]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -963,9 +1034,11 @@ export function MultiRoomTabs({
                                         // Clear localStorage for the room being closed
                                         const roomToClose = rooms[safeActiveRoomIndex];
                                         if (roomToClose) {
-                                          // Clear main chat messages
+                                          // Clear main chat messages (both old and new formats)
                                           const localStorageKey = `chat_${roomToClose.id}`;
+                                          const oldFormatKey = `chatMessages-${roomToClose.id}`;
                                           localStorage.removeItem(localStorageKey);
+                                          localStorage.removeItem(oldFormatKey);
 
                                           // Clear saved room states
                                           const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
@@ -1068,8 +1141,13 @@ export function MultiRoomTabs({
                                 const currentRoom = rooms[activeRoomIndex];
                                 if (currentRoom && currentRoom.messages && currentRoom.messages.length > 0) {
                                   const localStorageKey = `chat_${currentRoom.id}`;
-                                  localStorage.setItem(localStorageKey, JSON.stringify(currentRoom.messages));
-                                  console.log('Saved messages to localStorage for room:', currentRoom.id);
+                                  const messagesWithTimestamp = {
+                                    messages: currentRoom.messages,
+                                    savedAt: Date.now(),
+                                    roomId: currentRoom.id
+                                  };
+                                  localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
+                                  console.log('Saved messages with timestamp to localStorage for room:', currentRoom.id);
                                 }
 
                                 // Clear new message indicator for this room
@@ -1120,9 +1198,11 @@ export function MultiRoomTabs({
                                     // Clear ALL localStorage for the room being closed
                                     const roomToClose = rooms[tabIndex];
                                     if (roomToClose) {
-                                      // Clear main chat messages
+                                      // Clear main chat messages (both old and new formats)
                                       const localStorageKey = `chat_${roomToClose.id}`;
+                                      const oldFormatKey = `chatMessages-${roomToClose.id}`;
                                       localStorage.removeItem(localStorageKey);
+                                      localStorage.removeItem(oldFormatKey);
 
                                       // Clear saved room states
                                       const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
