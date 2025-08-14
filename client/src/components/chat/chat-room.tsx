@@ -1912,7 +1912,7 @@ export function ChatRoom({
                       return (
                         <div
                           key={`${member.user.id}-${member.user.username}`}
-                          className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                          className="flex items-center space-x-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                           onClick={() => {
                             try {
                               const profileData = {
@@ -1934,55 +1934,71 @@ export function ChatRoom({
                             }
                           }}
                         >
-                          <UserAvatar
-                            username={member.user.username || 'Unknown'}
-                            size="sm"
-                            isOnline={member.user.isOnline || false}
-                            profilePhotoUrl={member.user.profilePhotoUrl}
-                            isAdmin={(member.user.level || 0) >= 5}
-                          />
+                          <div className="relative">
+                            <div className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm",
+                              member.user.isMentor ? "bg-purple-500" :
+                              member.user.username?.toLowerCase() === 'devtes' ? "bg-red-400" :
+                              member.user.username?.toLowerCase() === 'bob_al' ? "bg-green-500" :
+                              member.user.username?.toLowerCase() === 'mentor' ? "bg-purple-500" :
+                              member.user.username?.toLowerCase() === 'dhe' ? "bg-red-400" :
+                              "bg-blue-500"
+                            )}>
+                              {member.user.profilePhotoUrl ? (
+                                <img
+                                  src={member.user.profilePhotoUrl}
+                                  alt={member.user.username}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              ) : (
+                                <span className="uppercase">
+                                  {member.user.username?.slice(0, 2) || 'UN'}
+                                </span>
+                              )}
+                            </div>
+                            <div className={cn(
+                              "absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-white rounded-full",
+                              member.user.isOnline ? "bg-green-500" : "bg-gray-400"
+                            )} />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-2 mb-1">
-                              <div className="flex items-center space-x-1">
-                                <span className={cn(
-                                  "font-medium text-sm truncate",
-                                  member.user.isMentor ? "text-red-600" :
-                                  ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
-                                )}>
-                                  {member.user.username || 'Unknown'}
-                                </span>
-                                <div className="flex items-center space-x-1">
-                                 {/* Crown only for owner in managed rooms */}
-                                  {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                    <Crown className="w-3 h-3 text-yellow-500" />
-                                  )}
-                                  {/* Mentor badge */}
-                                  {member.user.isMentor && (
-                                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
-                                      M
-                                    </Badge>
-                                  )}
-                                  {/* Merchant badge - check for both boolean and truthy values */}
-                                  {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                    <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                      🛍️
-                                    </Badge>
-                                  )}
-                                  {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
-                                    <Badge variant="destructive" className="text-xs bg-red-600">
-                                      Admin
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    Level {member.user.level || 1}
-                                  </Badge>
-                                </div>
-                              </div>
+                              <span className={cn(
+                                "font-medium text-gray-800",
+                                member.user.isMentor ? "text-red-600" :
+                                member.user.username?.toLowerCase() === 'bob_al' ? "text-orange-600" : ""
+                              )}>
+                                {member.user.username || 'Unknown'}
+                              </span>
+                              {/* Crown only for owner in managed rooms */}
+                              {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                <Crown className="w-3 h-3 text-yellow-500" />
+                              )}
+                              {/* Mentor badge */}
+                              {member.user.isMentor && (
+                                <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                                  M
+                                </Badge>
+                              )}
+                              {/* Merchant badge */}
+                              {(member.user.isMerchant === true || member.user.isMerchant) && (
+                                <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                                  🛍️
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="text-xs bg-gray-100">
+                                Level {member.user.level || 1}
+                              </Badge>
                             </div>
-                            <div className={cn("text-xs", (member.user.isOnline || false) ? "text-green-600" : "text-gray-500")}>
-                              {(member.user.isOnline || false) ? "Online" : "Offline"}
+                            <div className={cn(
+                              "text-xs flex items-center space-x-1",
+                              member.user.isOnline ? "text-green-600" : "text-gray-500"
+                            )}>
+                              <div className={cn(
+                                "w-2 h-2 rounded-full",
+                                member.user.isOnline ? "bg-green-500" : "bg-gray-400"
+                              )} />
+                              <span>{member.user.isOnline ? "Online" : "Offline"}</span>
                             </div>
                           </div>
                         </div>
