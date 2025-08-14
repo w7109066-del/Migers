@@ -66,7 +66,7 @@ function startJoinPhase(io: Server, room: string): void {
   const data = rooms[room];
   if (!data) return;
 
-  io.to(room).emit('bot_message', 'LowCardBot', `🎮 LowCard started by ${data.startedBy}. Enter !j to join the game. Cost: ${data.bet} MCR [30s]`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `🎮 LowCard started by ${data.startedBy}. Enter !j to join the game. Cost: ${data.bet} COIN [30s]`, null, room);
 
   data.timeout = setTimeout(() => {
     if (data.players.length < 2) {
@@ -142,13 +142,13 @@ function finishRound(io: Server, room: string): void {
   if (remainingPlayers.length === 1) {
     const winner = remainingPlayers[0];
     tambahCoin(winner.id, winAmount);
-    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins the game! +${winAmount.toFixed(1)} MCR`, `/cards/${winner.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins the game! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
   } else {
     // Multiple remaining players - highest card wins
     const sortedRemaining = remainingPlayers.sort((a, b) => getCardValue(b.card!) - getCardValue(a.card!));
     const winner = sortedRemaining[0];
     tambahCoin(winner.id, winAmount);
-    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins with the highest card! +${winAmount.toFixed(1)} MCR`, `/cards/${winner.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins with the highest card! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
   }
 
   // Show all cards
@@ -158,7 +158,7 @@ function finishRound(io: Server, room: string): void {
     io.to(room).emit('bot_message', 'LowCardBot', `${player.username}: ${player.card!.value.toUpperCase()}${player.card!.suit.toUpperCase()}${status}`, `/cards/${player.card!.filename}`, room);
   });
 
-  io.to(room).emit('bot_message', 'LowCardBot', `💰 House cut: ${housecut.toFixed(1)} MCR`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `💰 House cut: ${housecut.toFixed(1)} COIN`, null, room);
   io.to(room).emit('bot_message', 'LowCardBot', `🎮 Type !start <bet> to play again!`, null, room);
 
   // Clean up
@@ -218,7 +218,7 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
       }
 
       if (bet > 10000) {
-        io.to(room).emit('bot_message', 'LowCardBot', `❌ Bet too high! Maximum bet is 10,000 MCR.`, null, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `❌ Bet too high! Maximum bet is 10,000 COIN.`, null, room);
         return;
       }
 
@@ -257,7 +257,7 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
 
         // Check if user has enough coins
         if (!potongCoin(userId, data.bet)) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} doesn't have enough MCR to join.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} doesn't have enough COIN to join.`, null, room);
           return;
         }
 
