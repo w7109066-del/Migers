@@ -791,10 +791,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                   </div>
                 )}
                 {isUserEnterLeave && (
-                  <div className="flex items-center justify-center">
-                    <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                      <span className="text-blue-600 font-medium text-xs">{roomName || 'Room'}: </span>
-                      <span className="text-blue-800 text-xs">{message.content}</span>
+                  <div className="mb-2">
+                    <div className="text-sm">
+                      <span className="text-red-500 font-medium">{roomName || 'Room'}: </span>
+                      <span className="text-gray-800">{message.content}</span>
                     </div>
                   </div>
                 )}
