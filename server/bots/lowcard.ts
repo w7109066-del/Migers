@@ -56,7 +56,7 @@ function tambahCoin(userId: string, amount: number): void {
 function ensureBotPresence(io: Server, roomId: string): void {
   if (!botPresence[roomId]) {
     botPresence[roomId] = true;
-    io.to(roomId).emit('bot_message', 'LowCardBot', '🎮 LowCardBot is now active! Type !start <bet> to begin playing.', null, roomId);
+    io.to(roomId).emit('bot_message', 'LowCardBot', 'LowCardBot is now active! Type !start <bet> to begin playing.', null, roomId);
     console.log(`LowCardBot initialized in room: ${roomId}`);
   }
 }
@@ -65,12 +65,12 @@ function startJoinPhase(io: Server, room: string): void {
   const data = rooms[room];
   if (!data) return;
 
-  io.to(room).emit('bot_message', 'LowCardBot', `🎮 LowCard started by ${data.startedBy}. Enter !j to join the game. Cost: ${data.bet} COIN [30s]`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `LowCard started by ${data.startedBy}. Enter !j to join the game. Cost: ${data.bet} COIN [30s]`, null, room);
 
   data.timeout = setTimeout(() => {
     if (data.players.length < 2) {
-      io.to(room).emit('bot_message', 'LowCardBot', `⏰ Joining ends. Not enough players. Need at least 2 players.`, null, room);
-      io.to(room).emit('bot_message', 'LowCardBot', `❌ Game canceled`, null, room);
+      io.to(room).emit('bot_message', 'LowCardBot', `Joining ends. Not enough players. Need at least 2 players.`, null, room);
+      io.to(room).emit('bot_message', 'LowCardBot', `Game canceled`, null, room);
       delete rooms[room];
     } else {
       startDrawPhase(io, room);
@@ -88,14 +88,14 @@ function startDrawPhase(io: Server, room: string): void {
   }
 
   data.isRunning = true;
-  io.to(room).emit('bot_message', 'LowCardBot', `🚀 Drawing started! Type !d to draw your card. [20s auto-draw]`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `Drawing started! Type !d to draw your card. [20s auto-draw]`, null, room);
 
   // Auto-draw after 20 seconds
   data.drawTimeout = setTimeout(() => {
     data.players.forEach(player => {
       if (!player.card) {
         player.card = drawCard();
-        io.to(room).emit('bot_message', 'LowCardBot', `⏱️ ${player.username} auto drew a card.`, `/cards/${player.card.filename}`, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `${player.username} auto drew a card.`, `/cards/${player.card.filename}`, room);
       }
     });
 
@@ -125,10 +125,10 @@ function finishRound(io: Server, room: string): void {
   if (losers.length > 1) {
     // Tie breaker - random selection
     finalLoser = losers[Math.floor(Math.random() * losers.length)];
-    io.to(room).emit('bot_message', 'LowCardBot', `🎯 Tie broken! ${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `Tie broken! ${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
   } else {
     finalLoser = losers[0];
-    io.to(room).emit('bot_message', 'LowCardBot', `💀 ${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
   }
 
   // Calculate winnings
@@ -141,24 +141,24 @@ function finishRound(io: Server, room: string): void {
   if (remainingPlayers.length === 1) {
     const winner = remainingPlayers[0];
     tambahCoin(winner.id, winAmount);
-    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins the game! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `${winner.username} wins the game! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
   } else {
     // Multiple remaining players - highest card wins
     const sortedRemaining = remainingPlayers.sort((a, b) => getCardValue(b.card!) - getCardValue(a.card!));
     const winner = sortedRemaining[0];
     tambahCoin(winner.id, winAmount);
-    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins with the highest card! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `${winner.username} wins with the highest card! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
   }
 
   // Show all cards
-  io.to(room).emit('bot_message', 'LowCardBot', `📋 Final Results:`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `Final Results:`, null, room);
   sorted.forEach(player => {
     const status = player.username === finalLoser.username ? " (LOSER)" : "";
     io.to(room).emit('bot_message', 'LowCardBot', `${player.username}: ${player.card!.value.toUpperCase()}${player.card!.suit.toUpperCase()}${status}`, `/cards/${player.card!.filename}`, room);
   });
 
-  io.to(room).emit('bot_message', 'LowCardBot', `💰 House cut: ${housecut.toFixed(1)} COIN`, null, room);
-  io.to(room).emit('bot_message', 'LowCardBot', `🎮 Type !start <bet> to play again!`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `House cut: ${housecut.toFixed(1)} COIN`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `Type !start <bet> to play again!`, null, room);
 
   // Clean up
   delete rooms[room];
@@ -174,13 +174,13 @@ export function getBotStatus(roomId: string): string {
   if (botPresence[roomId]) {
     const game = rooms[roomId];
     if (game?.isRunning) {
-      return `🎮 LowCardBot is running a game with ${game.players.length} players.`;
+      return `LowCardBot is running a game with ${game.players.length} players.`;
     } else if (game) {
-      return `🎮 LowCardBot is waiting for players to join. Type !j to join!`;
+      return `LowCardBot is waiting for players to join. Type !j to join!`;
     }
-    return `🎮 LowCardBot is active! Type !start <bet> to begin playing.`;
+    return `LowCardBot is active! Type !start <bet> to begin playing.`;
   }
-  return `🎮 LowCardBot is not active in this room.`;
+  return `LowCardBot is not active in this room.`;
 }
 
 // Direct command processing function
@@ -206,18 +206,18 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
     switch (command) {
     case '!start': {
       if (rooms[room]) {
-        io.to(room).emit('bot_message', 'LowCardBot', `❌ Game already in progress!`, null, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `Game already in progress!`, null, room);
         return;
       }
 
       const bet = parseInt(args[0]) || 50;
       if (bet <= 0) {
-        io.to(room).emit('bot_message', 'LowCardBot', `❌ Invalid bet amount! Must be greater than 0.`, null, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `Invalid bet amount! Must be greater than 0.`, null, room);
         return;
       }
 
       if (bet > 10000) {
-        io.to(room).emit('bot_message', 'LowCardBot', `❌ Bet too high! Maximum bet is 10,000 COIN.`, null, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `Bet too high! Maximum bet is 10,000 COIN.`, null, room);
         return;
       }
 
@@ -235,28 +235,28 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
       case '!j': {
         const data = rooms[room];
         if (!data) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ No game in progress. Type !start <bet> to start a game.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `No game in progress. Type !start <bet> to start a game.`, null, room);
           return;
         }
 
         if (data.isRunning) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game already started! Wait for next round.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `Game already started! Wait for next round.`, null, room);
           return;
         }
 
         if (data.players.find(p => p.username === username)) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} already joined!`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `${username} already joined!`, null, room);
           return;
         }
 
         if (data.players.length >= 200) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game is full! Maximum 200 players.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `Game is full! Maximum 200 players.`, null, room);
           return;
         }
 
         // Check if user has enough coins
         if (!potongCoin(userId, data.bet)) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} doesn't have enough COIN to join.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `${username} doesn't have enough COIN to join.`, null, room);
           return;
         }
 
@@ -269,35 +269,35 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
         };
 
         data.players.push(player);
-        io.to(room).emit('bot_message', 'LowCardBot', `✅ ${username} joined the game! (${data.players.length} players)`, null, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `${username} joined the game! (${data.players.length} players)`, null, room);
         break;
       }
 
       case '!d': {
         const data = rooms[room];
         if (!data) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ No game in progress.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `No game in progress.`, null, room);
           return;
         }
 
         if (!data.isRunning) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game hasn't started yet!`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `Game hasn't started yet!`, null, room);
           return;
         }
 
         const player = data.players.find(p => p.username === username);
         if (!player) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} is not in this game!`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `${username} is not in this game!`, null, room);
           return;
         }
 
         if (player.card) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} already drew a card!`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `${username} already drew a card!`, null, room);
           return;
         }
 
         player.card = drawCard();
-        io.to(room).emit('bot_message', 'LowCardBot', `🎯 ${username} drew a card!`, `/cards/${player.card.filename}`, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `${username} drew a card!`, `/cards/${player.card.filename}`, room);
 
         // Check if all players have drawn
         const allDrawn = data.players.every(p => p.card);
@@ -316,30 +316,30 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
       case '!leave': {
         const data = rooms[room];
         if (!data) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ No game in progress.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `No game in progress.`, null, room);
           return;
         }
 
         if (data.isRunning) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Cannot leave during game! Wait for round to finish.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `Cannot leave during game! Wait for round to finish.`, null, room);
           return;
         }
 
         const playerIndex = data.players.findIndex(p => p.username === username);
         if (playerIndex === -1) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} is not in this game!`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `${username} is not in this game!`, null, room);
           return;
         }
 
         // Refund the bet
         tambahCoin(userId, data.bet);
         data.players.splice(playerIndex, 1);
-        io.to(room).emit('bot_message', 'LowCardBot', `👋 ${username} left the game. Bet refunded.`, null, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `${username} left the game. Bet refunded.`, null, room);
         break;
       }
 
       case '!help': {
-        const helpText = `🎮 LowCard Commands:
+        const helpText = `LowCard Commands:
 !start <bet> - Start a new game
 !j - Join current game
 !d - Draw your card
@@ -397,12 +397,12 @@ export function handleLowCardBot(io: Server, socket: any): void {
           // Refund bet if game hasn't started
           tambahCoin(player.id, player.bet);
           data.players.splice(playerIndex, 1);
-          io.to(room).emit('bot_message', 'LowCardBot', `👋 ${player.username} disconnected and left the game. Bet refunded.`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `${player.username} disconnected and left the game. Bet refunded.`, null, room);
 
           // Cancel game if not enough players
           if (data.players.length < 2 && data.timeout) {
             clearTimeout(data.timeout);
-            io.to(room).emit('bot_message', 'LowCardBot', `❌ Not enough players. Game canceled.`, null, room);
+            io.to(room).emit('bot_message', 'LowCardBot', `Not enough players. Game canceled.`, null, room);
             delete rooms[room];
           }
         } else {
@@ -410,7 +410,7 @@ export function handleLowCardBot(io: Server, socket: any): void {
           if (!player.card) {
             player.card = { value: "2", suit: "c", filename: "lc_2c.png" }; // Worst possible card
           }
-          io.to(room).emit('bot_message', 'LowCardBot', `💀 ${player.username} disconnected and auto-loses!`, null, room);
+          io.to(room).emit('bot_message', 'LowCardBot', `${player.username} disconnected and auto-loses!`, null, room);
 
           // Check if all remaining have cards
           const allDrawn = data.players.every(p => p.card);
