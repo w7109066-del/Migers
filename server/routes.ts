@@ -3024,53 +3024,9 @@ export function registerRoutes(app: Express): Server {
 
           // Check if message is a LowCard bot command and handle it
           if (data.content.startsWith('!')) {
-            // First, show the user's command in chat
-            const senderUser = await storage.getUser(userId);
-            
-            if (['1', '2', '3', '4'].includes(data.roomId)) {
-              // For mock rooms, create mock message for the command
-              const commandMessage = {
-                id: `command-${Date.now()}`,
-                content: data.content,
-                senderId: userId,
-                roomId: data.roomId,
-                recipientId: null,
-                messageType: 'text',
-                createdAt: new Date().toISOString(),
-                sender: {
-                  id: userId,
-                  username: senderUser?.username || 'User',
-                  level: senderUser?.level || 1,
-                  isOnline: senderUser?.isOnline || true,
-                  profilePhotoUrl: senderUser?.profilePhotoUrl || null
-                }
-              };
-
-              // Broadcast the user's command message first
-              io.to(data.roomId).emit('new_message', {
-                message: commandMessage,
-              });
-            } else {
-              // For real rooms, save the command message
-              const messageData = insertMessageSchema.parse({
-                content: data.content,
-                senderId: userId,
-                roomId: data.roomId,
-                recipientId: null,
-                messageType: 'text',
-              });
-
-              const newMessage = await storage.createMessage(messageData);
-              
-              // Broadcast the user's command message first
-              io.to(data.roomId).emit('new_message', {
-                message: newMessage,
-              });
-            }
-
-            // Then handle the bot command logic
+            // Don't show the command in chat, just handle the bot logic
             socket.emit('command', data.roomId, data.content);
-            return;
+            return; // Exit early - don't save or show command message
           }
 
           // Check if message is a kick command
