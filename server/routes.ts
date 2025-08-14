@@ -2914,38 +2914,16 @@ export function registerRoutes(app: Express): Server {
           // Leave the Socket.IO room
           socket.leave(data.roomId);
 
-          // Only broadcast leave message for unexpected disconnects (not manual)
+          // Only broadcast leave message for explicit disconnects
           if (data.explicit) {
-            // Broadcast user leave message and user_left event
-            const leaveMessage = {
-              id: `system-leave-${Date.now()}`,
-              content: `${user?.username || 'User'} has left the room.`,
-              senderId: 'system',
-              roomId: data.roomId,
-              recipientId: null,
-              messageType: 'system',
-              createdAt: new Date().toISOString(),
-              sender: {
-                id: 'system',
-                username: 'System',
-                level: 0,
-                isOnline: true,
-              }
-            };
-
-            // Broadcast leave message
-            io.to(data.roomId).emit('new_message', {
-              message: leaveMessage
+            // Only emit user_left event with consistent format - no separate message
+            socket.to(data.roomId).emit('user_left', {
+              username: user.username,
+              userId: user.id,
+              userLevel: user.level || 1,
+              roomId: data.roomId
             });
           }
-
-          // Emit user left event to room (but not to the user who left)
-          socket.to(data.roomId).emit('user_left', {
-            username: user.username,
-            userId: user.id,
-            userLevel: user.level || 1,
-            roomId: data.roomId
-          });
 
           console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
 
