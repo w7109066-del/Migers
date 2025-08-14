@@ -750,18 +750,16 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     {formatTime(message.createdAt)}
                   </span>
                 </div>
-                <div className="text-sm text-blue-800">
-                  {message.content}
-                </div>
-                {message.cardImage && (
-                  <div className="mt-2">
+                <div className="text-sm text-blue-800 flex items-center gap-2">
+                  <span>{message.content}</span>
+                  {message.cardImage && (
                     <img 
                       src={message.cardImage} 
                       alt="Card" 
-                      className="w-16 h-24 object-contain border rounded"
+                      className="w-6 h-8 object-contain inline-block"
                     />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           );
