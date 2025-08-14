@@ -969,9 +969,8 @@ export class DatabaseStorage implements IStorage {
     console.log('Creating message with data:', messageData);
 
     try {
-      // For system rooms (1-4), we'll store them with the room ID as-is
-      // The roomId will be stored as a string UUID or the system room ID
-      const [message] = await db.insert(messages).values({
+      // All messages get UUID from database - no mock IDs
+      const [message] = await this.db.insert(messages).values({
         content: messageData.content,
         senderId: messageData.senderId,
         roomId: messageData.roomId,
@@ -982,6 +981,10 @@ export class DatabaseStorage implements IStorage {
 
       // Get sender info
       const sender = await this.getUser(messageData.senderId);
+      
+      if (!sender) {
+        throw new Error('Sender not found');
+      }
 
       return {
         ...message,

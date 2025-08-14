@@ -453,25 +453,9 @@ export function ChatRoom({
           return;
         }
 
-        // Check for duplicate messages (remove optimistic message if real one arrives)
+        // Check if message already exists (prevent duplicates)
         setMessages(prev => {
-          // Remove any temporary/optimistic messages from the same user with similar content
-          const filteredMessages = prev.filter(msg => {
-            const isOptimistic = msg.id.startsWith('temp-');
-            const isSameUser = msg.senderId === newMessage.senderId;
-            const isSimilarContent = msg.content.trim() === newMessage.content.trim();
-            const isRecent = Date.now() - new Date(msg.createdAt).getTime() < 5000; // within 5 seconds
-
-            // Remove optimistic message if real message matches
-            if (isOptimistic && isSameUser && isSimilarContent && isRecent) {
-              console.log('Removing optimistic message:', msg.id);
-              return false;
-            }
-            return true;
-          });
-
-          // Check if message already exists (prevent duplicates)
-          const messageExists = filteredMessages.some(msg =>
+          const messageExists = prev.some(msg =>
             msg.id === newMessage.id ||
             (msg.senderId === newMessage.senderId &&
              msg.content === newMessage.content &&
@@ -480,11 +464,11 @@ export function ChatRoom({
 
           if (messageExists) {
             console.log('Message already exists, skipping:', newMessage.id);
-            return filteredMessages;
+            return prev;
           }
 
           console.log('Adding new message to chat:', newMessage.id);
-          return [...filteredMessages, newMessage];
+          return [...prev, newMessage];
         });
       }
     };
@@ -666,28 +650,10 @@ export function ChatRoom({
     if (roomId && content.trim() && user) {
       console.log('Sending message:', content, 'to room:', roomId);
 
-      // Create optimistic message for immediate UI feedback
-      const optimisticMessage = {
-        id: `temp-${Date.now()}-${user.id}`,
-        content: content.trim(),
-        senderId: user.id,
-        createdAt: new Date().toISOString(),
-        sender: {
-          id: user.id,
-          username: user.username,
-          level: user.level || 1,
-          isOnline: true
-        },
-        messageType: 'chat'
-      };
-
-      // Add optimistic message to local state immediately
-      setMessages(prev => [...prev, optimisticMessage]);
-
-      // Send message via WebSocket
+      // Send message via WebSocket - no optimistic messages
       sendChatMessage(content, roomId);
 
-      console.log('Message sent and added optimistically:', optimisticMessage);
+      console.log('Message sent to backend:', content);
     }
   };
 
