@@ -164,22 +164,23 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
         console.log('Successfully joined room:', roomData.name);
         setSelectedRoom({ id: roomData.id, name: roomData.name });
         return roomData;
-      } else if (response.status === 403) {
-        const errorData = await response.json();
-        toast({
-          title: "Access Denied",
-          description: errorData.message || "You are banned from accessing chat rooms.",
-          variant: "destructive",
-        });
-        throw new Error('Access denied');
       } else {
-        console.error('Failed to join room:', response.status);
-        toast({
-          title: "Error",
-          description: "Failed to join room. Please try again.",
-          variant: "destructive",
-        });
-        throw new Error('Failed to join room');
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 403) {
+          toast({
+            title: "Access Denied",
+            description: errorData.message || "You are banned from accessing chat rooms.",
+            variant: "destructive",
+          });
+        } else {
+          console.error('Failed to join room:', response.status, errorData);
+          toast({
+            title: "Error",
+            description: errorData.message || "Failed to join room. Please try again.",
+            variant: "destructive",
+          });
+        }
+        throw new Error(errorData.message || 'Failed to join room');
       }
     },
     onSuccess: (data) => {
@@ -188,6 +189,10 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
       if (typeof onRoomSelect === 'function' && data) {
         onRoomSelect({ id: data.id, name: data.name });
       }
+    },
+    onError: (error: Error) => {
+      console.error('Room join mutation error:', error);
+      // Don't show additional toast here since we already show it in mutationFn
     },
   });
 
@@ -259,22 +264,22 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
     // Validate room data before proceeding
     if (!room || !room.id || !room.name) {
       console.error('Invalid room data:', room);
+      toast({
+        title: "Error",
+        description: "Invalid room data. Please refresh and try again.",
+        variant: "destructive",
+      });
       return;
     }
 
-    try {
-      console.log('Attempting to join room:', room.id);
-      await joinRoomMutation.mutateAsync(room);
-      // The mutation handler itself sets selectedRoom on success or shows toast on failure
-    } catch (error) {
-      console.error('An unexpected error occurred during room join attempt:', error);
-      // If the mutation itself throws an error (e.g., network issue before response), show a generic error.
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+    // Prevent multiple simultaneous join attempts
+    if (joinRoomMutation.isPending) {
+      console.log('Room join already in progress');
+      return;
     }
+
+    console.log('Attempting to join room:', room.id);
+    joinRoomMutation.mutate(room);
   };
 
   const handleBackToRoomList = () => {
