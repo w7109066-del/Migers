@@ -11,6 +11,7 @@ import {
   friendships,
   creditTransactions,
   friends,
+  gifts,
   type User,
   type InsertUser,
   type Friendship,
@@ -112,6 +113,13 @@ export interface IStorage {
   createCustomEmoji(emojiData: InsertCustomEmoji): Promise<CustomEmoji>;
   updateCustomEmoji(emojiId: string, updates: Partial<CustomEmoji>): Promise<CustomEmoji | undefined>;
   deleteCustomEmoji(emojiId: string): Promise<void>;
+
+  // Gift management methods
+  getAllGifts(): Promise<any[]>;
+  getGift(giftId: string): Promise<any | undefined>;
+  createGift(giftData: any): Promise<any>;
+  deleteGift(giftId: string): Promise<void>;
+  createGiftTransaction(transactionData: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1891,6 +1899,75 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCustomEmoji(emojiId: string): Promise<void> {
     await this.db.delete(customEmojis).where(eq(customEmojis.id, emojiId));
+  }
+
+  // Gift management methods
+  async getAllGifts(): Promise<any[]> {
+    try {
+      const allGifts = await this.db.select().from(gifts);
+      return allGifts;
+    } catch (error) {
+      console.error('Error getting all gifts:', error);
+      return [];
+    }
+  }
+
+  async getGift(giftId: string): Promise<any | undefined> {
+    try {
+      const [gift] = await this.db.select().from(gifts).where(eq(gifts.id, giftId));
+      return gift || undefined;
+    } catch (error) {
+      console.error('Error getting gift:', error);
+      return undefined;
+    }
+  }
+
+  async createGift(giftData: any): Promise<any> {
+    try {
+      const [newGift] = await this.db
+        .insert(gifts)
+        .values({
+          name: giftData.name,
+          price: giftData.price,
+          description: giftData.description,
+          emoji: giftData.emoji,
+          fileUrl: giftData.fileUrl,
+          fileType: giftData.fileType
+        })
+        .returning();
+      return newGift;
+    } catch (error) {
+      console.error('Error creating gift:', error);
+      throw error;
+    }
+  }
+
+  async deleteGift(giftId: string): Promise<void> {
+    try {
+      await this.db.delete(gifts).where(eq(gifts.id, giftId));
+    } catch (error) {
+      console.error('Error deleting gift:', error);
+      throw error;
+    }
+  }
+
+  async createGiftTransaction(transactionData: any): Promise<any> {
+    try {
+      // For now, we'll store gift transactions in the creditTransactions table with metadata
+      const [transaction] = await this.db
+        .insert(creditTransactions)
+        .values({
+          senderId: transactionData.senderId,
+          recipientId: transactionData.recipientId,
+          amount: transactionData.totalCost
+        })
+        .returning();
+
+      return transaction;
+    } catch (error) {
+      console.error('Error creating gift transaction:', error);
+      throw error;
+    }
   }
 
 

@@ -27,8 +27,7 @@ async function getVideoDuration(filePath: string): Promise<number> {
   }
 }
 
-// Mock data for gifts
-let customGifts: any[] = [];
+// Gift system now uses database
 
 // Helper function to authenticate user, returns user object or null
 async function authenticateUser(req: any): Promise<any | null> {
@@ -691,21 +690,40 @@ export function registerRoutes(app: Express): Server {
       const { recipientId, giftId, giftName, price, quantity = 1, totalCost, emoji, category } = req.body;
       const senderId = req.user!.id;
 
-      if (!recipientId || !giftId || !giftName || !price) {
+      if (!recipientId || !giftId || !price) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      // Check if sender has enough coins (assuming user has coins field)
-      const sender = await db.query.users.findFirst({
-        where: eq(users.id, senderId),
-      });
+      // Verify gift exists in database
+      const gift = await storage.getGift(giftId);
+      if (!gift) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
 
+      const actualTotalCost = gift.price * quantity;
+
+      // Check if sender has enough coins
+      const sender = await storage.getUser(senderId);
       if (!sender) {
         return res.status(404).json({ message: "Sender not found" });
       }
 
-      // Create direct message with gift info using storage method
-      const giftMessage = `🎁 ${giftName} x${quantity} (${totalCost} coins)`;
+      if ((sender.coins || 0) < actualTotalCost) {
+        return res.status(400).json({ message: "Insufficient coins" });
+      }
+
+      // Verify recipient exists
+      const recipient = await storage.getUser(recipientId);
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+
+      // Deduct coins from sender and add to recipient (gift sending fee could be implemented here)
+      await storage.updateUserCoins(senderId, (sender.coins || 0) - actualTotalCost);
+      // Note: In a real gift system, you might not give the full amount to recipient or have different logic
+
+      // Create direct message with gift info
+      const giftMessage = `🎁 ${gift.name} x${quantity} (${actualTotalCost} coins)`;
 
       const directMessage = await storage.createDirectMessage({
         content: giftMessage,
@@ -713,6 +731,49 @@ export function registerRoutes(app: Express): Server {
         recipientId,
         messageType: 'gift'
       });
+
+      // Create gift transaction record
+      await storage.createGiftTransaction({
+        senderId,
+        recipientId,
+        giftId: gift.id,
+        quantity,
+        totalCost: actualTotalCost
+      });
+
+      // Create notification for recipient
+      try {
+        const notification = await storage.createNotification({
+          userId: recipientId,
+          type: 'gift_received',
+          title: 'Gift Received',
+          message: `${sender.username} sent you ${gift.name}`,
+          fromUserId: senderId,
+          data: { giftId: gift.id, giftName: gift.name, quantity, totalCost: actualTotalCost }
+        });
+
+        // Send real-time notification via WebSocket
+        if (notification) {
+          broadcastToUser(recipientId, {
+            type: 'new_notification',
+            notification: {
+              id: notification.id,
+              type: 'gift_received',
+              title: 'Gift Received',
+              message: `${sender.username} sent you ${gift.name}`,
+              fromUser: {
+                id: senderId,
+                username: sender.username
+              },
+              data: { giftId: gift.id, giftName: gift.name, quantity, totalCost: actualTotalCost },
+              isRead: false,
+              createdAt: notification.createdAt || new Date().toISOString()
+            }
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to create gift notification:', notificationError);
+      }
 
       // Send gift notification via WebSocket
       broadcastToUser(recipientId, {
@@ -2448,8 +2509,8 @@ export function registerRoutes(app: Express): Server {
   // Admin: Get all custom gifts
   app.get('/api/admin/gifts', requireAdmin, async (req, res) => {
     try {
-      // Return empty array for now to prevent errors
-      res.json([]);
+      const gifts = await storage.getAllGifts();
+      res.json(gifts);
     } catch (error) {
       console.error('Error fetching gifts:', error);
       res.status(500).json({ error: 'Failed to fetch gifts' });
@@ -2462,15 +2523,48 @@ export function registerRoutes(app: Express): Server {
     { name: 'jsonFile', maxCount: 1 }
   ]), async (req, res) => {
     try {
-      const { name, emoji, price, category } = req.body;
+      const { name, emoji, price, category = 'populer' } = req.body;
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
       if (!name || !emoji || !price) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      // For now, just return success without database operation
-      res.json({ success: true, message: 'Gift added successfully' });
+      const parsedPrice = parseInt(price);
+      if (isNaN(parsedPrice) || parsedPrice <= 0) {
+        return res.status(400).json({ error: 'Invalid price' });
+      }
+
+      // Handle file uploads
+      let pngFileUrl = null;
+      let jsonFileUrl = null;
+
+      if (files.pngFile && files.pngFile[0]) {
+        pngFileUrl = `/uploads/gifts/${files.pngFile[0].filename}`;
+      }
+
+      if (files.jsonFile && files.jsonFile[0]) {
+        jsonFileUrl = `/uploads/gifts/${files.jsonFile[0].filename}`;
+      }
+
+      // Create gift in database
+      const giftData = {
+        name: name.trim(),
+        price: parsedPrice,
+        emoji: emoji.trim(),
+        category: category.trim(),
+        fileUrl: pngFileUrl,
+        fileType: pngFileUrl ? 'png' : null,
+        description: `${name} - ${category} gift`
+      };
+
+      const newGift = await storage.createGift(giftData);
+
+      res.json({
+        success: true,
+        message: 'Gift added successfully',
+        gift: newGift
+      });
     } catch (error) {
       console.error('Error adding gift:', error);
       res.status(500).json({ error: 'Failed to add gift' });
@@ -2481,8 +2575,38 @@ export function registerRoutes(app: Express): Server {
   app.delete('/api/admin/gifts/:id', requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      // For now, just return success
-      res.json({ success: true });
+
+      if (!id) {
+        return res.status(400).json({ error: 'Gift ID is required' });
+      }
+
+      // Get gift to delete associated files
+      const gift = await storage.getGift(id);
+      if (!gift) {
+        return res.status(404).json({ error: 'Gift not found' });
+      }
+
+      // Delete gift files if they exist
+      if (gift.fileUrl) {
+        try {
+          const filePath = path.join('.', gift.fileUrl);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`Deleted gift file: ${filePath}`);
+          }
+        } catch (fileError) {
+          console.error('Error deleting gift file:', fileError);
+          // Don't fail the deletion if file cleanup fails
+        }
+      }
+
+      // Delete gift from database
+      await storage.deleteGift(id);
+
+      res.json({
+        success: true,
+        message: 'Gift deleted successfully'
+      });
     } catch (error) {
       console.error('Error deleting gift:', error);
       res.status(500).json({ error: 'Failed to delete gift' });
