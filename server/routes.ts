@@ -2607,6 +2607,11 @@ export function registerRoutes(app: Express): Server {
 
   // Access temp bans from global scope
   const tempBans = global.tempBans || new Map();
+  
+  // Initialize global muted users map
+  if (!global.mutedUsers) {
+    global.mutedUsers = new Map();
+  }
 
   // Periodic cleanup for stale connections (every 5 minutes)
   setInterval(() => {
@@ -2628,6 +2633,15 @@ export function registerRoutes(app: Express): Server {
         if (now > ban.expiration) {
           console.log(`Removing expired temp ban for user ${userId}`);
           tempBans.delete(userId);
+        }
+      }
+
+      // Cleanup expired mutes
+      const mutedUsers = global.mutedUsers || new Map();
+      for (const [userId, mute] of mutedUsers.entries()) {
+        if (now > mute.muteExpiration) {
+          console.log(`Removing expired mute for user ${userId}`);
+          mutedUsers.delete(userId);
         }
       }
     } catch (error) {
@@ -2953,6 +2967,23 @@ export function registerRoutes(app: Express): Server {
 
     socket.on('send_message', async (data) => {
       if (userId && data.content) {
+        // Check if user is muted
+        const mutedUsers = global.mutedUsers || new Map();
+        const muteData = mutedUsers.get(userId);
+        
+        if (muteData) {
+          if (Date.now() < muteData.muteExpiration) {
+            const remainingTime = Math.ceil((muteData.muteExpiration - Date.now()) / 1000 / 60);
+            socket.emit('error', {
+              message: `You are muted for ${remainingTime} more minutes by ${muteData.mutedBy}`,
+            });
+            return;
+          } else {
+            // Mute expired, remove it
+            mutedUsers.delete(userId);
+          }
+        }
+
         // Check if user is banned from rooms (only for room messages)
         if (data.roomId) {
           const currentUser = await storage.getUser(userId);
@@ -3024,6 +3055,197 @@ export function registerRoutes(app: Express): Server {
             // The client should ideally call the API endpoint directly for kicks.
             // For now, we'll just log it.
             console.log(`Client-side handler received /kick command for ${kickMatch[1]}`);
+            return;
+          }
+
+          // Check if message is a mute command
+          const muteCommandRegex = /^\/mute\s+(\S+)(?:\s+(\d+))?$/i;
+          const muteMatch = data.content.match(muteCommandRegex);
+
+          if (muteMatch) {
+            const [, targetUsername, muteTimeStr] = muteMatch;
+            const muteTime = parseInt(muteTimeStr) || 10; // Default 10 minutes if no time specified
+            const senderUser = await storage.getUser(userId);
+
+            if (!senderUser) {
+              return; // Should not happen if user is authenticated
+            }
+
+            // Check if sender has level 1+ permission to mute
+            if ((senderUser.level || 0) < 1) {
+              const errorMessage = {
+                id: `mute-error-${Date.now()}`,
+                content: `❌ Insufficient permissions to mute users. Level 1+ required.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: errorMessage,
+              });
+              return;
+            }
+
+            // Find target user in room
+            let targetUser = null;
+
+            if (['1', '2', '3', '4'].includes(data.roomId)) {
+              // Search in mock room members
+              const roomMembers = mockRoomMembers.get(data.roomId);
+              if (roomMembers) {
+                for (const [memberId, memberData] of roomMembers) {
+                  if (memberData.username.toLowerCase() === targetUsername.toLowerCase()) {
+                    targetUser = memberData;
+                    break;
+                  }
+                }
+              }
+            } else {
+              // Search in real room members
+              const roomMembers = await storage.getRoomMembers(data.roomId);
+              targetUser = roomMembers?.find(member =>
+                member.user.username.toLowerCase() === targetUsername.toLowerCase()
+              )?.user;
+            }
+
+            if (!targetUser) {
+              const notFoundMessage = {
+                id: `mute-error-${Date.now()}`,
+                content: `❌ User '${targetUsername}' not found in this room.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: notFoundMessage,
+              });
+              return;
+            }
+
+            // Prevent muting yourself
+            if (targetUser.id === userId) {
+              const errorMessage = {
+                id: `mute-error-${Date.now()}`,
+                content: `❌ You cannot mute yourself.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: errorMessage,
+              });
+              return;
+            }
+
+            // Prevent muting admin users (level 5+)
+            if ((targetUser.level || 0) >= 5) {
+              const errorMessage = {
+                id: `mute-error-${Date.now()}`,
+                content: `❌ Cannot mute admin users.`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: errorMessage,
+              });
+              return;
+            }
+
+            // Validate mute time (max 1440 minutes = 24 hours)
+            if (muteTime > 1440) {
+              const errorMessage = {
+                id: `mute-error-${Date.now()}`,
+                content: `❌ Mute time cannot exceed 1440 minutes (24 hours).`,
+                senderId: 'system',
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'system',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  username: 'System',
+                  level: 0,
+                  isOnline: true,
+                }
+              };
+
+              socket.emit('new_message', {
+                message: errorMessage,
+              });
+              return;
+            }
+
+            // Add user to muted users list
+            const mutedUsers = global.mutedUsers || (global.mutedUsers = new Map());
+            const muteExpiration = Date.now() + (muteTime * 60 * 1000); // Convert minutes to milliseconds
+            
+            mutedUsers.set(targetUser.id, {
+              username: targetUser.username,
+              mutedBy: senderUser.username,
+              muteExpiration,
+              roomId: data.roomId
+            });
+
+            // Broadcast mute message to all room members
+            const successMessage = {
+              id: `mute-success-${Date.now()}`,
+              content: `🔇 ${targetUsername} has been muted by ${senderUser.username} for ${muteTime} minutes`,
+              senderId: 'system',
+              roomId: data.roomId,
+              recipientId: null,
+              messageType: 'system',
+              createdAt: new Date().toISOString(),
+              sender: {
+                id: 'system',
+                username: 'System',
+                level: 0,
+                isOnline: true,
+              }
+            };
+
+            // Broadcast to all room members
+            io.to(data.roomId).emit('new_message', {
+              message: successMessage,
+            });
+
+            console.log(`User ${targetUsername} muted by ${senderUser.username} for ${muteTime} minutes`);
             return;
           }
 
