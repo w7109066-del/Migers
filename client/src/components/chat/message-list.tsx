@@ -740,10 +740,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
             <div key={message.id} className="flex items-start space-x-3 mb-2">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-green-400 text-sm">
+                  <span className="font-semibold text-sm" style={{ color: '#a3c645' }}>
                     {message.sender.username}:
                   </span>
-                  <div className="text-sm text-blue-400 flex items-center gap-1">
+                  <div className="text-sm flex items-center gap-1" style={{ color: '#90c1cc' }}>
                     <span>{message.content}</span>
                     {message.cardImage && (
                       <img 
