@@ -242,6 +242,16 @@ export function MultiRoomTabs({
           };
           localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
 
+          // Auto-scroll to bottom if this is the active room
+          if (currentActiveRoom && message.roomId === currentActiveRoom.id) {
+            setTimeout(() => {
+              const messagesContainer = document.querySelector('.chat-room-messages');
+              if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+              }
+            }, 100);
+          }
+
           // If message is for a room that's not currently active, mark it as having new messages
           if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
             setHasNewMessages(prev => {
@@ -266,7 +276,7 @@ export function MultiRoomTabs({
   // Auto-clear expired messages for all rooms every 30 seconds
   useEffect(() => {
     const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
-    
+
     const clearExpiredMessagesForAllRooms = () => {
       if (!user || rooms.length === 0) return;
 
@@ -275,11 +285,11 @@ export function MultiRoomTabs({
 
         const localStorageKey = `chat_${room.id}`;
         const storedData = localStorage.getItem(localStorageKey);
-        
+
         if (storedData) {
           try {
             const parsedData = JSON.parse(storedData);
-            
+
             // Check if this is old format (array) or new format (object with timestamp)
             if (Array.isArray(parsedData)) {
               // Old format - clear immediately as we can't determine age
@@ -293,14 +303,14 @@ export function MultiRoomTabs({
             // New format with timestamp
             if (parsedData.savedAt && parsedData.messages) {
               const messageAge = Date.now() - parsedData.savedAt;
-              
+
               if (messageAge > MESSAGE_EXPIRY_TIME) {
                 console.log('MultiRoomTabs: Clearing expired messages for room:', room.id, 'Age:', Math.round(messageAge / 1000 / 60), 'minutes');
                 localStorage.removeItem(localStorageKey);
-                
+
                 // Clear messages from room object
                 room.messages = [];
-                
+
                 // Save empty state with new timestamp
                 const emptyMessagesWithTimestamp = {
                   messages: [],
@@ -322,10 +332,10 @@ export function MultiRoomTabs({
 
     // Clear expired messages immediately on component mount
     clearExpiredMessagesForAllRooms();
-    
+
     // Set up interval to check for expired messages every 30 seconds
     const interval = setInterval(clearExpiredMessagesForAllRooms, 30000);
-    
+
     return () => clearInterval(interval);
   }, [rooms, user]);
 

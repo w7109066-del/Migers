@@ -396,6 +396,14 @@ export function ChatRoom({
         };
         localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
         console.log('Generated and saved welcome messages with timestamp for room:', roomId);
+
+        // Force scroll to bottom after welcome messages are set
+        setTimeout(() => {
+          const messagesContainer = document.querySelector('.chat-room-messages');
+          if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        }, 300);
       }
     };
 
