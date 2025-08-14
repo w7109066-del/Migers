@@ -370,22 +370,13 @@ export function registerRoutes(app: Express): Server {
       const { roomId } = req.params;
       const userId = req.user!.id;
 
-      // For mock rooms (excluding MeChat which is now database), just return success
-      if (['2', '3', '4'].includes(roomId)) {
-        res.json({
-          success: true,
-          message: "Successfully joined room",
-          roomId
-        });
-      } else {
-        // For real rooms including MeChat, use storage
-        await storage.joinRoom(roomId, userId);
-        res.json({
-          success: true,
-          message: "Successfully joined room",
-          roomId
-        });
-      }
+      // Use storage for all rooms (system and user-created)
+      await storage.joinRoom(roomId, userId);
+      res.json({
+        success: true,
+        message: "Successfully joined room",
+        roomId
+      });
     } catch (error) {
       console.error("Failed to join room:", error);
       res.status(500).json({ message: "Failed to join room" });
@@ -3830,74 +3821,19 @@ export function registerRoutes(app: Express): Server {
             // Clean up room membership on disconnect
             if (currentRoomId) {
               try {
-                const disconnectedUser = await storage.getUser(userId);
+                // Leave room from database (works for all rooms)
+                await storage.leaveRoom(currentRoomId, userId);
+                console.log(`User ${userId} left room ${currentRoomId} on disconnect`);
 
-                // For mock rooms (excluding MeChat)
-                if (['2', '3', '4'].includes(currentRoomId)) {
-                  // Mock room handling
-                  if (mockRoomMembers.has(currentRoomId)) {
-                    const roomMembersMap = mockRoomMembers.get(currentRoomId)!;
-
-                    // Remove all entries for this user
-                    const keysToRemove: string[] = [];
-                    roomMembersMap.forEach((memberData, memberId) => {
-                      if (memberId === userId || (disconnectedUser && memberData.username === disconnectedUser.username)) {
-                        keysToRemove.push(memberId);
-                      }
-                    });
-
-                    keysToRemove.forEach(key => {
-                      roomMembersMap.delete(key);
-                      console.log(`Cleaned up user entry ${key} on disconnect from mock room ${currentRoomId}`);
-                    });
-
-                    // Only broadcast leave message for unexpected disconnects (not manual)
-                    if (disconnectedUser && disconnectedUser.username && reason !== 'client namespace disconnect') {
-                      const leaveMessage = {
-                        id: `system-leave-${Date.now()}`,
-                        content: `${disconnectedUser.username} has left the room.`,
-                        senderId: 'system',
-                        roomId: currentRoomId,
-                        recipientId: null,
-                        messageType: 'system',
-                        createdAt: new Date().toISOString(),
-                        sender: {
-                          id: 'system',
-                          username: 'System',
-                          level: 0,
-                          isOnline: true,
-                        }
-                      };
-
-                      // Broadcast leave message
-                      io.to(currentRoomId).emit('new_message', {
-                        message: leaveMessage
-                      });
-
-                      // Also emit user_left event
-                      io.to(currentRoomId).emit('user_left', {
-                        username: disconnectedUser.username,
-                        userId: userId,
-                        userLevel: disconnectedUser.level || 1,
-                        roomId: currentRoomId
-                      });
-                    }
-
-                    // Broadcast room count update to all clients
-                    try {
-                      const currentCount = await getRoomMemberCount(currentRoomId);
-                      io.emit('room_member_count_updated', {
-                        roomId: currentRoomId,
-                        memberCount: currentCount
-                      });
-                    } catch (countError) {
-                      console.error(`Error getting room member count for ${currentRoomId}:`, countError);
-                    }
-                  }
-                } else {
-                  // For real rooms, ensure cleanup
-                  await storage.leaveRoom(currentRoomId, userId);
-                  console.log(`User ${userId} left real room ${currentRoomId}`);
+                // Broadcast room count update to all clients
+                try {
+                  const currentCount = await getRoomMemberCount(currentRoomId);
+                  io.emit('room_member_count_updated', {
+                    roomId: currentRoomId,
+                    memberCount: currentCount
+                  });
+                } catch (countError) {
+                  console.error(`Error getting room member count for ${currentRoomId}:`, countError);
                 }
               } catch (roomError) {
                 console.error(`Error cleaning up room ${currentRoomId} for user ${userId}:`, roomError);
