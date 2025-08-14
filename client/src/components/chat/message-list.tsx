@@ -743,7 +743,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                   <span className="font-semibold text-green-600 text-sm">
                     {message.sender.username}:
                   </span>
-                  <div className="text-sm text-gray-700 flex items-center gap-1">
+                  <div className="text-sm text-blue-400 flex items-center gap-1">
                     <span>{message.content}</span>
                     {message.cardImage && (
                       <img 
