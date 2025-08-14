@@ -14,7 +14,7 @@ import { directMessages, users, messages, friendships, notifications, gifts, pos
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
-import { handleLowCardBot, isBotActiveInRoom, getBotStatus } from './bots/lowcard';
+import { handleLowCardBot, isBotActiveInRoom, getBotStatus, processLowCardCommand } from './bots/lowcard';
 
 // Helper function to get video duration
 async function getVideoDuration(filePath: string): Promise<number> {
@@ -3070,30 +3070,9 @@ export function registerRoutes(app: Express): Server {
               });
             }
 
-            // Handle the bot command directly here instead of emitting to socket
+            // Handle the bot command directly here
             console.log('Handling bot command directly for user:', senderUser?.username);
-            handleLowCardBot(io, {
-              ...socket,
-              username: senderUser?.username,
-              userId: userId,
-              emit: (event: string, ...args: any[]) => {
-                console.log('Bot command event:', event, args);
-                if (event === 'command') {
-                  // Process the command immediately
-                  const [room, msg] = args;
-                  console.log('Processing command:', msg, 'in room:', room);
-
-                  // Call the actual command handler
-                  const commandHandler = socket.listeners('command')[0];
-                  if (commandHandler) {
-                    commandHandler(room, msg);
-                  }
-                }
-              }
-            });
-
-            // Also emit the command event for the bot to handle
-            socket.emit('command', data.roomId, data.content);
+            processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             return;
           }
 

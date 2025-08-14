@@ -184,51 +184,54 @@ export function getBotStatus(roomId: string): string {
   return `🎮 LowCardBot is not active in this room.`;
 }
 
-export function handleLowCardBot(io: Server, socket: any): void {
-  console.log('Setting up LowCard bot command listener for socket:', socket.id);
+// Direct command processing function
+export function processLowCardCommand(io: Server, room: string, msg: string, userId: string, username: string): void {
+  console.log('Processing LowCard command directly:', msg, 'in room:', room, 'for user:', username);
   
-  socket.on('command', (room: string, msg: string) => {
-    console.log('LowCard bot received command:', msg, 'in room:', room, 'from socket:', socket.id);
-    if (!msg.startsWith('!')) {
-      console.log('Not a bot command, ignoring');
-      return;
-    }
+  if (!msg.startsWith('!')) {
+    console.log('Not a bot command, ignoring');
+    return;
+  }
 
-    // Ensure bot is present in the room when any command is used
-    ensureBotPresence(io, room);
+  // Ensure bot is present in the room when any command is used
+  ensureBotPresence(io, room);
 
-    const [command, ...args] = msg.trim().split(' ');
-    const username = socket.username;
-    const userId = socket.userId;
+  const [command, ...args] = msg.trim().split(' ');
+
+  handleLowCardCommand(io, room, command, args, userId, username);
+}
+
+// Separate command handling logic
+function handleLowCardCommand(io: Server, room: string, command: string, args: string[], userId: string, username: string): void {
 
     switch (command) {
-      case '!start': {
-        if (rooms[room]) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game already in progress!`, null, room);
-          return;
-        }
-
-        const bet = parseInt(args[0]) || 50;
-        if (bet <= 0) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Invalid bet amount! Must be greater than 0.`, null, room);
-          return;
-        }
-
-        if (bet > 10000) {
-          io.to(room).emit('bot_message', 'LowCardBot', `❌ Bet too high! Maximum bet is 10,000 MCR.`, null, room);
-          return;
-        }
-
-        rooms[room] = {
-          players: [],
-          bet,
-          startedBy: username,
-          isRunning: false
-        };
-
-        startJoinPhase(io, room);
-        break;
+    case '!start': {
+      if (rooms[room]) {
+        io.to(room).emit('bot_message', 'LowCardBot', `❌ Game already in progress!`, null, room);
+        return;
       }
+
+      const bet = parseInt(args[0]) || 50;
+      if (bet <= 0) {
+        io.to(room).emit('bot_message', 'LowCardBot', `❌ Invalid bet amount! Must be greater than 0.`, null, room);
+        return;
+      }
+
+      if (bet > 10000) {
+        io.to(room).emit('bot_message', 'LowCardBot', `❌ Bet too high! Maximum bet is 10,000 MCR.`, null, room);
+        return;
+      }
+
+      rooms[room] = {
+        players: [],
+        bet,
+        startedBy: username,
+        isRunning: false
+      };
+
+      startJoinPhase(io, room);
+      break;
+    }
 
       case '!j': {
         const data = rooms[room];
@@ -348,6 +351,32 @@ export function handleLowCardBot(io: Server, socket: any): void {
         break;
       }
     }
+}
+
+export function handleLowCardBot(io: Server, socket: any): void {
+  console.log('Setting up LowCard bot command listener for socket:', socket.id);
+  
+  // Handle the command directly if socket.on is not available
+  if (typeof socket.on !== 'function') {
+    console.log('Socket.on not available, handling command directly');
+    return;
+  }
+  
+  socket.on('command', (room: string, msg: string) => {
+    console.log('LowCard bot received command:', msg, 'in room:', room, 'from socket:', socket.id);
+    if (!msg.startsWith('!')) {
+      console.log('Not a bot command, ignoring');
+      return;
+    }
+
+    // Ensure bot is present in the room when any command is used
+    ensureBotPresence(io, room);
+
+    const [command, ...args] = msg.trim().split(' ');
+    const username = socket.username;
+    const userId = socket.userId;
+
+    handleLowCardCommand(io, room, command, args, userId, username);
   });
 
   socket.on('disconnecting', () => {
