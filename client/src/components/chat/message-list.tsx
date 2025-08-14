@@ -773,7 +773,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isCurrentlyInRoom = message.content.includes('Currently in the room:');
           const isRoomManaged = message.content.includes('This room is managed by');
           const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left');
-          const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User');) || message.content.includes('LowcardBot has joined');
+          const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User') || message.content.includes('LowcardBot has joined');
 
           return (
             <div key={message.id} className="mb-2">
