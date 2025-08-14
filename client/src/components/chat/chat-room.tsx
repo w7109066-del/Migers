@@ -195,7 +195,7 @@ export function ChatRoom({
             joinRoom(roomId);
             setIsRoomJoined(true);
             console.log('Joined room after error recovery:', roomId);
-            
+
             // Load messages after successful recovery join
             await loadRoomMessages();
           } catch (joinError) {
@@ -217,7 +217,7 @@ export function ChatRoom({
       console.log('Loading messages for joined room:', roomId);
 
       const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
-      
+
       // Try to restore messages from localStorage for this room using consistent key format
       const localStorageKeys = [`chat_${roomId}`, `chatMessages-${roomId}`];
       let storedData = null;
@@ -235,7 +235,7 @@ export function ChatRoom({
       if (storedData) {
         try {
           const parsedData = JSON.parse(storedData);
-          
+
           // Check if this is old format (array) or new format (object with timestamp)
           if (Array.isArray(parsedData)) {
             console.log('Found old format messages, clearing and showing welcome messages');
@@ -245,14 +245,14 @@ export function ChatRoom({
           } else if (parsedData.messages && parsedData.savedAt) {
             // New format with timestamp - check if expired
             const messageAge = Date.now() - parsedData.savedAt;
-            
+
             if (messageAge > MESSAGE_EXPIRY_TIME) {
               console.log('Messages expired (', Math.round(messageAge / 1000 / 60), 'minutes old), showing welcome messages only');
               localStorage.removeItem(`chat_${roomId}`);
               shouldShowWelcome = true;
             } else {
               console.log('Restoring valid messages from localStorage for room:', roomId, parsedData.messages.length);
-              
+
               // Check if welcome messages exist in stored messages
               const hasWelcomeMessage = parsedData.messages.some(msg =>
                 msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
@@ -562,17 +562,17 @@ export function ChatRoom({
   // Auto-clear expired messages every 30 seconds
   useEffect(() => {
     const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
-    
+
     const clearExpiredMessages = () => {
       if (!roomId || !isRoomJoined) return;
 
       const localStorageKey = `chat_${roomId}`;
       const storedData = localStorage.getItem(localStorageKey);
-      
+
       if (storedData) {
         try {
           const parsedData = JSON.parse(storedData);
-          
+
           // Check if this is old format (array) or new format (object with timestamp)
           if (Array.isArray(parsedData)) {
             // Old format - clear immediately as we can't determine age
@@ -585,11 +585,11 @@ export function ChatRoom({
           // New format with timestamp
           if (parsedData.savedAt && parsedData.messages) {
             const messageAge = Date.now() - parsedData.savedAt;
-            
+
             if (messageAge > MESSAGE_EXPIRY_TIME) {
               console.log('Clearing expired messages for room:', roomId, 'Age:', Math.round(messageAge / 1000 / 60), 'minutes');
               localStorage.removeItem(localStorageKey);
-              
+
               // Clear messages and show only welcome messages
               const welcomeMessages = [
                 {
@@ -615,7 +615,7 @@ export function ChatRoom({
               }
 
               setMessages(welcomeMessages);
-              
+
               // Save the new welcome messages with timestamp
               const newMessagesWithTimestamp = {
                 messages: welcomeMessages,
@@ -635,10 +635,10 @@ export function ChatRoom({
 
     // Clear expired messages immediately on component mount
     clearExpiredMessages();
-    
+
     // Set up interval to check for expired messages every 30 seconds
     const interval = setInterval(clearExpiredMessages, 30000);
-    
+
     return () => clearInterval(interval);
   }, [roomId, roomName, isRoomJoined]);
 
@@ -1638,7 +1638,7 @@ export function ChatRoom({
                       Block User
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-80">
+                  <SheetContent side="right" className="w-64">
                     <SheetHeader>
                       <SheetTitle>Block User from Rooms</SheetTitle>
                     </SheetHeader>
@@ -1804,7 +1804,7 @@ export function ChatRoom({
                       Kick User
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-80">
+                  <SheetContent side="right" className="w-64">
                     <SheetHeader>
                       <SheetTitle>Kick User from Room</SheetTitle>
                     </SheetHeader>
@@ -1969,7 +1969,7 @@ export function ChatRoom({
                 </Sheet>
               )}
 
-              {/* Leave Room - Available for all users including mentors */}
+              {/* Leave Room - Available for all users */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">

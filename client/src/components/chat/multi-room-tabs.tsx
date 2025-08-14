@@ -734,7 +734,7 @@ export function MultiRoomTabs({
                                       Block User
                                     </Button>
                                   </SheetTrigger>
-                                  <SheetContent side="right" className="w-80">
+                                  <SheetContent side="right" className="w-64">
                                     <SheetHeader>
                                       <SheetTitle>Block User from Rooms</SheetTitle>
                                     </SheetHeader>
@@ -856,7 +856,7 @@ export function MultiRoomTabs({
                                       Manage Banned Users
                                     </Button>
                                   </SheetTrigger>
-                                  <SheetContent side="right" className="w-80">
+                                  <SheetContent side="right" className="w-64">
                                     <SheetHeader>
                                       <SheetTitle>Banned Users Management</SheetTitle>
                                     </SheetHeader>
@@ -884,7 +884,7 @@ export function MultiRoomTabs({
                                       Kick User
                                     </Button>
                                   </SheetTrigger>
-                                  <SheetContent side="right" className="w-80">
+                                  <SheetContent side="right" className="w-64">
                                     <SheetHeader>
                                       <SheetTitle>Kick User from Room</SheetTitle>
                                     </SheetHeader>
