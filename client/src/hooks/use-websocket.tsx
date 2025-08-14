@@ -161,13 +161,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     // Handle bot messages
-    socket.current.on('bot_message', (botName, message, cardImage) => {
+    socket.current.on('bot_message', (botName, message, cardImage, roomId) => {
       window.dispatchEvent(new CustomEvent('botMessage', {
         detail: {
           botName,
           message,
           cardImage,
-          roomId: currentRoomRef.current
+          roomId: roomId || currentRoomRef.current
         }
       }));
     });

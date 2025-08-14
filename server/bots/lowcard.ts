@@ -69,7 +69,7 @@ function startDrawTimer(io: Server, room: string): void {
     game.players.forEach(p => {
       if (!p.card) {
         drawOneCard(p);
-        io.to(room).emit('bot_message', 'LowCardBot', `⏱️ Auto-draw - ${p.name}:`, `/cards/${p.card}`);
+        io.to(room).emit('bot_message', 'LowCardBot', `⏱️ Auto-draw - ${p.name}:`, `/cards/${p.card}`, room);
       }
     });
     checkAllDrawn(io, room);
@@ -86,16 +86,16 @@ function checkAllDrawn(io: Server, room: string): void {
     return getCardValue(curr.card!) < getCardValue(prev.card!) ? curr : prev;
   });
 
-  io.to(room).emit('bot_message', 'LowCardBot', `${lowest.name} OUT dengan kartu terendah!`);
+  io.to(room).emit('bot_message', 'LowCardBot', `${lowest.name} OUT dengan kartu terendah!`, null, room);
   game.players = game.players.filter(p => p.name !== lowest.name);
 
   if (game.players.length <= 1) {
-    io.to(room).emit('bot_message', 'LowCardBot', `Game selesai! Pemenang: ${game.players[0]?.name || 'Bot'}`);
+    io.to(room).emit('bot_message', 'LowCardBot', `Game selesai! Pemenang: ${game.players[0]?.name || 'Bot'}`, null, room);
     delete rooms[room];
   } else {
     game.players.forEach(p => delete p.card);
     startDrawTimer(io, room);
-    io.to(room).emit('bot_message', 'LowCardBot', `Ronde berikutnya! Ketik !d untuk draw, atau tunggu 20 detik.`);
+    io.to(room).emit('bot_message', 'LowCardBot', `Ronde berikutnya! Ketik !d untuk draw, atau tunggu 20 detik.`, null, room);
   }
 }
 
@@ -139,7 +139,7 @@ export function handleLowCardBot(io: Server, socket: any): void {
           bet,
         };
 
-        io.to(room).emit('bot_message', 'LowCardBot', `🎮 Game dimulai dengan taruhan ${bet} koin! Ketik !j untuk join.`);
+        io.to(room).emit('bot_message', 'LowCardBot', `🎮 Game dimulai dengan taruhan ${bet} koin! Ketik !j untuk join.`, null, room);
         break;
       }
 
@@ -152,16 +152,16 @@ export function handleLowCardBot(io: Server, socket: any): void {
         if (game.players.find(p => p.id === socket.id)) return;
 
         if (!potongCoin(socket.id, game.bet)) {
-          io.to(room).emit('bot_message', 'LowCardBot', `${socket.username} saldo tidak cukup untuk join.`);
+          io.to(room).emit('bot_message', 'LowCardBot', `${socket.username} saldo tidak cukup untuk join.`, null, room);
           return;
         }
 
         game.players.push({ id: socket.id, name: socket.username, isBot: false, bet: game.bet });
-        io.to(room).emit('bot_message', 'LowCardBot', `✅ ${socket.username} bergabung dengan taruhan ${game.bet} koin!`);
+        io.to(room).emit('bot_message', 'LowCardBot', `✅ ${socket.username} bergabung dengan taruhan ${game.bet} koin!`, null, room);
 
         if (game.players.length >= 2 && !game.timeout) {
           startDrawTimer(io, room);
-          io.to(room).emit('bot_message', 'LowCardBot', `🚀 Game mulai! Semua player ketik !d untuk draw, atau tunggu 20 detik.`);
+          io.to(room).emit('bot_message', 'LowCardBot', `🚀 Game mulai! Semua player ketik !d untuk draw, atau tunggu 20 detik.`, null, room);
         }
 
         break;
@@ -176,7 +176,7 @@ export function handleLowCardBot(io: Server, socket: any): void {
         if (player.card) return; // sudah draw
 
         drawOneCard(player);
-        io.to(room).emit('bot_message', 'LowCardBot', `🎯 ${player.name} menarik kartu!`, `/cards/${player.card}`);
+        io.to(room).emit('bot_message', 'LowCardBot', `🎯 ${player.name} menarik kartu!`, `/cards/${player.card}`, room);
         // cek semua sudah draw atau belum
         const allDrawn = game.players.every(p => p.card);
         if (allDrawn) {
@@ -194,9 +194,9 @@ export function handleLowCardBot(io: Server, socket: any): void {
       const idx = game.players.findIndex(p => p.id === socket.id);
       if (idx !== -1) {
         game.players.splice(idx, 1);
-        io.to(room).emit('bot_message', 'LowCardBot', `${socket.username} keluar dari game.`);
+        io.to(room).emit('bot_message', 'LowCardBot', `${socket.username} keluar dari game.`, null, room);
         if (game.players.length <= 1) {
-          io.to(room).emit('bot_message', 'LowCardBot', `Game selesai! Pemenang: ${game.players[0]?.name || 'Bot'}`);
+          io.to(room).emit('bot_message', 'LowCardBot', `Game selesai! Pemenang: ${game.players[0]?.name || 'Bot'}`, null, room);
           delete rooms[room];
         }
       }
