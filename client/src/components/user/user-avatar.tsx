@@ -1,14 +1,6 @@
 import { cn } from "@/lib/utils";
 
-interface UserAvatarProps {
-  username: string;
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
-  isOnline?: boolean;
-  onClick?: () => void;
-  className?: string;
-  profilePhotoUrl?: string;
-  isAdmin?: boolean;
-}
+
 
 const sizeClasses = {
   xs: "w-6 h-6 text-xs",
@@ -28,6 +20,19 @@ const indicatorSizes = {
 
 
 
+interface UserAvatarProps {
+  username: string;
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  isOnline?: boolean;
+  onClick?: () => void;
+  className?: string;
+  profilePhotoUrl?: string;
+  isAdmin?: boolean;
+  isMentor?: boolean;
+  isMerchant?: boolean;
+  userLevel?: number;
+}
+
 export function UserAvatar({ 
   username, 
   size = "md", 
@@ -35,7 +40,10 @@ export function UserAvatar({
   onClick, 
   className,
   profilePhotoUrl,
-  isAdmin = false
+  isAdmin = false,
+  isMentor = false,
+  isMerchant = false,
+  userLevel = 1
 }: UserAvatarProps) {
   const initials = (username || "?")
     .split(/[\s_]+/)
@@ -44,20 +52,35 @@ export function UserAvatar({
     .toUpperCase()
     .slice(0, 2);
 
-  // Generate consistent colors based on username
-  const colorVariants = [
-    "from-purple-400 to-pink-400",
-    "from-blue-400 to-indigo-400",
-    "from-green-400 to-teal-400",
-    "from-yellow-400 to-orange-400",
-    "from-red-400 to-rose-400",
-    "from-indigo-400 to-purple-400",
-    "from-teal-400 to-cyan-400",
-    "from-orange-400 to-red-400",
-  ];
+  // Role-based colors with priority: Admin > Mentor > Merchant > Regular User
+  const getRoleBasedColor = () => {
+    if (isAdmin || userLevel >= 5) {
+      return "from-red-500 to-red-600"; // Admin - Red
+    }
+    if (isMentor) {
+      return "from-purple-500 to-purple-600"; // Mentor - Purple
+    }
+    if (isMerchant) {
+      return "from-indigo-500 to-indigo-600"; // Merchant - Indigo
+    }
+    
+    // Default colors for regular users
+    const colorVariants = [
+      "from-purple-400 to-pink-400",
+      "from-blue-400 to-indigo-400",
+      "from-green-400 to-teal-400",
+      "from-yellow-400 to-orange-400",
+      "from-red-400 to-rose-400",
+      "from-indigo-400 to-purple-400",
+      "from-teal-400 to-cyan-400",
+      "from-orange-400 to-red-400",
+    ];
+    
+    const colorIndex = (username || "?").charCodeAt(0) % colorVariants.length;
+    return colorVariants[colorIndex];
+  };
 
-  const colorIndex = (username || "?").charCodeAt(0) % colorVariants.length;
-  const gradientColor = colorVariants[colorIndex];
+  const gradientColor = getRoleBasedColor();
 
   // Handle profile photo URL - ensure it's a valid string and not null/undefined
   const validProfilePhotoUrl = profilePhotoUrl && typeof profilePhotoUrl === 'string' && profilePhotoUrl.trim() !== '' ? profilePhotoUrl : null;

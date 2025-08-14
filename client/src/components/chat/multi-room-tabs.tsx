@@ -675,6 +675,9 @@ export function MultiRoomTabs({
                                                           isOnline={member.user.isOnline || false}
                                                           profilePhotoUrl={member.user.profilePhotoUrl}
                                                           isAdmin={(member.user.level || 0) >= 5}
+                                                          isMentor={member.user.isMentor}
+                                                          isMerchant={member.user.isMerchant}
+                                                          userLevel={member.user.level || 1}
                                                         />
                                                         <div>
                                                           <div className="flex items-center space-x-2 mb-1">
@@ -819,6 +822,9 @@ export function MultiRoomTabs({
                                                           isOnline={member.user.isOnline || false}
                                                           profilePhotoUrl={member.user.profilePhotoUrl}
                                                           isAdmin={(member.user.level || 0) >= 5}
+                                                          isMentor={member.user.isMentor}
+                                                          isMerchant={member.user.isMerchant}
+                                                          userLevel={member.user.level || 1}
                                                         />
                                                         <div>
                                                           <div className="flex items-center space-x-2 mb-1">

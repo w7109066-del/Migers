@@ -1480,6 +1480,9 @@ export function ChatRoom({
                                               isOnline={member.user.isOnline || false}
                                               profilePhotoUrl={member.user.profilePhotoUrl}
                                               isAdmin={(member.user.level || 0) >= 5}
+                                              isMentor={member.user.isMentor}
+                                              isMerchant={member.user.isMerchant}
+                                              userLevel={member.user.level || 1}
                                             />
                                             <div>
                                               <div className="flex items-center space-x-2 mb-1">
@@ -1506,11 +1509,6 @@ export function ChatRoom({
                                                     {(member.user.isMerchant === true || member.user.isMerchant) && (
                                                       <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
                                                         🛍️
-                                                      </Badge>
-                                                    )}
-                                                    {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
-                                                      <Badge variant="destructive" className="text-xs bg-red-600">
-                                                        Admin
                                                       </Badge>
                                                     )}
                                                   </div>
@@ -1648,6 +1646,9 @@ export function ChatRoom({
                                               isOnline={member.user.isOnline || false}
                                               profilePhotoUrl={member.user.profilePhotoUrl}
                                               isAdmin={(member.user.level || 0) >= 5}
+                                              isMentor={member.user.isMentor}
+                                              isMerchant={member.user.isMerchant}
+                                              userLevel={member.user.level || 1}
                                             />
                                             <div>
                                               <div className="flex items-center space-x-2 mb-1">
@@ -1674,11 +1675,6 @@ export function ChatRoom({
                                                     {(member.user.isMerchant === true || member.user.isMerchant) && (
                                                       <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
                                                         🛍️
-                                                      </Badge>
-                                                    )}
-                                                    {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
-                                                      <Badge variant="destructive" className="text-xs bg-red-600">
-                                                        Admin
                                                       </Badge>
                                                     )}
                                                   </div>
