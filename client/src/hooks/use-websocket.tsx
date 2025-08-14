@@ -346,8 +346,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     socket.current.on('clear_room_data', (data) => {
       console.log('Clearing room data for:', data.roomId);
-      const localStorageKey = `chatMessages-${data.roomId}`;
-      localStorage.removeItem(localStorageKey);
+      
+      // Clear both old and new format localStorage keys
+      const localStorageKeys = [`chatMessages-${data.roomId}`, `chat_${data.roomId}`];
+      localStorageKeys.forEach(key => localStorage.removeItem(key));
 
       // Clear all room-related localStorage
       const allKeys = Object.keys(localStorage);
@@ -462,9 +464,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     if (forceLeave) {
       console.log('User explicitly leaving room - clearing localStorage and sending WebSocket leave');
 
-      // Clear ALL localStorage for this room
-      const localStorageKey = `chatMessages-${roomId}`;
-      localStorage.removeItem(localStorageKey);
+      // Clear ALL localStorage for this room (both old and new formats)
+      const localStorageKeys = [`chatMessages-${roomId}`, `chat_${roomId}`];
+      localStorageKeys.forEach(key => localStorage.removeItem(key));
 
       // Clear saved room states  
       const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');

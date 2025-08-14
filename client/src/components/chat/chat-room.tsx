@@ -216,42 +216,68 @@ export function ChatRoom({
     const loadRoomMessages = async () => {
       console.log('Loading messages for joined room:', roomId);
 
+      const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+      
       // Try to restore messages from localStorage for this room using consistent key format
       const localStorageKeys = [`chat_${roomId}`, `chatMessages-${roomId}`];
-      let storedMessages = null;
+      let storedData = null;
 
       for (const key of localStorageKeys) {
         const stored = localStorage.getItem(key);
         if (stored) {
-          storedMessages = stored;
+          storedData = stored;
           break;
         }
       }
 
       let shouldShowWelcome = false;
 
-      if (storedMessages) {
+      if (storedData) {
         try {
-          const parsedMessages = JSON.parse(storedMessages);
-          console.log('Restoring messages from localStorage for room:', roomId, parsedMessages.length);
-
-          // Check if welcome messages exist in stored messages
-          const hasWelcomeMessage = parsedMessages.some(msg =>
-            msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
-          );
-          const hasManagedByMessage = parsedMessages.some(msg =>
-            msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
-          );
-
-          // If welcome messages are missing, we need to regenerate them
-          if (!hasWelcomeMessage || !hasManagedByMessage) {
+          const parsedData = JSON.parse(storedData);
+          
+          // Check if this is old format (array) or new format (object with timestamp)
+          if (Array.isArray(parsedData)) {
+            console.log('Found old format messages, clearing and showing welcome messages');
+            // Old format - clear and show welcome messages
+            localStorage.removeItem(`chat_${roomId}`);
             shouldShowWelcome = true;
+          } else if (parsedData.messages && parsedData.savedAt) {
+            // New format with timestamp - check if expired
+            const messageAge = Date.now() - parsedData.savedAt;
+            
+            if (messageAge > MESSAGE_EXPIRY_TIME) {
+              console.log('Messages expired (', Math.round(messageAge / 1000 / 60), 'minutes old), showing welcome messages only');
+              localStorage.removeItem(`chat_${roomId}`);
+              shouldShowWelcome = true;
+            } else {
+              console.log('Restoring valid messages from localStorage for room:', roomId, parsedData.messages.length);
+              
+              // Check if welcome messages exist in stored messages
+              const hasWelcomeMessage = parsedData.messages.some(msg =>
+                msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
+              );
+              const hasManagedByMessage = parsedData.messages.some(msg =>
+                msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
+              );
+
+              // If welcome messages are missing, we need to regenerate them
+              if (!hasWelcomeMessage || !hasManagedByMessage) {
+                shouldShowWelcome = true;
+              } else {
+                setMessages(parsedData.messages);
+                return; // Exit early if messages loaded successfully
+              }
+            }
           } else {
-            setMessages(parsedMessages);
-            return; // Exit early if messages loaded successfully
+            // Invalid format
+            console.log('Invalid message format, clearing and showing welcome messages');
+            localStorage.removeItem(`chat_${roomId}`);
+            shouldShowWelcome = true;
           }
         } catch (error) {
           console.error('Failed to parse stored messages for room:', roomId, error);
+          localStorage.removeItem(`chat_${roomId}`);
           shouldShowWelcome = true;
         }
       } else if (savedMessages.length > 0) {
@@ -269,8 +295,13 @@ export function ChatRoom({
           shouldShowWelcome = true;
         } else {
           setMessages(savedMessages);
-          // Save to consistent localStorage key
-          localStorage.setItem(`chat_${roomId}`, JSON.stringify(savedMessages));
+          // Save to consistent localStorage key with timestamp
+          const messagesWithTimestamp = {
+            messages: savedMessages,
+            savedAt: Date.now(),
+            roomId: roomId
+          };
+          localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
           return; // Exit early if messages loaded successfully
         }
       } else {
@@ -357,9 +388,14 @@ export function ChatRoom({
         const finalMessages = [...welcomeMessages, ...existingMessages];
         setMessages(finalMessages);
 
-        // Save updated messages to consistent localStorage key
-        localStorage.setItem(`chat_${roomId}`, JSON.stringify(finalMessages));
-        console.log('Generated and saved welcome messages for room:', roomId);
+        // Save updated messages to consistent localStorage key with timestamp
+        const messagesWithTimestamp = {
+          messages: finalMessages,
+          savedAt: Date.now(),
+          roomId: roomId
+        };
+        localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
+        console.log('Generated and saved welcome messages with timestamp for room:', roomId);
       }
     };
 
@@ -457,14 +493,102 @@ export function ChatRoom({
 
   // Note: Removed the "Currently in the room" message to avoid chat spam when users join
 
-  // Auto-save messages to localStorage whenever messages change (only if user has joined)
+  // Auto-save messages to localStorage with timestamps whenever messages change (only if user has joined)
   useEffect(() => {
     if (roomId && messages.length > 0 && isRoomJoined) {
       const localStorageKey = `chat_${roomId}`;
-      localStorage.setItem(localStorageKey, JSON.stringify(messages));
-      console.log('Auto-saved', messages.length, 'messages to localStorage for room:', roomId);
+      const messagesWithTimestamp = {
+        messages: messages,
+        savedAt: Date.now(),
+        roomId: roomId
+      };
+      localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
+      console.log('Auto-saved', messages.length, 'messages with timestamp to localStorage for room:', roomId);
     }
   }, [messages, roomId, isRoomJoined]);
+
+  // Auto-clear expired messages every 30 seconds
+  useEffect(() => {
+    const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+    
+    const clearExpiredMessages = () => {
+      if (!roomId || !isRoomJoined) return;
+
+      const localStorageKey = `chat_${roomId}`;
+      const storedData = localStorage.getItem(localStorageKey);
+      
+      if (storedData) {
+        try {
+          const parsedData = JSON.parse(storedData);
+          
+          // Check if this is old format (array) or new format (object with timestamp)
+          if (Array.isArray(parsedData)) {
+            // Old format - clear immediately as we can't determine age
+            console.log('Clearing old format messages for room:', roomId);
+            localStorage.removeItem(localStorageKey);
+            setMessages([]);
+            return;
+          }
+
+          // New format with timestamp
+          if (parsedData.savedAt && parsedData.messages) {
+            const messageAge = Date.now() - parsedData.savedAt;
+            
+            if (messageAge > MESSAGE_EXPIRY_TIME) {
+              console.log('Clearing expired messages for room:', roomId, 'Age:', Math.round(messageAge / 1000 / 60), 'minutes');
+              localStorage.removeItem(localStorageKey);
+              
+              // Clear messages and show only welcome messages
+              const welcomeMessages = [
+                {
+                  id: `welcome-${roomId}`,
+                  content: `Welcome to ${roomName} official chat room.`,
+                  senderId: 'system',
+                  createdAt: new Date().toISOString(),
+                  sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+                  messageType: 'system'
+                }
+              ];
+
+              // Add room managed by message for non-system rooms
+              if (!['1', '2', '3', '4'].includes(roomId)) {
+                welcomeMessages.push({
+                  id: `room-managed-${roomId}`,
+                  content: `This room is managed by room creator`,
+                  senderId: 'system',
+                  createdAt: new Date().toISOString(),
+                  sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+                  messageType: 'system'
+                });
+              }
+
+              setMessages(welcomeMessages);
+              
+              // Save the new welcome messages with timestamp
+              const newMessagesWithTimestamp = {
+                messages: welcomeMessages,
+                savedAt: Date.now(),
+                roomId: roomId
+              };
+              localStorage.setItem(localStorageKey, JSON.stringify(newMessagesWithTimestamp));
+            }
+          }
+        } catch (error) {
+          console.error('Error checking message expiry:', error);
+          // If there's an error parsing, clear the corrupted data
+          localStorage.removeItem(localStorageKey);
+        }
+      }
+    };
+
+    // Clear expired messages immediately on component mount
+    clearExpiredMessages();
+    
+    // Set up interval to check for expired messages every 30 seconds
+    const interval = setInterval(clearExpiredMessages, 30000);
+    
+    return () => clearInterval(interval);
+  }, [roomId, roomName, isRoomJoined]);
 
   // WebSocket event listeners
   useEffect(() => {
@@ -1067,7 +1191,7 @@ export function ChatRoom({
     if (confirmLeave) {
       // Clear ALL localStorage cache for this room when explicitly leaving
       if (roomId) {
-        // Clear main chat messages with specific key format
+        // Clear main chat messages with specific key format (both old and new formats)
         localStorage.removeItem(`chat_${roomId}`);
         localStorage.removeItem(`chatMessages-${roomId}`);
 
