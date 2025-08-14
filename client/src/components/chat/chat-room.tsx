@@ -173,9 +173,60 @@ export function ChatRoom({
 
       console.log('Initializing chat room:', roomId);
 
-      // First, try to restore messages from localStorage for this room
-      const localStorageKey = `chatMessages-${roomId}`;
-      const storedMessages = localStorage.getItem(localStorageKey);
+      // Join room logic first - only if connected and not already joined/attempting
+      if (isConnected && !isRoomJoined && !joinAttemptRef.current) {
+        joinAttemptRef.current = true;
+
+        try {
+          const canJoin = await checkTempBan(roomId);
+          if (canJoin) {
+            console.log('Attempting to join room:', roomId);
+            joinRoom(roomId);
+            setIsRoomJoined(true);
+            console.log('Successfully joined room:', roomId);
+
+            // Only load messages AFTER successfully joining the room
+            await loadRoomMessages();
+          }
+        } catch (error) {
+          console.error('Error checking temp ban or joining room:', error);
+          // Still try to join if check fails
+          try {
+            joinRoom(roomId);
+            setIsRoomJoined(true);
+            console.log('Joined room after error recovery:', roomId);
+            
+            // Load messages after successful recovery join
+            await loadRoomMessages();
+          } catch (joinError) {
+            console.error('Failed to join room:', joinError);
+          }
+        } finally {
+          joinAttemptRef.current = false;
+        }
+      } else if (isRoomJoined) {
+        // User is already joined, load messages
+        await loadRoomMessages();
+      }
+
+      previousRoomIdRef.current = roomId;
+    };
+
+    // Function to load messages only after confirming user has joined
+    const loadRoomMessages = async () => {
+      console.log('Loading messages for joined room:', roomId);
+
+      // Try to restore messages from localStorage for this room using consistent key format
+      const localStorageKeys = [`chat_${roomId}`, `chatMessages-${roomId}`];
+      let storedMessages = null;
+
+      for (const key of localStorageKeys) {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          storedMessages = stored;
+          break;
+        }
+      }
 
       let shouldShowWelcome = false;
 
@@ -197,6 +248,7 @@ export function ChatRoom({
             shouldShowWelcome = true;
           } else {
             setMessages(parsedMessages);
+            return; // Exit early if messages loaded successfully
           }
         } catch (error) {
           console.error('Failed to parse stored messages for room:', roomId, error);
@@ -217,7 +269,9 @@ export function ChatRoom({
           shouldShowWelcome = true;
         } else {
           setMessages(savedMessages);
-          localStorage.setItem(localStorageKey, JSON.stringify(savedMessages));
+          // Save to consistent localStorage key
+          localStorage.setItem(`chat_${roomId}`, JSON.stringify(savedMessages));
+          return; // Exit early if messages loaded successfully
         }
       } else {
         shouldShowWelcome = true;
@@ -303,39 +357,10 @@ export function ChatRoom({
         const finalMessages = [...welcomeMessages, ...existingMessages];
         setMessages(finalMessages);
 
-        // Save updated messages to localStorage
-        localStorage.setItem(localStorageKey, JSON.stringify(finalMessages));
+        // Save updated messages to consistent localStorage key
+        localStorage.setItem(`chat_${roomId}`, JSON.stringify(finalMessages));
         console.log('Generated and saved welcome messages for room:', roomId);
       }
-
-      // Join room logic - only if connected and not already joined/attempting
-      if (isConnected && !isRoomJoined && !joinAttemptRef.current) {
-        joinAttemptRef.current = true;
-
-        try {
-          const canJoin = await checkTempBan(roomId);
-          if (canJoin) {
-            console.log('Attempting to join room:', roomId);
-            joinRoom(roomId);
-            setIsRoomJoined(true);
-            console.log('Successfully joined room:', roomId);
-          }
-        } catch (error) {
-          console.error('Error checking temp ban or joining room:', error);
-          // Still try to join if check fails
-          try {
-            joinRoom(roomId);
-            setIsRoomJoined(true);
-            console.log('Joined room after error recovery:', roomId);
-          } catch (joinError) {
-            console.error('Failed to join room:', joinError);
-          }
-        } finally {
-          joinAttemptRef.current = false;
-        }
-      }
-
-      previousRoomIdRef.current = roomId;
     };
 
     // Reset join attempt flag when room changes
@@ -432,14 +457,14 @@ export function ChatRoom({
 
   // Note: Removed the "Currently in the room" message to avoid chat spam when users join
 
-  // Auto-save messages to localStorage whenever messages change
+  // Auto-save messages to localStorage whenever messages change (only if user has joined)
   useEffect(() => {
-    if (roomId && messages.length > 0) {
-      const localStorageKey = `chatMessages-${roomId}`;
+    if (roomId && messages.length > 0 && isRoomJoined) {
+      const localStorageKey = `chat_${roomId}`;
       localStorage.setItem(localStorageKey, JSON.stringify(messages));
       console.log('Auto-saved', messages.length, 'messages to localStorage for room:', roomId);
     }
-  }, [messages, roomId]);
+  }, [messages, roomId, isRoomJoined]);
 
   // WebSocket event listeners
   useEffect(() => {
@@ -1042,9 +1067,9 @@ export function ChatRoom({
     if (confirmLeave) {
       // Clear ALL localStorage cache for this room when explicitly leaving
       if (roomId) {
-        // Clear main chat messages immediately
-        const localStorageKey = `chatMessages-${roomId}`;
-        localStorage.removeItem(localStorageKey);
+        // Clear main chat messages with specific key format
+        localStorage.removeItem(`chat_${roomId}`);
+        localStorage.removeItem(`chatMessages-${roomId}`);
 
         // Clear saved room states
         const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
@@ -1066,7 +1091,7 @@ export function ChatRoom({
         // Clear any additional room-specific keys that might exist
         const allKeys = Object.keys(localStorage);
         allKeys.forEach(key => {
-          if (key.includes(roomId)) {
+          if (key.includes(roomId) || key.includes(`chat_${roomId}`) || key.includes(`room_${roomId}`)) {
             localStorage.removeItem(key);
             console.log('Removed localStorage key:', key);
           }

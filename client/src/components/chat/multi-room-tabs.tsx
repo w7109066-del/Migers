@@ -234,7 +234,7 @@ export function MultiRoomTabs({
           targetRoom.messages = [...(targetRoom.messages || []), message];
 
           // Save to localStorage immediately
-          const localStorageKey = `chatMessages-${message.roomId}`;
+          const localStorageKey = `chat_${message.roomId}`;
           localStorage.setItem(localStorageKey, JSON.stringify(targetRoom.messages));
 
           // If message is for a room that's not currently active, mark it as having new messages
@@ -1041,7 +1041,7 @@ export function MultiRoomTabs({
                                 // Save current room messages to localStorage before switching
                                 const currentRoom = rooms[activeRoomIndex];
                                 if (currentRoom && currentRoom.messages && currentRoom.messages.length > 0) {
-                                  const localStorageKey = `chatMessages-${currentRoom.id}`;
+                                  const localStorageKey = `chat_${currentRoom.id}`;
                                   localStorage.setItem(localStorageKey, JSON.stringify(currentRoom.messages));
                                   console.log('Saved messages to localStorage for room:', currentRoom.id);
                                 }
@@ -1095,7 +1095,7 @@ export function MultiRoomTabs({
                                     const roomToClose = rooms[tabIndex];
                                     if (roomToClose) {
                                       // Clear main chat messages
-                                      const localStorageKey = `chatMessages-${roomToClose.id}`;
+                                      const localStorageKey = `chat_${roomToClose.id}`;
                                       localStorage.removeItem(localStorageKey);
 
                                       // Clear saved room states
