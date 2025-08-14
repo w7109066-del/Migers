@@ -344,6 +344,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    socket.current.on('clear_room_data', (data) => {
+      console.log('Clearing room data for:', data.roomId);
+      const localStorageKey = `chatMessages-${data.roomId}`;
+      localStorage.removeItem(localStorageKey);
+
+      // Clear all room-related localStorage
+      const allKeys = Object.keys(localStorage);
+      allKeys.forEach(key => {
+        if (key.includes(data.roomId)) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      console.log('Room data cleared for:', data.roomId);
+    });
+
     socket.current.connect();
   };
 
@@ -439,45 +455,45 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const leaveRoom = (roomId: string, forceLeave: boolean = false) => {
-    if (!roomId || !user) return;
+  const leaveRoom = (roomId: string, forceLeave = false) => {
+    console.log('leaveRoom called with:', roomId, 'forceLeave:', forceLeave);
 
-    // Only actually leave room if explicitly forced (user clicks leave)
-    // Don't leave room for UI tab switches
+    // Check if this is an explicit user action vs UI switch
     if (forceLeave) {
-      console.log('Force leaving room:', roomId);
-      sendMessage('leave_room', {
-        roomId,
-        sessionId: sessionId.current,
-        explicit: true, // Add explicit flag for server to broadcast
-      });
+      console.log('User explicitly leaving room - clearing localStorage and sending WebSocket leave');
 
-      // Remove from joined rooms tracking
-      joinedRoomsRef.current.delete(roomId);
-
-      // Clear ALL localStorage data related to this room
+      // Clear ALL localStorage for this room
       const localStorageKey = `chatMessages-${roomId}`;
       localStorage.removeItem(localStorageKey);
-      
-      // Clear saved room states
+
+      // Clear saved room states  
       const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
       if (savedRoomStates[roomId]) {
         delete savedRoomStates[roomId];
         localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
       }
-      
-      // Clear multi-room state
-      const multiRoomStateKey = `multiRoomState-${user.id}`;
-      const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
-      if (multiRoomState.rooms) {
-        multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomId);
-        localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+
+      // Clear any additional room-related localStorage keys
+      const allKeys = Object.keys(localStorage);
+      allKeys.forEach(key => {
+        if (key.includes(roomId) || key.includes(`room-${roomId}`)) {
+          localStorage.removeItem(key);
+          console.log('Removed localStorage key:', key);
+        }
+      });
+
+      // Clear multi-room state if user exists
+      if (user) {
+        const multiRoomStateKey = `multiRoomState-${user.id}`;
+        const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
+        if (multiRoomState.rooms) {
+          multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomId);
+          localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+        }
       }
 
-      // Update joined rooms localStorage
-      const joinedRoomsArray = Array.from(joinedRoomsRef.current);
-      localStorage.setItem(`joinedRooms-${user.id}`, JSON.stringify(joinedRoomsArray));
-
+      // Send WebSocket leave message
+      sendMessage('leave_room', { roomId });
       console.log('Left room and cleared ALL localStorage data:', roomId);
     } else {
       console.log('UI tab switch detected - NOT leaving room:', roomId);

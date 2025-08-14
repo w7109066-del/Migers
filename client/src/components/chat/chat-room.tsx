@@ -1042,7 +1042,7 @@ export function ChatRoom({
     if (confirmLeave) {
       // Clear ALL localStorage cache for this room when explicitly leaving
       if (roomId) {
-        // Clear main chat messages
+        // Clear main chat messages immediately
         const localStorageKey = `chatMessages-${roomId}`;
         localStorage.removeItem(localStorageKey);
 
@@ -1062,6 +1062,15 @@ export function ChatRoom({
             localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
           }
         }
+
+        // Clear any additional room-specific keys that might exist
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach(key => {
+          if (key.includes(roomId)) {
+            localStorage.removeItem(key);
+            console.log('Removed localStorage key:', key);
+          }
+        });
 
         console.log('Cleared ALL localStorage cache for room:', roomId);
 
@@ -1083,6 +1092,11 @@ export function ChatRoom({
         // Actually leave the room via WebSocket with forceLeave=true
         leaveRoom(roomId, true); // Force leave the room
         console.log('User explicitly left room:', roomId);
+
+        // Force page refresh to ensure clean state
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
 
         // Immediate navigation to prevent any state persistence
         if (onLeaveRoom) {

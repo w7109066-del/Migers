@@ -3090,16 +3090,16 @@ export function registerRoutes(app: Express): Server {
           // Leave the Socket.IO room
           socket.leave(data.roomId);
 
-          // Only broadcast leave message for unexpected disconnects (not manual)
-          if (data.explicit) {
-            // Only emit user_left event with consistent format - no separate message
-            socket.to(data.roomId).emit('user_left', {
-              username: user.username,
-              userId: user.id,
-              userLevel: user.level || 1,
-              roomId: data.roomId
-            });
-          }
+          // Emit user left event to all room members
+          io.to(data.roomId).emit('user_left', {
+            userId: userId,
+            username: user?.username || 'Unknown User',
+            roomId: data.roomId,
+            userLevel: user?.level || 1
+          });
+
+          // Clear any room-specific data for this user
+          socket.emit('clear_room_data', { roomId: data.roomId });
 
           console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
 
