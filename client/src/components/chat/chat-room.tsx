@@ -322,6 +322,18 @@ export function ChatRoom({
           }
         ];
 
+        // Add current user join message
+        if (user && user.username) {
+          welcomeMessages.push({
+            id: `current-user-${roomId}`,
+            content: `Currently user in the room: ${user.username}[${user.level || 1}]`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          });
+        }
+
         // For non-system rooms (not rooms 1-4), fetch room info to show creator
         if (!['1', '2', '3', '4'].includes(roomId)) {
           try {
@@ -333,6 +345,15 @@ export function ChatRoom({
               welcomeMessages.push({
                 id: `room-managed-${roomId}`,
                 content: `This room is managed by ${creatorName}`,
+                senderId: 'system',
+                createdAt: new Date().toISOString(),
+                sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+                messageType: 'system'
+              });
+            } else {
+              welcomeMessages.push({
+                id: `room-managed-${roomId}`,
+                content: `This room is managed by room creator`,
                 senderId: 'system',
                 createdAt: new Date().toISOString(),
                 sender: { id: 'system', username: 'System', level: 0, isOnline: true },
@@ -364,28 +385,44 @@ export function ChatRoom({
 
         // Merge with existing messages if any (excluding old welcome messages)
         let existingMessages = [];
-        if (storedMessages) {
+        if (storedData) {
           try {
-            const parsedMessages = JSON.parse(storedMessages);
-            existingMessages = parsedMessages.filter(msg =>
-              !msg.id.startsWith('welcome-') &&
-              !msg.id.startsWith('room-managed-') &&
-              !msg.content.includes(`Welcome to ${roomName}`) &&
-              !msg.content.includes('managed by')
-            );
+            const parsedMessages = JSON.parse(storedData);
+            if (Array.isArray(parsedMessages)) {
+              existingMessages = parsedMessages.filter(msg =>
+                !msg.id?.startsWith('welcome-') &&
+                !msg.id?.startsWith('room-managed-') &&
+                !msg.id?.startsWith('current-user-') &&
+                !msg.content?.includes(`Welcome to ${roomName}`) &&
+                !msg.content?.includes('managed by') &&
+                !msg.content?.includes('Currently user in the room')
+              );
+            } else if (parsedMessages.messages) {
+              existingMessages = parsedMessages.messages.filter(msg =>
+                !msg.id?.startsWith('welcome-') &&
+                !msg.id?.startsWith('room-managed-') &&
+                !msg.id?.startsWith('current-user-') &&
+                !msg.content?.includes(`Welcome to ${roomName}`) &&
+                !msg.content?.includes('managed by') &&
+                !msg.content?.includes('Currently user in the room')
+              );
+            }
           } catch (error) {
             console.error('Error parsing stored messages:', error);
           }
         } else if (savedMessages.length > 0) {
           existingMessages = savedMessages.filter(msg =>
-            !msg.id.startsWith('welcome-') &&
-            !msg.id.startsWith('room-managed-') &&
-            !msg.content.includes(`Welcome to ${roomName}`) &&
-            !msg.content.includes('managed by')
+            !msg.id?.startsWith('welcome-') &&
+            !msg.id?.startsWith('room-managed-') &&
+            !msg.id?.startsWith('current-user-') &&
+            !msg.content?.includes(`Welcome to ${roomName}`) &&
+            !msg.content?.includes('managed by') &&
+            !msg.content?.includes('Currently user in the room')
           );
         }
 
         const finalMessages = [...welcomeMessages, ...existingMessages];
+        console.log('Setting welcome messages for room:', roomId, finalMessages);
         setMessages(finalMessages);
 
         // Save updated messages to consistent localStorage key with timestamp
@@ -397,13 +434,20 @@ export function ChatRoom({
         localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
         console.log('Generated and saved welcome messages with timestamp for room:', roomId);
 
-        // Force scroll to bottom after welcome messages are set
-        setTimeout(() => {
+        // Force scroll to bottom multiple times to ensure it works
+        const scrollToBottom = () => {
           const messagesContainer = document.querySelector('.chat-room-messages');
           if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            console.log('Scrolled to bottom:', messagesContainer.scrollHeight);
           }
-        }, 300);
+        };
+
+        // Multiple scroll attempts with different delays
+        setTimeout(scrollToBottom, 100);
+        setTimeout(scrollToBottom, 300);
+        setTimeout(scrollToBottom, 500);
+        setTimeout(scrollToBottom, 1000);
       }
     };
 
