@@ -178,7 +178,8 @@ io.on("connection", async (socket: Socket) => {
     });
   });
 
-  // Initialize LowCard bot
+  // Initialize LowCard bot for this socket connection
+  console.log('Initializing LowCard bot for socket:', socket.id);
   handleLowCardBot(io, socket);
 
   // Handle sending messages
@@ -200,6 +201,7 @@ io.on("connection", async (socket: Socket) => {
 
       // Check if message is a LowCard command
       if (data.message.startsWith('!')) {
+        console.log('LowCard command detected in index.ts:', data.message, 'for room:', data.roomId);
         // Emit command event to the socket for lowcard bot handling
         socket.emit('command', data.roomId, data.message);
         return;

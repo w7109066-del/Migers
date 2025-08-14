@@ -2913,7 +2913,7 @@ export function registerRoutes(app: Express): Server {
           // Leave the Socket.IO room
           socket.leave(data.roomId);
 
-          // Only broadcast leave message if it's an explicit leave (not tab switch)
+          // Only broadcast leave message for unexpected disconnects (not manual)
           if (data.explicit) {
             // Broadcast user leave message and user_left event
             const leaveMessage = {
@@ -3024,9 +3024,77 @@ export function registerRoutes(app: Express): Server {
 
           // Check if message is a LowCard bot command and handle it
           if (data.content.startsWith('!')) {
-            // Don't show the command in chat, just handle the bot logic
+            console.log('Processing LowCard command:', data.content, 'in room:', data.roomId);
+
+            // First, show the user's command in chat
+            const senderUser = await storage.getUser(userId);
+
+            if (['1', '2', '3', '4'].includes(data.roomId)) {
+              // For mock rooms, create mock message for the command
+              const commandMessage = {
+                id: `command-${Date.now()}`,
+                content: data.content,
+                senderId: userId,
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'text',
+                createdAt: new Date().toISOString(),
+                sender: {
+                  id: userId,
+                  username: senderUser?.username || 'User',
+                  level: senderUser?.level || 1,
+                  isOnline: senderUser?.isOnline || true,
+                  profilePhotoUrl: senderUser?.profilePhotoUrl || null
+                }
+              };
+
+              // Broadcast the user's command message first
+              io.to(data.roomId).emit('new_message', {
+                message: commandMessage,
+              });
+            } else {
+              // For real rooms, save the command message
+              const messageData = insertMessageSchema.parse({
+                content: data.content,
+                senderId: userId,
+                roomId: data.roomId,
+                recipientId: null,
+                messageType: 'text',
+              });
+
+              const newMessage = await storage.createMessage(messageData);
+
+              // Broadcast the user's command message first
+              io.to(data.roomId).emit('new_message', {
+                message: newMessage,
+              });
+            }
+
+            // Handle the bot command directly here instead of emitting to socket
+            console.log('Handling bot command directly for user:', senderUser?.username);
+            handleLowCardBot(io, {
+              ...socket,
+              username: senderUser?.username,
+              userId: userId,
+              emit: (event: string, ...args: any[]) => {
+                console.log('Bot command event:', event, args);
+                if (event === 'command') {
+                  // Process the command immediately
+                  const [room, msg] = args;
+                  console.log('Processing command:', msg, 'in room:', room);
+
+                  // Call the actual command handler
+                  const commandHandler = socket.listeners('command')[0];
+                  if (commandHandler) {
+                    commandHandler(room, msg);
+                  }
+                }
+              }
+            });
+
+            // Also emit the command event for the bot to handle
             socket.emit('command', data.roomId, data.content);
-            return; // Exit early - don't save or show command message
+            return;
           }
 
           // Check if message is a kick command
