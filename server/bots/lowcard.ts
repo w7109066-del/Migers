@@ -1,110 +1,168 @@
 
 import { Server } from 'socket.io';
 
-type Player = {
+interface Player {
   id: string;
-  name: string;
-  isBot: boolean;
-  card?: string;
-  bet?: number;
-};
-
-type GameRoom = {
-  players: Player[];
-  isRunning: boolean;
+  username: string;
+  socketId: string;
+  card?: Card;
+  coin: number;
   bet: number;
+}
+
+interface Card {
+  value: string; // e.g., "2", "k", "a"
+  suit: string;  // e.g., "h", "s", "d", "c"
+  filename: string; // e.g., "lc_2h.png"
+}
+
+interface GameRoom {
+  players: Player[];
+  bet: number;
+  startedBy: string;
+  isRunning: boolean;
   timeout?: NodeJS.Timeout;
-};
+  drawTimeout?: NodeJS.Timeout;
+}
 
 const rooms: Record<string, GameRoom> = {};
-const botPresence: Record<string, boolean> = {}; // Track bot presence in rooms
-const suits = ['c', 'd', 'h', 's'];
+const botPresence: Record<string, boolean> = {};
 
-function getDeck(): string[] {
-  const deck = [];
-  for (let i = 2; i <= 14; i++) {
-    for (const s of suits) {
-      const label = i <= 10 ? `${i}` : i === 11 ? 'j' : i === 12 ? 'q' : i === 13 ? 'k' : 'a';
-      deck.push(`lc_${label}${s}.png`);
-    }
-  }
-  return deck;
+// Card utilities
+function drawCard(): Card {
+  const values = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "j", "q", "k", "a"];
+  const suits = ["h", "d", "s", "c"];
+  const value = values[Math.floor(Math.random() * values.length)];
+  const suit = suits[Math.floor(Math.random() * suits.length)];
+  const filename = `lc_${value}${suit}.png`;
+  return { value, suit, filename };
 }
 
-function shuffle(array: string[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
+function getCardValue(card: Card): number {
+  const order = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "j", "q", "k", "a"];
+  return order.indexOf(card.value);
 }
 
-function getCardValue(filename: string): number {
-  const name = filename.split('_')[1].split('.')[0];
-  const val = name.slice(0, -1); // Remove suit character
-  if (val === 'a') return 14;
-  if (val === 'k') return 13;
-  if (val === 'q') return 12;
-  if (val === 'j') return 11;
-  return parseInt(val);
-}
-
-// Dummy potongCoin, ganti dengan DB logic kamu
+// Mock function - replace with actual database logic
 function potongCoin(userId: string, amount: number): boolean {
-  // TODO: cek dan potong saldo user, return false jika saldo kurang
-  return true;
+  // TODO: Implement actual coin deduction from database
+  return true; // For now, always return true
 }
 
-function drawOneCard(player: Player): void {
-  const deck = getDeck();
-  shuffle(deck);
-  player.card = deck.pop();
+function tambahCoin(userId: string, amount: number): void {
+  // TODO: Implement actual coin addition to database
 }
 
-function startDrawTimer(io: Server, room: string): void {
-  const game = rooms[room];
-  if (!game) return;
+// Initialize bot presence in a room
+function ensureBotPresence(io: Server, roomId: string): void {
+  if (!botPresence[roomId]) {
+    botPresence[roomId] = true;
+    io.to(roomId).emit('bot_message', 'LowCardBot', '🎮 LowCardBot is now active! Type !start <bet> to begin playing.', null, roomId);
+    console.log(`LowCardBot initialized in room: ${roomId}`);
+  }
+}
 
-  if (game.timeout) clearTimeout(game.timeout);
+function startJoinPhase(io: Server, room: string): void {
+  const data = rooms[room];
+  if (!data) return;
 
-  game.timeout = setTimeout(() => {
-    game.players.forEach(p => {
-      if (!p.card) {
-        drawOneCard(p);
-        io.to(room).emit('bot_message', 'LowCardBot', `⏱️ Auto-draw - ${p.name}:`, `/cards/${p.card}`, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `🎮 LowCard started by ${data.startedBy}. Enter !j to join the game. Cost: ${data.bet} MCR [30s]`, null, room);
+
+  data.timeout = setTimeout(() => {
+    if (data.players.length < 2) {
+      io.to(room).emit('bot_message', 'LowCardBot', `⏰ Joining ends. Not enough players. Need at least 2 players.`, null, room);
+      io.to(room).emit('bot_message', 'LowCardBot', `❌ Game canceled`, null, room);
+      delete rooms[room];
+    } else {
+      startDrawPhase(io, room);
+    }
+  }, 30000);
+}
+
+function startDrawPhase(io: Server, room: string): void {
+  const data = rooms[room];
+  if (!data) return;
+
+  if (data.timeout) {
+    clearTimeout(data.timeout);
+    delete data.timeout;
+  }
+
+  data.isRunning = true;
+  io.to(room).emit('bot_message', 'LowCardBot', `🚀 Drawing started! Type !d to draw your card. [20s auto-draw]`, null, room);
+
+  // Auto-draw after 20 seconds
+  data.drawTimeout = setTimeout(() => {
+    data.players.forEach(player => {
+      if (!player.card) {
+        player.card = drawCard();
+        io.to(room).emit('bot_message', 'LowCardBot', `⏱️ ${player.username} auto drew a card.`, `/cards/${player.card.filename}`, room);
       }
     });
-    checkAllDrawn(io, room);
+    
+    const allDrawn = data.players.every(p => p.card);
+    if (allDrawn) {
+      finishRound(io, room);
+    }
   }, 20000);
 }
 
-function checkAllDrawn(io: Server, room: string): void {
-  const game = rooms[room];
-  if (!game) return;
-  const allDrawn = game.players.every(p => p.card);
-  if (!allDrawn) return;
+function finishRound(io: Server, room: string): void {
+  const data = rooms[room];
+  if (!data) return;
 
-  const lowest = game.players.reduce((prev, curr) => {
-    return getCardValue(curr.card!) < getCardValue(prev.card!) ? curr : prev;
+  if (data.drawTimeout) {
+    clearTimeout(data.drawTimeout);
+    delete data.drawTimeout;
+  }
+
+  // Sort players by card value (lowest first)
+  const sorted = [...data.players].sort((a, b) => getCardValue(a.card!) - getCardValue(b.card!));
+  const lowestValue = getCardValue(sorted[0].card!);
+  const losers = sorted.filter(p => getCardValue(p.card!) === lowestValue);
+
+  let finalLoser: Player;
+
+  if (losers.length > 1) {
+    // Tie breaker - random selection
+    finalLoser = losers[Math.floor(Math.random() * losers.length)];
+    io.to(room).emit('bot_message', 'LowCardBot', `🎯 Tie broken! ${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
+  } else {
+    finalLoser = losers[0];
+    io.to(room).emit('bot_message', 'LowCardBot', `💀 ${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
+  }
+
+  // Calculate winnings
+  const totalBet = data.players.reduce((sum, p) => sum + p.bet, 0);
+  const housecut = totalBet * 0.1; // 10% house cut
+  const winAmount = totalBet - housecut;
+
+  // Determine winner (highest card among remaining players)
+  const remainingPlayers = data.players.filter(p => p.username !== finalLoser.username);
+  if (remainingPlayers.length === 1) {
+    const winner = remainingPlayers[0];
+    tambahCoin(winner.id, winAmount);
+    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins the game! +${winAmount.toFixed(1)} MCR`, `/cards/${winner.card!.filename}`, room);
+  } else {
+    // Multiple remaining players - highest card wins
+    const sortedRemaining = remainingPlayers.sort((a, b) => getCardValue(b.card!) - getCardValue(a.card!));
+    const winner = sortedRemaining[0];
+    tambahCoin(winner.id, winAmount);
+    io.to(room).emit('bot_message', 'LowCardBot', `🎉 ${winner.username} wins with the highest card! +${winAmount.toFixed(1)} MCR`, `/cards/${winner.card!.filename}`, room);
+  }
+
+  // Show all cards
+  io.to(room).emit('bot_message', 'LowCardBot', `📋 Final Results:`, null, room);
+  sorted.forEach(player => {
+    const status = player.username === finalLoser.username ? " (LOSER)" : "";
+    io.to(room).emit('bot_message', 'LowCardBot', `${player.username}: ${player.card!.value.toUpperCase()}${player.card!.suit.toUpperCase()}${status}`, `/cards/${player.card!.filename}`, room);
   });
 
-  io.to(room).emit('bot_message', 'LowCardBot', `${lowest.name} OUT dengan kartu terendah!`, null, room);
-  game.players = game.players.filter(p => p.name !== lowest.name);
+  io.to(room).emit('bot_message', 'LowCardBot', `💰 House cut: ${housecut.toFixed(1)} MCR`, null, room);
+  io.to(room).emit('bot_message', 'LowCardBot', `🎮 Type !start <bet> to play again!`, null, room);
 
-  if (game.players.length <= 1) {
-    const winner = game.players[0]?.name || 'No one';
-    io.to(room).emit('bot_message', 'LowCardBot', `🎉 Game selesai! Pemenang: ${winner}! Ketik !start <bet> untuk game baru.`, null, room);
-    // Don't delete the room, just reset the game state
-    game.isRunning = false;
-    game.players = [];
-    if (game.timeout) {
-      clearTimeout(game.timeout);
-      delete game.timeout;
-    }
-  } else {
-    game.players.forEach(p => delete p.card);
-    startDrawTimer(io, room);
-    io.to(room).emit('bot_message', 'LowCardBot', `Ronde berikutnya! Ketik !d untuk draw, atau tunggu 20 detik.`, null, room);
-  }
+  // Clean up
+  delete rooms[room];
 }
 
 // Function to check if bot is active in a room
@@ -117,49 +175,13 @@ export function getBotStatus(roomId: string): string {
   if (botPresence[roomId]) {
     const game = rooms[roomId];
     if (game?.isRunning) {
-      return `🎮 LowCardBot sedang menjalankan game dengan ${game.players.length} pemain.`;
+      return `🎮 LowCardBot is running a game with ${game.players.length} players.`;
+    } else if (game) {
+      return `🎮 LowCardBot is waiting for players to join. Type !j to join!`;
     }
-    return `🎮 LowCardBot aktif! Ketik !start <bet> untuk memulai game.`;
+    return `🎮 LowCardBot is active! Type !start <bet> to begin playing.`;
   }
-  return `🎮 LowCardBot tidak aktif di room ini.`;
-}
-
-export function handleLowcardCommand(socket: any, msg: string): void {
-  const [command, ...args] = msg.trim().split(" ");
-
-  switch (command) {
-    case "!start":
-      // Start game logic
-      break;
-    case "!j":
-      // Join logic
-      break;
-    case "!d":
-      // Draw card logic
-      break;
-    case "!status":
-      // Show bot status
-      break;
-    default:
-      break;
-  }
-}
-
-// Initialize bot presence in a room
-function ensureBotPresence(io: Server, roomId: string): void {
-  if (!botPresence[roomId]) {
-    botPresence[roomId] = true;
-    // Announce bot presence to room
-    io.to(roomId).emit('bot_message', 'LowCardBot', '🎮 LowCardBot is now active! Type !start <bet> to begin playing.', null, roomId);
-    console.log(`LowCardBot initialized in room: ${roomId}`);
-  }
-}
-
-// Remove bot from room (only when explicitly needed)
-function removeBotPresence(roomId: string): void {
-  delete botPresence[roomId];
-  delete rooms[roomId];
-  console.log(`LowCardBot removed from room: ${roomId}`);
+  return `🎮 LowCardBot is not active in this room.`;
 }
 
 export function handleLowCardBot(io: Server, socket: any): void {
@@ -169,104 +191,189 @@ export function handleLowCardBot(io: Server, socket: any): void {
     // Ensure bot is present in the room when any command is used
     ensureBotPresence(io, room);
 
-    const cmd = msg.split(' ')[0];
+    const [command, ...args] = msg.trim().split(' ');
+    const username = socket.username;
+    const userId = socket.userId;
 
-    switch (cmd) {
+    switch (command) {
       case '!start': {
-        if (rooms[room]?.isRunning) return;
-        const parts = msg.split(' ');
-        const bet = parts.length > 1 ? parseInt(parts[1]) : 0;
+        if (rooms[room]) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game already in progress!`, null, room);
+          return;
+        }
+
+        const bet = parseInt(args[0]) || 50;
         if (bet <= 0) {
-          io.to(room).emit('bot_message', 'LowCardBot', 'Jumlah taruhan tidak valid.');
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Invalid bet amount! Must be greater than 0.`, null, room);
+          return;
+        }
+
+        if (bet > 10000) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Bet too high! Maximum bet is 10,000 MCR.`, null, room);
           return;
         }
 
         rooms[room] = {
           players: [],
-          isRunning: true,
           bet,
+          startedBy: username,
+          isRunning: false
         };
 
-        io.to(room).emit('bot_message', 'LowCardBot', `🎮 Game dimulai dengan taruhan ${bet} koin! Ketik !j untuk join.`, null, room);
+        startJoinPhase(io, room);
         break;
       }
 
       case '!j': {
-        const game = rooms[room];
-        if (!game?.isRunning) {
-          io.to(room).emit('bot_message', 'LowCardBot', 'Game belum dimulai, ketik !start (bet) dulu.');
-          return;
-        }
-        if (game.players.find(p => p.id === socket.id)) return;
-
-        if (!potongCoin(socket.id, game.bet)) {
-          io.to(room).emit('bot_message', 'LowCardBot', `${socket.username} saldo tidak cukup untuk join.`, null, room);
+        const data = rooms[room];
+        if (!data) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ No game in progress. Type !start <bet> to start a game.`, null, room);
           return;
         }
 
-        game.players.push({ id: socket.id, name: socket.username, isBot: false, bet: game.bet });
-        io.to(room).emit('bot_message', 'LowCardBot', `✅ ${socket.username} bergabung dengan taruhan ${game.bet} koin!`, null, room);
-
-        if (game.players.length >= 2 && !game.timeout) {
-          startDrawTimer(io, room);
-          io.to(room).emit('bot_message', 'LowCardBot', `🚀 Game mulai! Semua player ketik !d untuk draw, atau tunggu 20 detik.`, null, room);
+        if (data.isRunning) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game already started! Wait for next round.`, null, room);
+          return;
         }
 
+        if (data.players.find(p => p.username === username)) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} already joined!`, null, room);
+          return;
+        }
+
+        if (data.players.length >= 8) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game is full! Maximum 8 players.`, null, room);
+          return;
+        }
+
+        // Check if user has enough coins
+        if (!potongCoin(userId, data.bet)) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} doesn't have enough MCR to join.`, null, room);
+          return;
+        }
+
+        const player: Player = {
+          id: userId,
+          username,
+          socketId: socket.id,
+          coin: 1000, // This should come from database
+          bet: data.bet
+        };
+
+        data.players.push(player);
+        io.to(room).emit('bot_message', 'LowCardBot', `✅ ${username} joined the game! (${data.players.length} players)`, null, room);
         break;
       }
 
       case '!d': {
-        const game = rooms[room];
-        if (!game?.isRunning) return;
-
-        const player = game.players.find(p => p.id === socket.id);
-        if (!player) return;
-        if (player.card) return; // sudah draw
-
-        drawOneCard(player);
-        io.to(room).emit('bot_message', 'LowCardBot', `🎯 ${player.name} menarik kartu!`, `/cards/${player.card}`, room);
-        // cek semua sudah draw atau belum
-        const allDrawn = game.players.every(p => p.card);
-        if (allDrawn) {
-          checkAllDrawn(io, room);
+        const data = rooms[room];
+        if (!data) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ No game in progress.`, null, room);
+          return;
         }
 
-        break;
-      }
+        if (!data.isRunning) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Game hasn't started yet!`, null, room);
+          return;
+        }
 
-      case '!bot': {
-        // Activate bot in room
-        ensureBotPresence(io, room);
+        const player = data.players.find(p => p.username === username);
+        if (!player) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} is not in this game!`, null, room);
+          return;
+        }
+
+        if (player.card) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} already drew a card!`, null, room);
+          return;
+        }
+
+        player.card = drawCard();
+        io.to(room).emit('bot_message', 'LowCardBot', `🎯 ${username} drew a card!`, `/cards/${player.card.filename}`, room);
+
+        // Check if all players have drawn
+        const allDrawn = data.players.every(p => p.card);
+        if (allDrawn) {
+          finishRound(io, room);
+        }
         break;
       }
 
       case '!status': {
-        // Show bot and game status
         const status = getBotStatus(room);
         io.to(room).emit('bot_message', 'LowCardBot', status, null, room);
+        break;
+      }
+
+      case '!leave': {
+        const data = rooms[room];
+        if (!data) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ No game in progress.`, null, room);
+          return;
+        }
+
+        if (data.isRunning) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ Cannot leave during game! Wait for round to finish.`, null, room);
+          return;
+        }
+
+        const playerIndex = data.players.findIndex(p => p.username === username);
+        if (playerIndex === -1) {
+          io.to(room).emit('bot_message', 'LowCardBot', `❌ ${username} is not in this game!`, null, room);
+          return;
+        }
+
+        // Refund the bet
+        tambahCoin(userId, data.bet);
+        data.players.splice(playerIndex, 1);
+        io.to(room).emit('bot_message', 'LowCardBot', `👋 ${username} left the game. Bet refunded.`, null, room);
+        break;
+      }
+
+      case '!help': {
+        const helpText = `🎮 LowCard Commands:
+!start <bet> - Start a new game
+!j - Join current game
+!d - Draw your card
+!leave - Leave game (before it starts)
+!status - Check bot status
+!help - Show this help`;
+        io.to(room).emit('bot_message', 'LowCardBot', helpText, null, room);
         break;
       }
     }
   });
 
   socket.on('disconnecting', () => {
-    // Jika player left, remove from game but keep bot active
-    Object.entries(rooms).forEach(([room, game]) => {
-      const idx = game.players.findIndex(p => p.id === socket.id);
-      if (idx !== -1) {
-        const playerName = socket.username;
-        game.players.splice(idx, 1);
-        io.to(room).emit('bot_message', 'LowCardBot', `${playerName} keluar dari game.`, null, room);
+    // Handle player disconnect
+    Object.entries(rooms).forEach(([room, data]) => {
+      const playerIndex = data.players.findIndex(p => p.socketId === socket.id);
+      if (playerIndex !== -1) {
+        const player = data.players[playerIndex];
         
-        if (game.players.length <= 1) {
-          const winner = game.players[0]?.name || 'No one';
-          io.to(room).emit('bot_message', 'LowCardBot', `🎉 Game selesai! Pemenang: ${winner}! Ketik !start <bet> untuk game baru.`, null, room);
-          // Reset game but keep bot active
-          game.isRunning = false;
-          game.players = [];
-          if (game.timeout) {
-            clearTimeout(game.timeout);
-            delete game.timeout;
+        if (!data.isRunning) {
+          // Refund bet if game hasn't started
+          tambahCoin(player.id, player.bet);
+          data.players.splice(playerIndex, 1);
+          io.to(room).emit('bot_message', 'LowCardBot', `👋 ${player.username} disconnected and left the game. Bet refunded.`, null, room);
+          
+          // Cancel game if not enough players
+          if (data.players.length < 2 && data.timeout) {
+            clearTimeout(data.timeout);
+            io.to(room).emit('bot_message', 'LowCardBot', `❌ Not enough players. Game canceled.`, null, room);
+            delete rooms[room];
+          }
+        } else {
+          // Game is running - mark as auto-loss
+          if (!player.card) {
+            player.card = { value: "2", suit: "c", filename: "lc_2c.png" }; // Worst possible card
+          }
+          io.to(room).emit('bot_message', 'LowCardBot', `💀 ${player.username} disconnected and auto-loses!`, null, room);
+          
+          // Check if all remaining have cards
+          const allDrawn = data.players.every(p => p.card);
+          if (allDrawn) {
+            finishRound(io, room);
           }
         }
       }
