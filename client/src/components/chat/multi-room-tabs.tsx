@@ -960,6 +960,32 @@ export function MultiRoomTabs({
                                     <AlertDialogAction
                                       onClick={() => {
                                         setSettingsOpen(false);
+                                        // Clear localStorage for the room being closed
+                                        const roomToClose = rooms[safeActiveRoomIndex];
+                                        if (roomToClose) {
+                                          // Clear main chat messages
+                                          const localStorageKey = `chat_${roomToClose.id}`;
+                                          localStorage.removeItem(localStorageKey);
+
+                                          // Clear saved room states
+                                          const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
+                                          if (savedRoomStates[roomToClose.id]) {
+                                            delete savedRoomStates[roomToClose.id];
+                                            localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
+                                          }
+
+                                          // Clear multi-room state
+                                          if (user) {
+                                            const multiRoomStateKey = `multiRoomState-${user.id}`;
+                                            const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
+                                            if (multiRoomState.rooms) {
+                                              multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomToClose.id);
+                                              localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+                                            }
+                                          }
+
+                                          console.log('Cleared ALL localStorage data for closed room:', roomToClose.id);
+                                        }
                                         onCloseRoom(safeActiveRoomIndex);
                                       }}
                                       className="bg-red-600 hover:bg-red-700"

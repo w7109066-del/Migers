@@ -284,8 +284,13 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
 
   const handleBackToRoomList = () => {
     console.log('Back to room list clicked - staying connected to room');
-    // Just hide the room view without leaving the room
+    
+    // Clear selected room state
     setSelectedRoom(null);
+
+    // Refresh room data to ensure clean state
+    queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    refetchMemberCounts();
 
     // Dispatch event to notify parent component that we're back to room list
     window.dispatchEvent(new CustomEvent('backToRoomList'));
@@ -531,6 +536,14 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
     favorite: safeFilteredRooms.filter((room: Room) => room.category === "favorite"),
     game: safeFilteredRooms.filter((room: Room) => room.category === "game")
   };
+
+  // Additional safety check to prevent blank screen
+  useEffect(() => {
+    if (!selectedRoom && safeDisplayRooms.length === 0 && !isLoading && !error) {
+      console.log('RoomList: No rooms available, forcing refetch');
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    }
+  }, [selectedRoom, safeDisplayRooms.length, isLoading, error, queryClient]);
 
   return (
     <div className="h-full w-full bg-white dark:bg-gray-900 flex flex-col">

@@ -1118,12 +1118,7 @@ export function ChatRoom({
         leaveRoom(roomId, true); // Force leave the room
         console.log('User explicitly left room:', roomId);
 
-        // Force page refresh to ensure clean state
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
-
-        // Immediate navigation to prevent any state persistence
+        // Navigate back to room list immediately without page refresh
         if (onLeaveRoom) {
           onLeaveRoom();
         }
