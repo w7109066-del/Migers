@@ -139,7 +139,7 @@ export function handleLowCardBot(io: Server, socket: any): void {
           bet,
         };
 
-        io.to(room).emit('bot_message', 'LowCardBot', `Game dimulai dengan taruhan ${bet} koin! Ketik !j untuk join.`);
+        io.to(room).emit('bot_message', 'LowCardBot', `🎮 Game dimulai dengan taruhan ${bet} koin! Ketik !j untuk join.`);
         break;
       }
 
@@ -157,11 +157,11 @@ export function handleLowCardBot(io: Server, socket: any): void {
         }
 
         game.players.push({ id: socket.id, name: socket.username, isBot: false, bet: game.bet });
-        io.to(room).emit('bot_message', 'LowCardBot', `${socket.username} join dengan taruhan ${game.bet} koin!`);
+        io.to(room).emit('bot_message', 'LowCardBot', `✅ ${socket.username} bergabung dengan taruhan ${game.bet} koin!`);
 
         if (game.players.length >= 2 && !game.timeout) {
           startDrawTimer(io, room);
-          io.to(room).emit('bot_message', 'LowCardBot', `Game mulai! Semua player ketik !d untuk draw, atau tunggu 20 detik.`);
+          io.to(room).emit('bot_message', 'LowCardBot', `🚀 Game mulai! Semua player ketik !d untuk draw, atau tunggu 20 detik.`);
         }
 
         break;
@@ -176,7 +176,7 @@ export function handleLowCardBot(io: Server, socket: any): void {
         if (player.card) return; // sudah draw
 
         drawOneCard(player);
-        io.to(room).emit('bot_message', 'LowCardBot', `Bot draws - ${player.name}:`, `/cards/${player.card}`);
+        io.to(room).emit('bot_message', 'LowCardBot', `🎯 ${player.name} menarik kartu!`, `/cards/${player.card}`);
         // cek semua sudah draw atau belum
         const allDrawn = game.players.every(p => p.card);
         if (allDrawn) {

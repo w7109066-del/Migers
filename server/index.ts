@@ -191,6 +191,12 @@ io.on("connection", async (socket: Socket) => {
     try {
       console.log('Received message data:', data);
 
+      // Check if message is a bot command
+      if (data.message.startsWith('/add bot lowcard')) {
+        io.to(data.roomId).emit('bot_message', 'LowCardBot', 'LowCardBot has joined the room! Type !start <bet> to begin playing.');
+        return;
+      }
+
       // Check if message is a LowCard command
       if (data.message.startsWith('!')) {
         socket.emit('command', data.roomId, data.message);

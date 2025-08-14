@@ -24,7 +24,8 @@ interface Message {
     isMentor?: boolean; // Added isMentor property
     isMerchant?: boolean; // Added isMerchant property
   };
-  messageType?: 'action' | 'normal'; // Added messageType for '/me' commands
+  messageType?: 'action' | 'normal' | 'bot'; // Added messageType for '/me' commands and bot messages
+  cardImage?: string; // Added cardImage for bot messages
 }
 
 interface MessageListProps {
@@ -677,6 +678,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
         const isCurrentUser = message.senderId === user?.id;
         const isSystemMessage = message.senderId === 'system';
         const isGift = isGiftMessage(message.content);
+        const isBotMessage = message.messageType === 'bot';
 
         // Gift message rendering with auto-hide after 3 seconds
         if (isGift) {
@@ -739,6 +741,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isRoomManaged = message.content.includes('This room is managed by');
           const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left');
           const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User');
+          const isLowcardBotMessage = message.content.startsWith('LowcardBot ready') || message.content.includes('LowcardBot has joined');
 
           return (
             <div key={message.id} className="mb-2">
@@ -774,6 +777,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     </div>
                   </div>
                 )}
+                {isLowcardBotMessage && (
+                  <div className="text-red-500 font-medium">LowcardBot: <span className="text-gray-800">{message.content}</span></div>
+                )}
               </div>
             </div>
           );
@@ -788,95 +794,97 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
               message.messageType === 'action' && "italic text-purple-700"
             )}
           >
-            <div className="flex-1">
-              {message.messageType === 'action' ? (
-                // Special rendering for /me action messages
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {format(new Date(message.createdAt), 'HH:mm')}
-                  </span>
-                  <div className="italic text-purple-700 dark:text-purple-400 break-words">
+            <UserAvatar
+              src={message.sender.profilePhotoUrl || ""}
+              alt={message.sender.username}
+              fallback={isBotMessage ? '🤖' : message.sender.username[0]}
+              className="w-8 h-8 flex-shrink-0"
+              level={message.sender.level}
+              isOnline={message.sender.isOnline}
+              onClick={() => onUserClick?.(message.sender)}
+            />
+            <div className="flex-grow min-w-0">
+              <div className="flex items-center space-x-2 mb-1">
+                <span
+                  className={cn(
+                    "font-semibold text-sm truncate",
+                    isBotMessage ? "text-blue-600" : // Bot message color
+                    isCurrentUser ? "text-green-700" : // Own message color (dark green)
+                    // Admin color (orange tua) visible in all rooms
+                    (() => {
+                      const currentRoomId = window.location.pathname.split('/').pop();
+                      // Admin color visible in all rooms - Dark orange
+                      if (message.sender.level >= 5) return "text-orange-800"; // Admin dark orange
+                      // Merchant color - Purple (check for isMerchant property)
+                      if (message.sender.isMerchant === true || message.sender.isMerchant) return "text-purple-600"; // Merchant purple
+                      // Owner and moderator colors only in user-created rooms (not system rooms 1-4)
+                      if (!['1', '2', '3', '4'].includes(currentRoomId || '')) {
+                        // Check if user is room owner (username matches room name)
+                        if (message.sender.username.toLowerCase() === roomName?.toLowerCase()) return "text-yellow-500"; // Owner
+                        if (message.sender.level >= 3 && message.sender.level < 5) return "text-amber-600"; // Moderator
+                      }
+                      // Default user role color (blue)
+                      return "text-blue-600";
+                    })()
+                  )}
+                  onClick={() => {
+                    if (message.senderId !== 'system' && onUserClick) {
+                      onUserClick({
+                        id: message.sender.id,
+                        username: message.sender.username,
+                        level: message.sender.level,
+                        status: "Available for chat", // Assuming a default status if not provided
+                        isOnline: message.sender.isOnline,
+                        profilePhotoUrl: message.sender.profilePhotoUrl,
+                        isMentor: message.sender.isMentor,
+                        isMerchant: message.sender.isMerchant
+                      });
+                    }
+                  }}
+                >
+                  {message.sender.username}:
+                </span>
+                {/* Mentor badge added here */}
+                {message.sender.isMentor && (
+                  <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                    M
+                  </Badge>
+                )}
+                {/* Merchant badge */}
+                {message.sender.isMerchant && (
+                  <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
+                    🛍️
+                  </Badge>
+                )}
+              </div>
+              <div className="break-words">
+                {message.messageType === 'action' ? (
+                  <div className="italic text-purple-700 dark:text-purple-400">
                     {message.content}
                   </div>
-                </div>
-              ) : (
-                // Normal message rendering
-                <>
-                  <div className="flex items-start space-x-2">
-                    <UserAvatar
-                      username={message.sender.username}
-                      size="sm"
-                      isOnline={message.sender.isOnline}
-                      onClick={() => onUserClick?.(message.sender)}
-                      profilePhotoUrl={message.sender.profilePhotoUrl}
+                ) : (
+                  <>
+                    <div
+                      className="text-sm"
+                      dangerouslySetInnerHTML={{
+                        __html: renderMessageContent(message.content)
+                      }}
                     />
-                    <div className="flex-1">
-                      <div className="flex items-baseline space-x-1">
-                        <span
-                          className={cn(
-                            "text-sm font-medium cursor-pointer hover:underline",
-                            // Check if this is own message first
-                            isCurrentUser ? "text-green-700" : // Own message color (dark green)
-                            // Admin color (orange tua) visible in all rooms
-                            (() => {
-                              const currentRoomId = window.location.pathname.split('/').pop();
-                              // Admin color visible in all rooms - Dark orange
-                              if (message.sender.level >= 5) return "text-orange-800"; // Admin dark orange
-                              // Merchant color - Purple (check for isMerchant property)
-                              if (message.sender.isMerchant === true || message.sender.isMerchant) return "text-purple-600"; // Merchant purple
-                              // Owner and moderator colors only in user-created rooms (not system rooms 1-4)
-                              if (!['1', '2', '3', '4'].includes(currentRoomId || '')) {
-                                // Check if user is room owner (username matches room name)
-                                if (message.sender.username.toLowerCase() === roomName?.toLowerCase()) return "text-yellow-500"; // Owner
-                                if (message.sender.level >= 3 && message.sender.level < 5) return "text-amber-600"; // Moderator
-                              }
-                              // Default user role color (blue)
-                              return "text-blue-600";
-                            })()
-                          )}
-                          onClick={() => {
-                            if (message.senderId !== 'system' && onUserClick) {
-                              onUserClick({
-                                id: message.sender.id,
-                                username: message.sender.username,
-                                level: message.sender.level,
-                                status: "Available for chat", // Assuming a default status if not provided
-                                isOnline: message.sender.isOnline,
-                                profilePhotoUrl: message.sender.profilePhotoUrl,
-                                isMentor: message.sender.isMentor,
-                                isMerchant: message.sender.isMerchant
-                              });
-                            }
-                          }}
-                        >
-                          {message.sender.username}:
-                        </span>
-                        {/* Mentor badge added here */}
-                        {message.sender.isMentor && (
-                          <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
-                            M
-                          </Badge>
-                        )}
-                        {/* Merchant badge */}
-                        {message.sender.isMerchant && (
-                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
-                            🛍️
-                          </Badge>
-                        )}
-                        <div
-                          className="text-sm break-words"
-                          dangerouslySetInnerHTML={{
-                            __html: renderMessageContent(message.content)
-                          }}
+                    {message.cardImage && (
+                      <div className="mt-2">
+                        <img
+                          src={message.cardImage}
+                          alt="Card"
+                          className="w-16 h-24 object-cover rounded-lg border"
                         />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                          {formatTime(message.createdAt)}
-                        </span>
                       </div>
-                    </div>
-                  </div>
-                </>
-              )}
+                    )}
+                  </>
+                )}
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                  {formatTime(message.createdAt)}
+                </span>
+              </div>
             </div>
           </div>
         );
