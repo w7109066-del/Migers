@@ -1,0 +1,37 @@
+󰀨 The above error occurred in the <UserAvatar> component:
+
+    at UserAvatar (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/components/user/user-avatar.tsx:33:3)
+    at div
+    at div
+    at MessageList (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/components/chat/message-list.tsx:24:31)
+    at div
+    at div
+    at div
+    at ChatRoom (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/components/chat/chat-room.tsx:42:3)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at MultiRoomTabs (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/components/chat/multi-room-tabs.tsx:32:3)
+    at div
+    at div
+    at div
+    at div
+    at HomePageContent (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/pages/home-page.tsx:77:80)
+    at WebSocketProvider (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/hooks/use-websocket.tsx:25:37)
+    at NotificationProvider (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/hooks/use-notifications.tsx:21:40)
+    at HomePage
+    at ProtectedRoute (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/App.tsx?v=rQSP4dw-_svotYYx6C7KQ:28:27)
+    at RenderedRoute (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=5ea54327:5525:26)
+    at Routes (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=5ea54327:6261:3)
+    at Router (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=5ea54327:6204:13)
+    at BrowserRouter (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=5ea54327:9273:3)
+    at AuthProvider (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://ee82d212-7a7e-4f47-b558-b16e9fe33aa0-00-2lo5gr0l0prt6.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=5ea54327:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. 
