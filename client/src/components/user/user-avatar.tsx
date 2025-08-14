@@ -83,7 +83,11 @@ export function UserAvatar({
   const gradientColor = getRoleBasedColor();
 
   // Handle profile photo URL - ensure it's a valid string and not null/undefined
-  const validProfilePhotoUrl = profilePhotoUrl && typeof profilePhotoUrl === 'string' && profilePhotoUrl.trim() !== '' ? profilePhotoUrl : null;
+  const validProfilePhotoUrl = profilePhotoUrl && 
+    typeof profilePhotoUrl === 'string' && 
+    profilePhotoUrl.trim() !== '' && 
+    profilePhotoUrl !== 'null' && 
+    profilePhotoUrl !== 'undefined' ? profilePhotoUrl : null;
 
   return (
     <div className="relative">
@@ -103,11 +107,16 @@ export function UserAvatar({
             alt={username || "User"} 
             className="w-full h-full object-cover"
             onError={(e) => {
+              console.error('Failed to load profile image:', validProfilePhotoUrl);
               // Fallback to initials if image fails to load
               const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.parentElement!.classList.add(`bg-gradient-to-br`, gradientColor);
-              target.parentElement!.innerHTML = `<span>${initials}</span>`;
+              const parent = target.parentElement;
+              if (parent) {
+                target.style.display = 'none';
+                parent.classList.add('bg-gradient-to-br');
+                parent.classList.add(...gradientColor.split(' '));
+                parent.innerHTML = `<span class="text-white font-semibold">${initials}</span>`;
+              }
             }}
           />
         ) : (

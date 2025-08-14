@@ -2827,26 +2827,27 @@ export function registerRoutes(app: Express): Server {
           // Join new room
           socket.join(data.roomId);
 
-          if (['1', '2', '3', '4'].includes(data.roomId)) {
-            // Mock room handling
-            if (!mockRoomMembers.has(data.roomId)) {
-              mockRoomMembers.set(data.roomId, new Map());
-            }
-            const roomMembers = mockRoomMembers.get(data.roomId)!;
-            roomMembers.set(userId, {
-              id: userId,
-              username: user.username,
-              level: user.level || 1,
-              isOnline: user.isOnline,
-              profilePhotoUrl: user.profilePhotoUrl,
-              isAdmin: user.isAdmin || false,
-              isMerchant: user.isMerchant,
-              merchantRegisteredAt: user.merchantRegisteredAt,
-            });
-          } else {
-            // Real room
-            await storage.joinRoom(data.roomId, userId);
+          // For mock rooms
+          if (!mockRoomMembers.has(data.roomId)) {
+            mockRoomMembers.set(data.roomId, new Map());
           }
+          const roomMembers = mockRoomMembers.get(data.roomId)!;
+
+          // Get fresh user data to ensure profilePhotoUrl is current
+          const freshUser = await storage.getUser(userId);
+          roomMembers.set(userId, {
+            id: userId,
+            username: freshUser?.username || user.username,
+            level: freshUser?.level || user.level || 1,
+            isOnline: freshUser?.isOnline || user.isOnline,
+            profilePhotoUrl: freshUser?.profilePhotoUrl || null,
+            isAdmin: freshUser?.isAdmin || user.isAdmin || false,
+            isMerchant: freshUser?.isMerchant || user.isMerchant,
+            merchantRegisteredAt: freshUser?.merchantRegisteredAt || user.merchantRegisteredAt,
+          });
+
+          // Real room
+          await storage.joinRoom(data.roomId, userId);
 
           // Update user's current room
           if (userConnections.has(userId)) {
@@ -3700,6 +3701,7 @@ export function registerRoutes(app: Express): Server {
               try {
                 const disconnectedUser = await storage.getUser(userId);
 
+                // For mock rooms
                 if (['1', '2', '3', '4'].includes(currentRoomId)) {
                   // Mock room handling
                   if (mockRoomMembers.has(currentRoomId)) {

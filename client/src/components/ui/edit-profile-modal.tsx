@@ -96,13 +96,17 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       });
 
       if (response.ok) {
+        const result = await response.json();
         toast({
           title: "Profile updated!",
           description: "Your profile has been successfully updated.",
         });
         onClose();
-        // Optionally trigger a refetch of user data
-        window.location.reload();
+        
+        // Force refresh after short delay to ensure server has processed the update
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
         const errorData = await response.json();
         toast({
