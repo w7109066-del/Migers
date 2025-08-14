@@ -740,7 +740,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
             <div key={message.id} className="flex items-start space-x-3 mb-2">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-green-600 text-sm">
+                  <span className="font-semibold text-green-400 text-sm">
                     {message.sender.username}:
                   </span>
                   <div className="text-sm text-blue-400 flex items-center gap-1">
