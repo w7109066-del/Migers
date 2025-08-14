@@ -99,6 +99,24 @@ function checkAllDrawn(io: Server, room: string): void {
   }
 }
 
+export function handleLowcardCommand(socket: any, msg: string): void {
+  const [command, ...args] = msg.trim().split(" ");
+
+  switch (command) {
+    case "!start":
+      // Start game logic
+      break;
+    case "!j":
+      // Join logic
+      break;
+    case "!d":
+      // Draw card logic
+      break;
+    default:
+      break;
+  }
+}
+
 export function handleLowCardBot(io: Server, socket: any): void {
   socket.on('command', (room: string, msg: string) => {
     if (!msg.startsWith('!')) return;
