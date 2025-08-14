@@ -653,6 +653,9 @@ export function MultiRoomTabs({
                                       <SheetTitle>Block User from Rooms</SheetTitle>
                                     </SheetHeader>
                                     <div className="mt-4 space-y-2">
+                                      <div className="text-sm text-gray-600">
+                                        Select users to block from all chat rooms
+                                      </div>
                                       {isLoadingMembers ? (
                                         <div className="flex items-center justify-center py-8">
                                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -685,7 +688,7 @@ export function MultiRoomTabs({
                                                               <span className={cn(
                                                                 "font-medium text-sm truncate",
                                                                 member.user.isMentor ? "text-red-600" :
-                                                                ((member.user.level || 0) >= 5) ? "text-orange-600" : "text-gray-800"
+                                                                ((member.user.level || 0) >= 5) ? "text-orange-600" : "text-blue-400"
                                                               )}>
                                                                 {member.user.username || 'Unknown'}
                                                               </span>
@@ -832,7 +835,7 @@ export function MultiRoomTabs({
                                                               <span className={cn(
                                                                 "font-medium text-sm truncate",
                                                                 member.user.isMentor ? "text-red-600" :
-                                                                ((member.user.level || 0) >= 5) ? "text-orange-600" : "text-gray-800"
+                                                                ((member.user.level || 0) >= 5) ? "text-orange-600" : "text-blue-400"
                                                               )}>
                                                                 {member.user.username || 'Unknown'}
                                                               </span>
@@ -990,7 +993,7 @@ export function MultiRoomTabs({
                       </div>
                     </div>
 
-                    {/* Dots Indicator - Always show for visual consistency */}
+                    {/* Dots indicator - Always show for visual consistency */}
                     <div className={cn("flex justify-center py-2 border-b",
                       isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
                     )}>

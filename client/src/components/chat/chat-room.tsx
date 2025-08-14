@@ -137,7 +137,7 @@ export function ChatRoom({
           const remainingMinutes = timeMatch ? parseInt(timeMatch[1]) : 0;
 
           // Show popup with remaining time
-          const banPopupMessage = `🚫 YOU HAVE BEEN KICKED!\n\nYou cannot enter any chat rooms right now.\n\nReason: Kicked by admin\nTime remaining: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nPlease wait until the restriction is lifted.`;
+          const banPopupMessage = `🚫 YOU HAVE BEEN KICKED!\n\nYou cannot enter any chat rooms right now.\n\nTime remaining: ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}\n\nPlease wait until the restriction is lifted.`;
 
           alert(banPopupMessage);
 
@@ -1308,7 +1308,7 @@ export function ChatRoom({
                                       <span className={cn(
                                         "font-medium text-sm truncate",
                                         member.user.isMentor ? "text-red-600" :
-                                        ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                        ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-blue-400"
                                       )}>
                                         {member.user.username || 'Unknown'}
                                       </span>
@@ -1490,7 +1490,7 @@ export function ChatRoom({
                                                   <span className={cn(
                                                     "font-medium text-sm truncate",
                                                     member.user.isMentor ? "text-red-600" :
-                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-blue-400"
                                                   )}>
                                                     {member.user.username || 'Unknown'}
                                                   </span>
@@ -1656,7 +1656,7 @@ export function ChatRoom({
                                                   <span className={cn(
                                                     "font-medium text-sm truncate",
                                                     member.user.isMentor ? "text-red-600" :
-                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-gray-800"
+                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-blue-400"
                                                   )}>
                                                     {member.user.username || 'Unknown'}
                                                   </span>
