@@ -53,6 +53,23 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
   const isDarkMode = true; // Assuming dark mode is active, adjust as needed
 
+  // Filter out bot commands that shouldn't be displayed
+  const filteredMessages = messages.filter(message => {
+    if (!message || !message.content) return true;
+    
+    const content = message.content.trim();
+    
+    // Filter out bot commands
+    if (content === '/add bot lowcard' || 
+        content === '/add bot sicbo' || 
+        content === '/bot off' || 
+        content.startsWith('!')) {
+      return false;
+    }
+    
+    return true;
+  });
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -674,7 +691,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
   return (
     <div className="message-list-container h-full overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-      {messages.map((message) => {
+      {filteredMessages.map((message) => {
         // Safety checks for message object
         if (!message || !message.id || !message.sender) {
           return null;

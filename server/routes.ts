@@ -3320,46 +3320,42 @@ export function registerRoutes(app: Express): Server {
 
         if (data.roomId) {
           // Check if message is /add bot lowcard command
-          if (data.content.startsWith('/add bot lowcard')) {
-            // Don't save this command to database - emit bot message instead
+          if (data.content.trim() === '/add bot lowcard') {
+            console.log('Processing /add bot lowcard command');
             io.to(data.roomId).emit('bot_message', 'LowCardBot', '🎮 LowCardBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
             return; // Exit early - don't save command message
           }
 
           // Check if message is /add bot sicbo command
-          if (data.content.startsWith('/add bot sicbo')) {
+          if (data.content.trim() === '/add bot sicbo') {
+            console.log('Processing /add bot sicbo command');
             // Activate sicbo bot in this room
             const { activateSicboBot } = await import('./bots/sicbo');
             activateSicboBot(data.roomId);
             
-            // Don't save this command to database - emit bot message instead
             io.to(data.roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
             return; // Exit early - don't save command message
-          }
-
-          // Check if message is /add bot lowcard command
-          if (data.content.startsWith('/add bot lowcard')) {
-            // Don't save this command to database - emit bot message instead
-            io.to(data.roomId).emit('bot_message', 'LowCardBot', '🎮 LowCardBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
-            return; // Exit early - don't save command message
+          }age
           }
 
           // Check if message is /bot off command
           if (data.content.trim() === '/bot off') {
+            console.log('Processing /bot off command');
             // Get user info for bot command processing
             const senderUser = await storage.getUser(userId);
 
             // Check if it's a Sicbo bot room first
+            const { isSicboBotActiveInRoom, processSicboCommand } = await import('./bots/sicbo');
+            const { processLowCardCommand } = await import('./bots/lowcard');
+            
             if (isSicboBotActiveInRoom(data.roomId)) {
               console.log('Handling /bot off for Sicbo bot');
               processSicboCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-              return;
+            } else {
+              console.log('Handling /bot off for LowCard bot');
+              processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             }
-
-            // Handle LowCard bot /bot off
-            console.log('Handling /bot off for LowCard bot');
-            processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            return;
+            return; // Exit early - don't save command message
           }
 
           // Check if message is a bot command and handle it
@@ -3369,11 +3365,19 @@ export function registerRoutes(app: Express): Server {
             // Get user info for bot command processing
             const senderUser = await storage.getUser(userId);
 
+            // Import bot modules
+            const { isSicboBotActiveInRoom, processSicboCommand } = await import('./bots/sicbo');
+            const { processLowCardCommand } = await import('./bots/lowcard');
+
             // Check if it's a Sicbo command first (since Sicbo bot was added more recently)
             if (isSicboBotActiveInRoom(data.roomId)) {
               console.log('Handling Sicbo bot command for user:', senderUser?.username);
               processSicboCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-              return;
+            } else {
+              console.log('Handling LowCard bot command for user:', senderUser?.username);
+              processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
+            }
+            return; // Exit early - don't save command message;
             }
 
             // Handle LowCard command as fallback
