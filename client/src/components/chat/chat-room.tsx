@@ -186,7 +186,7 @@ export function ChatRoom({
             console.log('Successfully joined room:', roomId);
 
             // Only load messages AFTER successfully joining the room
-            await loadRoomMessages();
+            loadRoomMessages();
           }
         } catch (error) {
           console.error('Error checking temp ban or joining room:', error);
@@ -197,7 +197,7 @@ export function ChatRoom({
             console.log('Joined room after error recovery:', roomId);
 
             // Load messages after successful recovery join
-            await loadRoomMessages();
+            loadRoomMessages();
           } catch (joinError) {
             console.error('Failed to join room:', joinError);
           }
@@ -206,7 +206,7 @@ export function ChatRoom({
         }
       } else if (isRoomJoined) {
         // User is already joined, load messages
-        await loadRoomMessages();
+        loadRoomMessages();
       }
 
       previousRoomIdRef.current = roomId;
@@ -862,8 +862,8 @@ export function ChatRoom({
         joinAttemptRef.current = false;
 
         // Load messages after successful join
-        setTimeout(async () => {
-          await loadRoomMessages();
+        setTimeout(() => {
+          loadRoomMessages();
         }, 500);
       } else if (joinedRoomId === roomId && !success) {
         console.error('Failed to join room:', joinedRoomId);
