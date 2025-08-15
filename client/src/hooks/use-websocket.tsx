@@ -508,25 +508,40 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   };
 
   const sendChatMessage = (content: string, roomId?: string, recipientId?: string) => {
-    // Check if the user is in the member list of the current room before sending a message
-    // This assumes there's a way to access the member list or a check function.
-    // For now, we'll just send and let the backend handle validation if no member list is available here.
-    // A more robust solution would involve fetching the member list or passing it down.
+    console.log('WebSocket: Attempting to send chat message:', { content, roomId, recipientId, isConnected });
 
-    // Placeholder for member list check:
-    // if (roomId && !isUserInMemberList(user.id, roomId)) {
-    //   window.dispatchEvent(new CustomEvent('errorMessage', { 
-    //     detail: { message: "You are not in this chatroom." } 
-    //   }));
-    //   return;
-    // }
+    if (!isConnected || !socket.current || !socket.current.connected) {
+      console.error('WebSocket: Cannot send message - not connected');
+      window.dispatchEvent(new CustomEvent('errorMessage', { 
+        detail: { message: "Not connected to server. Please reconnect." } 
+      }));
+      return;
+    }
 
-    sendMessage('send_message', {
-      content,
-      roomId,
-      recipientId,
-      messageType: 'text',
-    });
+    if (!content.trim()) {
+      console.error('WebSocket: Cannot send empty message');
+      return;
+    }
+
+    try {
+      const messageData = {
+        content: content.trim(),
+        roomId,
+        recipientId,
+        messageType: 'text',
+      };
+
+      console.log('WebSocket: Sending message data:', messageData);
+      
+      socket.current.emit('send_message', messageData);
+      console.log('WebSocket: Message emitted successfully');
+
+    } catch (error) {
+      console.error('WebSocket: Error sending message:', error);
+      window.dispatchEvent(new CustomEvent('errorMessage', { 
+        detail: { message: "Failed to send message. Please try again." } 
+      }));
+    }
   };
 
   const sendDirectMessage = (content: string, recipientId: string) => {

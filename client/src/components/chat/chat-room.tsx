@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { UserAvatar } from "@/components/user/user-avatar";
@@ -848,16 +848,58 @@ export function ChatRoom({
     };
   }, [roomId, refetchMembers, messages, blockedUsers]); // Added messages and blockedUsers to dependencies
 
-  const handleSendMessage = (content: string) => {
-    if (roomId && content.trim() && user) {
-      console.log('Sending message:', content, 'to room:', roomId);
-
-      // Send message via WebSocket - no optimistic messages
-      sendChatMessage(content, roomId);
-
-      console.log('Message sent to backend:', content);
+  const handleSendMessage = useCallback((content: string) => {
+    if (!content.trim()) {
+      console.log('Cannot send empty message');
+      return;
     }
-  };
+
+    if (!isConnected) {
+      console.log('Cannot send message: not connected to server');
+      // Show error message to user
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}`,
+        content: '❌ Connection lost. Please reconnect to send messages.',
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: 'system',
+          username: 'System',
+          level: 0,
+          isOnline: true
+        }
+      }]);
+      return;
+    }
+
+    if (!roomId) {
+      console.log('Cannot send message: no room ID');
+      return;
+    }
+
+    console.log('ChatRoom: Sending message:', content, 'to room:', roomId);
+
+    try {
+      sendChatMessage(content, roomId);
+      console.log('Message sent successfully via WebSocket');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Show error message to user
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}`,
+        content: '❌ Failed to send message. Please try again.',
+        senderId: 'system',
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: 'system',
+          username: 'System',
+          level: 0,
+          isOnline: true
+        }
+      }]);
+    }
+  }, [roomId, isConnected, sendChatMessage]);
+
 
   const handleChatUser = (user: any) => {
     console.log('Opening private chat with:', user.username);
@@ -1275,7 +1317,7 @@ export function ChatRoom({
 
         console.log('Cleared ALL localStorage cache for room:', roomId);
 
-        // Clear all room-specific state immediately
+        // Clear room-specific state immediately
         setMessages([]);
         setIsRoomJoined(false);
         setUserListOpen(false);
@@ -1511,6 +1553,9 @@ export function ChatRoom({
                                   isOnline={member.user.isOnline || false}
                                   profilePhotoUrl={member.user.profilePhotoUrl}
                                   isAdmin={(member.user.level || 0) >= 5}
+                                  isMentor={member.user.isMentor}
+                                  isMerchant={member.user.isMerchant}
+                                  userLevel={member.user.level || 1}
                                 />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center space-x-2 mb-1">

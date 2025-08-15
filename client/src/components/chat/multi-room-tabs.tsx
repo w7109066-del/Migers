@@ -230,51 +230,80 @@ export function MultiRoomTabs({
         const targetRoom = rooms.find(room => room.id === message.roomId);
         if (targetRoom) {
           console.log('MultiRoomTabs: Adding message to room:', message.roomId);
-          // Update the room's messages
-          targetRoom.messages = [...(targetRoom.messages || []), message];
+          // Update the room's messages - ensure we don't duplicate messages
+          const existingMessageIds = new Set((targetRoom.messages || []).map(m => m.id));
+          if (!existingMessageIds.has(message.id)) {
+            targetRoom.messages = [...(targetRoom.messages || []), message];
 
-          // Save to localStorage immediately with timestamp
-          const localStorageKey = `chat_${message.roomId}`;
-          const messagesWithTimestamp = {
-            messages: targetRoom.messages,
-            savedAt: Date.now(),
-            roomId: message.roomId
-          };
-          localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
-
-          // Auto-scroll to bottom if this is the active room
-          if (currentActiveRoom && message.roomId === currentActiveRoom.id) {
-            // Multiple scroll attempts to ensure it works
-            const scrollToBottom = () => {
-              const messagesContainer = document.querySelector('.chat-room-messages');
-              if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-              }
+            // Save to localStorage immediately with timestamp
+            const localStorageKey = `chat_${message.roomId}`;
+            const messagesWithTimestamp = {
+              messages: targetRoom.messages,
+              savedAt: Date.now(),
+              roomId: message.roomId
             };
-            
-            setTimeout(scrollToBottom, 100);
-            setTimeout(scrollToBottom, 300);
-            setTimeout(scrollToBottom, 500);
-          }
+            localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
 
-          // If message is for a room that's not currently active, mark it as having new messages
-          if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
-            setHasNewMessages(prev => {
-              const newMap = new Map(prev);
-              newMap.set(message.roomId, true);
-              return newMap;
-            });
+            // Auto-scroll to bottom if this is the active room
+            if (currentActiveRoom && message.roomId === currentActiveRoom.id) {
+              // Multiple scroll attempts to ensure it works
+              const scrollToBottom = () => {
+                const messagesContainer = document.querySelector('.chat-room-messages');
+                if (messagesContainer) {
+                  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+              };
+              
+              setTimeout(scrollToBottom, 100);
+              setTimeout(scrollToBottom, 300);
+              setTimeout(scrollToBottom, 500);
+            }
+
+            // If message is for a room that's not currently active, mark it as having new messages
+            if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
+              setHasNewMessages(prev => {
+                const newMap = new Map(prev);
+                newMap.set(message.roomId, true);
+                return newMap;
+              });
+            }
           }
         }
       }
     };
 
+    const handleErrorMessage = (event: CustomEvent) => {
+      const { message } = event.detail;
+      console.error('MultiRoomTabs: Error message received:', message);
+      
+      // Show error message in current active room
+      const currentActiveRoom = rooms[activeRoomIndex];
+      if (currentActiveRoom) {
+        const errorMessage = {
+          id: `error-${Date.now()}`,
+          content: message,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: {
+            id: 'system',
+            username: 'System',
+            level: 0,
+            isOnline: true
+          }
+        };
+
+        currentActiveRoom.messages = [...(currentActiveRoom.messages || []), errorMessage];
+      }
+    };
+
     window.addEventListener('userTyping', handleUserTyping as EventListener);
     window.addEventListener('newMessage', handleNewMessage as EventListener);
+    window.addEventListener('errorMessage', handleErrorMessage as EventListener);
 
     return () => {
       window.removeEventListener('userTyping', handleUserTyping as EventListener);
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
+      window.removeEventListener('errorMessage', handleErrorMessage as EventListener);
     };
   }, [activeRoomIndex, rooms]);
 

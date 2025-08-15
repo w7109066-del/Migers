@@ -287,113 +287,129 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
     if (e) {
       e.preventDefault();
     }
-    if (message.trim() && !isSubmitting) {
+    if (message.trim() && !isSubmitting && isConnected) {
       setIsSubmitting(true);
 
-      // Check if we have a valid connection before sending
-      console.log('Attempting to send message:', message.trim());
-      // Check if message is /add bot command
-      if (message.startsWith('/add bot lowcard')) {
-        // Send the command but don't show it in chat
-        onSendMessage(message);
-        setMessage("");
-        setShowEmojis(false);
-        setShowGifts(false);
+      // Log message sending attempt
+      console.log('Sending message:', message.trim(), 'to room:', roomId);
 
-        // Reset submission state after a short delay
-        setTimeout(() => {
-          setIsSubmitting(false);
-        }, 100);
-        return;
-      }
+      try {
+        // Check if message is /add bot command
+        if (message.startsWith('/add bot lowcard')) {
+          // Send the command but don't show it in chat
+          onSendMessage(message);
+          setMessage("");
+          setShowEmojis(false);
+          setShowGifts(false);
 
-      // Check if message is a whois command
-      const whoisCommandRegex = /^\/whois\s+(.+)$/i;
-      const whoisMatch = message.match(whoisCommandRegex);
-
-      if (whoisMatch) {
-        const [, username] = whoisMatch;
-        // Send whois command to server
-        onSendMessage(`/whois ${username.trim()}`);
-        setMessage("");
-        setShowEmojis(false);
-        setShowGifts(false);
-
-        // Reset submission state after a short delay
-        setTimeout(() => {
-          setIsSubmitting(false);
-        }, 100);
-        return;
-      }
-
-      // Check if message is a /me command
-      const meCommandRegex = /^\/me\s*(.*)$/i;
-      const meMatch = message.match(meCommandRegex);
-
-      if (meMatch) {
-        const [, actionText] = meMatch;
-        // Send /me command to server
-        onSendMessage(`/me ${actionText.trim()}`);
-        setMessage("");
-        setShowEmojis(false);
-        setShowGifts(false);
-
-        // Reset submission state after a short delay
-        setTimeout(() => {
-          setIsSubmitting(false);
-        }, 100);
-        return;
-      }
-
-      // Check if message is a gift command
-      const giftCommandRegex = /^\/send\s+(.+?)\s+to\s+(.+)$/i;
-      const match = message.match(giftCommandRegex);
-
-      if (match) {
-        const [, giftName, recipientName] = match;
-
-        // Find matching gift from animations
-        const matchedGift = gifts.find(gift =>
-          gift.name.toLowerCase().includes(giftName.toLowerCase()) ||
-          giftName.toLowerCase().includes(gift.name.toLowerCase())
-        );
-
-        if (matchedGift) {
-          // Send formatted gift message with animation data
-          const giftMessage = `🎁GIFT:${JSON.stringify({
-            senderName: 'You',
-            giftName: matchedGift.name,
-            recipientName: recipientName.trim(),
-            emoji: matchedGift.emoji,
-            value: matchedGift.value,
-            lottie: matchedGift.lottie
-          })}`;
-          onSendMessage(giftMessage);
-        } else {
-          // Fallback for unknown gifts
-          const giftMessage = `🎁 sent ${giftName.trim()} gift to ${recipientName.trim()} ✨`;
-          onSendMessage(giftMessage);
+          // Reset submission state after a short delay
+          setTimeout(() => {
+            setIsSubmitting(false);
+          }, 100);
+          return;
         }
-      } else {
-        onSendMessage(message);
-      }
 
-      // Clear message and room storage for current room
-      setMessage("");
-      if (roomId) {
-        setRoomInputs(prev => {
-          const newMap = new Map(prev);
-          newMap.delete(roomId); // Remove saved input for this room after sending
-          return newMap;
-        });
+        // Check if message is a whois command
+        const whoisCommandRegex = /^\/whois\s+(.+)$/i;
+        const whoisMatch = message.match(whoisCommandRegex);
+
+        if (whoisMatch) {
+          const [, username] = whoisMatch;
+          // Send whois command to server
+          onSendMessage(`/whois ${username.trim()}`);
+          setMessage("");
+          setShowEmojis(false);
+          setShowGifts(false);
+
+          // Reset submission state after a short delay
+          setTimeout(() => {
+            setIsSubmitting(false);
+          }, 100);
+          return;
+        }
+
+        // Check if message is a /me command
+        const meCommandRegex = /^\/me\s*(.*)$/i;
+        const meMatch = message.match(meCommandRegex);
+
+        if (meMatch) {
+          const [, actionText] = meMatch;
+          // Send /me command to server
+          onSendMessage(`/me ${actionText.trim()}`);
+          setMessage("");
+          setShowEmojis(false);
+          setShowGifts(false);
+
+          // Reset submission state after a short delay
+          setTimeout(() => {
+            setIsSubmitting(false);
+          }, 100);
+          return;
+        }
+
+        // Check if message is a gift command
+        const giftCommandRegex = /^\/send\s+(.+?)\s+to\s+(.+)$/i;
+        const match = message.match(giftCommandRegex);
+
+        if (match) {
+          const [, giftName, recipientName] = match;
+
+          // Find matching gift from animations
+          const matchedGift = gifts.find(gift =>
+            gift.name.toLowerCase().includes(giftName.toLowerCase()) ||
+            giftName.toLowerCase().includes(gift.name.toLowerCase())
+          );
+
+          if (matchedGift) {
+            // Send formatted gift message with animation data
+            const giftMessage = `🎁GIFT:${JSON.stringify({
+              senderName: 'You',
+              giftName: matchedGift.name,
+              recipientName: recipientName.trim(),
+              emoji: matchedGift.emoji,
+              value: matchedGift.value,
+              lottie: matchedGift.lottie
+            })}`;
+            onSendMessage(giftMessage);
+          } else {
+            // Fallback for unknown gifts
+            const giftMessage = `🎁 sent ${giftName.trim()} gift to ${recipientName.trim()} ✨`;
+            onSendMessage(giftMessage);
+          }
+        } else {
+          // Send regular message
+          console.log('Sending regular message:', message.trim());
+          onSendMessage(message.trim());
+        }
+
+        // Clear message and room storage for current room
+        setMessage("");
+        if (roomId) {
+          setRoomInputs(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(roomId); // Remove saved input for this room after sending
+            return newMap;
+          });
+        }
+        setShowEmojis(false);
+        setShowGifts(false);
+
+        console.log('Message sent successfully');
+
+      } catch (error) {
+        console.error('Error sending message:', error);
       }
-      setShowEmojis(false);
-      setShowGifts(false);
 
       // Reset submission state after a short delay
       setTimeout(() => {
         setIsSubmitting(false);
-      }, 100);
+      }, 200);
+    } else if (!isConnected) {
+      console.error('Cannot send message: not connected to server');
+    } else if (!message.trim()) {
+      console.error('Cannot send empty message');
+    } else if (isSubmitting) {
+      console.error('Cannot send message: already submitting');
     }
   };
 
