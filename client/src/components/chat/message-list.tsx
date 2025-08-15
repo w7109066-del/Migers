@@ -774,10 +774,12 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isCurrentlyInRoom = content.includes('Currently in the room:');
           const isRoomManaged = content.includes('This room is managed by');
           const isUserEnterLeave = content.includes('has entered') || content.includes('has left') || content.includes('has left the room');
-          const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User') || content.includes('LowcardBot has joined');
+          const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User');
           const isKickMessage = content.includes('has been kicked') || content.includes('kick vote') || content.includes('Vote expires') || content.includes('You has been kicked by admin');
           const isBotOffMessage = content.includes('bot is off') || content.includes('Bot is off') || content.includes('bot off');
-          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage;
+          const isBotJoinMessage = content.includes('LowCardBot has joined') || content.includes('SicboBot has joined') || content.includes('LowCardBot is now active') || content.includes('SicboBot is now active');
+          const isBotGameMessage = content.includes('LowCard') || content.includes('Sicbo') || content.includes('🎮') || content.includes('🎲') || content.includes('Type !start') || content.includes('Type !j') || content.includes('drew a card') || content.includes('wins the game') || content.includes('dice rolled');
+          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage && !isBotJoinMessage && !isBotGameMessage;
 
           return (
             <div key={message.id} className="flex justify-center mb-2">
@@ -818,6 +820,35 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     <div className="bg-red-50 px-3 py-1 rounded-full border border-red-200">
                       <span className="text-red-600 font-medium text-xs">{roomName || 'System'}: </span>
                       <span className="text-red-800 text-xs font-semibold">{content}</span>
+                    </div>
+                  </div>
+                )}
+                {isBotJoinMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                      <span className="text-green-600 font-medium text-xs">Bot: </span>
+                      <span className="text-green-800 text-xs">{content}</span>
+                    </div>
+                  </div>
+                )}
+                {isBotGameMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                      <span className="text-blue-600 font-medium text-xs">Game Bot: </span>
+                      <span className="text-blue-800 text-xs">{content}</span>
+                      {imageUrl && (
+                        <div className="mt-2">
+                          <img src={imageUrl} alt="Game Image" className="max-w-xs rounded" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {isBotOffMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
+                      <span className="text-gray-600 font-medium text-xs">Bot: </span>
+                      <span className="text-gray-800 text-xs">{content}</span>
                     </div>
                   </div>
                 )}

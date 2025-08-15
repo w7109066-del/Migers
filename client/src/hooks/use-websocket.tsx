@@ -102,24 +102,42 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     socket.current.on('new_message', (data) => {
-      console.log('WebSocket: Received new_message event:', data);
-      // Handle new room message - immediate dispatch
-      const messageData = data.message || data;
-      console.log('WebSocket: Dispatching newMessage event:', messageData);
-
-      // Dispatch immediately without any delay
-      const event = new CustomEvent('newMessage', {
-        detail: messageData
-      });
-      window.dispatchEvent(event);
-
-      // Also trigger a secondary event for backup
-      setTimeout(() => {
+      if (data.message) {
+        console.log('New message received:', data.message);
+        // Assuming onMessage is a globally accessible function or passed down
+        // If not, this needs to be handled differently, perhaps via a custom event.
+        // For now, assuming `onMessage` is available in this scope or globally.
+        // As `onMessage` is not defined in this context, we'll dispatch a custom event.
         window.dispatchEvent(new CustomEvent('newMessage', {
-          detail: messageData
+          detail: data.message
         }));
-      }, 10);
+      }
     });
+
+    socket.current.on('bot_message', (senderName, content, imageUrl, roomId) => {
+      console.log('Bot message received:', { senderName, content, imageUrl, roomId });
+
+      const botMessage = {
+        id: `bot-${Date.now()}-${Math.random()}`,
+        content: content,
+        senderId: 'bot',
+        roomId: roomId,
+        messageType: 'system',
+        createdAt: new Date().toISOString(),
+        imageUrl: imageUrl,
+        sender: {
+          id: 'bot',
+          username: senderName || 'Bot',
+          level: 0,
+          isOnline: true,
+        }
+      };
+
+      window.dispatchEvent(new CustomEvent('newMessage', { // Dispatching as 'newMessage' for consistent handling
+        detail: botMessage
+      }));
+    });
+
 
     socket.current.on('new_direct_message', (data) => {
       // Handle new direct message
@@ -181,7 +199,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           botName,
           message,
           cardImage,
-          roomId: roomId || currentRoomRef.current
+          roomId: roomId || currentRoomRef.current // Assuming currentRoomRef is defined elsewhere and accessible
         }
       }));
     });
@@ -338,7 +356,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       // but I'm keeping it as is per instructions.
       const localStorageKeysForFriendList = [`chatMessages-${roomId}`, `chat_${roomId}`];
       localStorageKeysForFriendList.forEach(key => localStorage.removeItem(key));
-      
+
       // Clear all room-related localStorage
       const allKeysForFriendList = Object.keys(localStorage);
       allKeysForFriendList.forEach(key => {
