@@ -620,7 +620,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   };
 
   const renderMessageContent = (content: string) => {
-    if (!content) return content;
+    if (!content || typeof content !== 'string') return content || '';
 
     // Process custom emojis first
     let processedContent = content;
@@ -675,9 +675,14 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   return (
     <div className="message-list-container h-full overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(100vh - 120px)' }}>
       {messages.map((message) => {
+        // Safety checks for message object
+        if (!message || !message.id || !message.sender) {
+          return null;
+        }
+
         const isCurrentUser = message.senderId === user?.id;
         const isSystemMessage = message.senderId === 'system';
-        const isGift = isGiftMessage(message.content);
+        const isGift = isGiftMessage(message.content || '');
         const isBotMessage = message.messageType === 'bot';
 
         // Gift message rendering with auto-hide after 3 seconds
@@ -735,21 +740,24 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
         }
 
         // Bot message rendering - handle both bot messageType and bot sender names
-        if (isBotMessage || message.sender.username === 'LowCardBot') {
+        if (isBotMessage || message.sender?.username === 'LowCardBot' || message.sender?.username === 'LowcardBot') {
           return (
             <div key={message.id} className="flex items-start space-x-3 mb-2">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm" style={{ color: '#29876b', fontWeight: 'bold', fontFamily: 'Roboto, sans-serif' }}>
-                    {message.sender.username}:
+                    {message.sender?.username || 'Bot'}:
                   </span>
                   <div className="text-sm flex items-center gap-1" style={{ color: '#29876b', fontFamily: 'Roboto, sans-serif' }}>
-                    <span>{message.content}</span>
+                    <span>{message.content || ''}</span>
                     {message.cardImage && (
                       <img 
                         src={message.cardImage} 
                         alt="Card" 
                         className="w-4 h-6 object-contain inline-block ml-1"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     )}
                   </div>
@@ -761,13 +769,15 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
         // System message rendering
         if (isSystemMessage) {
-          const isWelcomeMessage = message.content.includes('Welcome to');
-          const isCurrentlyInRoom = message.content.includes('Currently in the room:');
-          const isRoomManaged = message.content.includes('This room is managed by');
-          const isUserEnterLeave = message.content.includes('has entered') || message.content.includes('has left') || message.content.includes('has left the room');
-          const isWhoisMessage = message.content.includes('📋 User Info for') || message.content.includes('❌ User') || message.content.includes('LowcardBot has joined');
-          const isKickMessage = message.content.includes('has been kicked') || message.content.includes('kick vote') || message.content.includes('Vote expires') || message.content.includes('You has been kicked by admin');
-          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage;
+          const content = message.content || '';
+          const isWelcomeMessage = content.includes('Welcome to');
+          const isCurrentlyInRoom = content.includes('Currently in the room:');
+          const isRoomManaged = content.includes('This room is managed by');
+          const isUserEnterLeave = content.includes('has entered') || content.includes('has left') || content.includes('has left the room');
+          const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User') || content.includes('LowcardBot has joined');
+          const isKickMessage = content.includes('has been kicked') || content.includes('kick vote') || content.includes('Vote expires') || content.includes('You has been kicked by admin');
+          const isBotOffMessage = content.includes('bot is off') || content.includes('Bot is off') || content.includes('bot off');
+          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage;
 
           return (
             <div key={message.id} className="mb-2">
@@ -802,14 +812,22 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                   <div className="flex items-center justify-center">
                     <div className="bg-red-50 px-3 py-1 rounded-full border border-red-200">
                       <span className="text-red-600 font-medium text-xs">{roomName || 'System'}: </span>
-                      <span className="text-red-800 text-xs font-semibold">{message.content}</span>
+                      <span className="text-red-800 text-xs font-semibold">{content}</span>
+                    </div>
+                  </div>
+                )}
+                {isBotOffMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+                      <span className="text-orange-600 font-medium text-xs">{roomName || 'System'}: </span>
+                      <span className="text-orange-800 text-xs font-semibold">{content}</span>
                     </div>
                   </div>
                 )}
                 {isWhoisMessage && (
                   <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
                     <div className="text-blue-700">
-                      <pre className="whitespace-pre-wrap font-mono text-sm">{message.content}</pre>
+                      <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
                     </div>
                   </div>
                 )}
@@ -817,7 +835,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                   <div className="flex items-center justify-center">
                     <div className="bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
                       <span className="text-gray-600 font-medium text-xs">{roomName || 'System'}: </span>
-                      <span className="text-gray-800 text-xs">{message.content}</span>
+                      <span className="text-gray-800 text-xs">{content}</span>
                     </div>
                   </div>
                 )}
