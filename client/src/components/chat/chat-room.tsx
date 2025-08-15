@@ -648,6 +648,13 @@ export function ChatRoom({
       const newMessage = event.detail;
       console.log('ChatRoom: Received new message event:', newMessage);
 
+      // Ensure we have required fields
+      if (!newMessage || !newMessage.content) {
+        console.error('ChatRoom: Invalid message data received:', newMessage);
+        return;
+      }
+
+      // Check if this message is for the current room
       if (newMessage.roomId === roomId) {
         // Don't show messages from blocked users
         if (blockedUsers.has(newMessage.senderId)) {
@@ -668,8 +675,35 @@ export function ChatRoom({
             return prev;
           }
 
-          console.log('Adding new message to chat:', newMessage.id);
-          return [...prev, newMessage];
+          // Ensure message has required structure for display
+          const messageToAdd = {
+            id: newMessage.id || `msg-${Date.now()}-${Math.random()}`,
+            content: newMessage.content,
+            senderId: newMessage.senderId,
+            createdAt: newMessage.createdAt || new Date().toISOString(),
+            sender: newMessage.sender || {
+              id: newMessage.senderId,
+              username: 'User',
+              level: 1,
+              isOnline: true
+            },
+            messageType: newMessage.messageType || 'text',
+            cardImage: newMessage.cardImage,
+            roomId: newMessage.roomId
+          };
+
+          console.log('Adding new message to chat:', messageToAdd.id);
+          const newMessages = [...prev, messageToAdd];
+          
+          // Auto-scroll to bottom when new message arrives
+          setTimeout(() => {
+            const messagesContainer = document.querySelector('.chat-room-messages');
+            if (messagesContainer) {
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+          }, 100);
+          
+          return newMessages;
         });
       }
     };

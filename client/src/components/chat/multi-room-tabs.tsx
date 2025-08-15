@@ -223,6 +223,12 @@ export function MultiRoomTabs({
       const message = event.detail;
       console.log('MultiRoomTabs: Received new message:', message);
 
+      // Ensure message has required fields
+      if (!message || !message.content || !message.roomId) {
+        console.error('MultiRoomTabs: Invalid message data received:', message);
+        return;
+      }
+
       if (message.roomId) {
         const currentActiveRoom = rooms[activeRoomIndex];
 
@@ -230,10 +236,28 @@ export function MultiRoomTabs({
         const targetRoom = rooms.find(room => room.id === message.roomId);
         if (targetRoom) {
           console.log('MultiRoomTabs: Adding message to room:', message.roomId);
+          
+          // Ensure message has proper structure
+          const messageToAdd = {
+            id: message.id || `msg-${Date.now()}-${Math.random()}`,
+            content: message.content,
+            senderId: message.senderId,
+            createdAt: message.createdAt || new Date().toISOString(),
+            sender: message.sender || {
+              id: message.senderId,
+              username: 'User',
+              level: 1,
+              isOnline: true
+            },
+            messageType: message.messageType || 'text',
+            cardImage: message.cardImage,
+            roomId: message.roomId
+          };
+          
           // Update the room's messages - ensure we don't duplicate messages
           const existingMessageIds = new Set((targetRoom.messages || []).map(m => m.id));
-          if (!existingMessageIds.has(message.id)) {
-            targetRoom.messages = [...(targetRoom.messages || []), message];
+          if (!existingMessageIds.has(messageToAdd.id)) {
+            targetRoom.messages = [...(targetRoom.messages || []), messageToAdd];
 
             // Save to localStorage immediately with timestamp
             const localStorageKey = `chat_${message.roomId}`;

@@ -102,9 +102,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     socket.current.on('new_message', (data) => {
+      console.log('WebSocket: Received new_message event:', data);
       // Handle new room message
+      const messageData = data.message || data;
+      console.log('WebSocket: Dispatching newMessage event:', messageData);
       window.dispatchEvent(new CustomEvent('newMessage', {
-        detail: data.message
+        detail: messageData
       }));
     });
 
