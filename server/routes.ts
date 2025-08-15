@@ -3335,7 +3335,6 @@ export function registerRoutes(app: Express): Server {
             
             io.to(data.roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
             return; // Exit early - don't save command message
-          }age
           }
 
           // Check if message is /bot off command
