@@ -3312,8 +3312,19 @@ export function registerRoutes(app: Express): Server {
 
           // Check if message is /add bot sicbo command
           if (data.content.startsWith('/add bot sicbo')) {
+            // Activate sicbo bot in this room
+            const { activateSicboBot } = await import('./bots/sicbo');
+            activateSicboBot(data.roomId);
+            
             // Don't save this command to database - emit bot message instead
             io.to(data.roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
+            return; // Exit early - don't save command message
+          }
+
+          // Check if message is /add bot lowcard command
+          if (data.content.startsWith('/add bot lowcard')) {
+            // Don't save this command to database - emit bot message instead
+            io.to(data.roomId).emit('bot_message', 'LowCardBot', '🎮 LowCardBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
             return; // Exit early - don't save command message
           }
 

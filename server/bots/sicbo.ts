@@ -324,8 +324,17 @@ export function processSicboCommand(io: Server, roomId: string, command: string,
     io.to(roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has left the room. Type "/add bot sicbo" to add the bot back.', null, roomId);
     return;
   }
+
+  // Mark bot as present when any sicbo command is used
+  if (!botPresence[roomId]) {
+    botPresence[roomId] = true;
+  }
   
   io.emit('sicbo_command', roomId, command, userId, username);
+}
+
+export function activateSicboBot(roomId: string): void {
+  botPresence[roomId] = true;
 }
 
 export function isSicboBotActiveInRoom(roomId: string): boolean {
