@@ -188,6 +188,36 @@ export function getBotStatus(roomId: string): string {
 export function processLowCardCommand(io: Server, room: string, msg: string, userId: string, username: string): void {
   console.log('Processing LowCard command directly:', msg, 'in room:', room, 'for user:', username);
 
+  // Handle /bot off command specifically
+  if (msg.trim() === '/bot off') {
+    // Remove bot presence from room
+    delete botPresence[room];
+    
+    // Cancel any ongoing games in this room
+    const data = rooms[room];
+    if (data) {
+      // Refund all players if game exists
+      data.players.forEach(player => {
+        tambahCoin(player.id, player.bet);
+      });
+      
+      // Clear timeouts
+      if (data.timeout) {
+        clearTimeout(data.timeout);
+      }
+      if (data.drawTimeout) {
+        clearTimeout(data.drawTimeout);
+      }
+      
+      // Remove room data
+      delete rooms[room];
+    }
+    
+    // Send goodbye message
+    io.to(room).emit('bot_message', 'LowCardBot', '🎮 LowCardBot has left the room. Type "/add bot lowcard" to add the bot back.', null, room);
+    return;
+  }
+
   if (!msg.startsWith('!')) {
     console.log('Not a bot command, ignoring');
     return;
