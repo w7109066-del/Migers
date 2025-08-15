@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
 import { handleLowCardBot, isBotActiveInRoom, getBotStatus, processLowCardCommand } from './bots/lowcard';
+import { initializeSicboBot, processSicboCommand, isSicboBotActiveInRoom } from './bots/sicbo';
 
 // Helper function to get video duration
 async function getVideoDuration(filePath: string): Promise<number> {
@@ -2869,6 +2870,9 @@ export function registerRoutes(app: Express): Server {
     pingInterval: 25000
   });
 
+  // Initialize bots
+  initializeSicboBot(io);
+
   // Track users in mock rooms with detailed user info
   const mockRoomMembers = new Map<string, Map<string, any>>();
 
@@ -3306,15 +3310,29 @@ export function registerRoutes(app: Express): Server {
             return; // Exit early - don't save command message
           }
 
-          // Check if message is a LowCard bot command and handle it
+          // Check if message is /add bot sicbo command
+          if (data.content.startsWith('/add bot sicbo')) {
+            // Don't save this command to database - emit bot message instead
+            io.to(data.roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
+            return; // Exit early - don't save command message
+          }
+
+          // Check if message is a bot command and handle it
           if (data.content.startsWith('!')) {
-            console.log('Processing LowCard command:', data.content, 'in room:', data.roomId);
+            console.log('Processing bot command:', data.content, 'in room:', data.roomId);
 
             // Get user info for bot command processing
             const senderUser = await storage.getUser(userId);
 
-            // Handle the bot command directly without saving or broadcasting the command message
-            console.log('Handling bot command directly for user:', senderUser?.username);
+            // Check if it's a Sicbo command first (since Sicbo bot was added more recently)
+            if (isSicboBotActiveInRoom(data.roomId)) {
+              console.log('Handling Sicbo bot command for user:', senderUser?.username);
+              processSicboCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
+              return;
+            }
+
+            // Handle LowCard command as fallback
+            console.log('Handling LowCard bot command for user:', senderUser?.username);
             processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             return;
           }
