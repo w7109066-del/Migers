@@ -777,7 +777,6 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User') || content.includes('LowcardBot has joined');
           const isKickMessage = content.includes('has been kicked') || content.includes('kick vote') || content.includes('Vote expires') || content.includes('You has been kicked by admin');
           const isBotOffMessage = content.includes('bot is off') || content.includes('Bot is off') || content.includes('bot off');
-          const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User') || content.includes('LowcardBot has joined');
           const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage;g-red-50 px-3 py-1 rounded-full border border-red-200">
                       <span className="text-red-600 font-medium text-xs">{roomName || 'System'}: </span>
                       <span className="text-red-800 text-xs font-semibold">{content}</span>
