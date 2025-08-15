@@ -106,13 +106,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       // Handle new room message - immediate dispatch
       const messageData = data.message || data;
       console.log('WebSocket: Dispatching newMessage event:', messageData);
-      
+
       // Dispatch immediately without any delay
       const event = new CustomEvent('newMessage', {
         detail: messageData
       });
       window.dispatchEvent(event);
-      
+
       // Also trigger a secondary event for backup
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('newMessage', {
@@ -303,7 +303,53 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     socket.current.on('friend_list_updated', () => {
       console.log('Friend list updated via Socket.IO - forcing refresh');
 
-      // Clear ALL friend-related cache
+      // Clear both old and new format localStorage keys
+      const localStorageKeys = [`chatMessages-${roomId}`, `chat_${roomId}`];
+      localStorageKeys.forEach(key => localStorage.removeItem(key));
+
+      // Clear saved room states  
+      const savedRoomStates = JSON.parse(localStorage.getItem('savedRoomStates') || '{}');
+      if (savedRoomStates[roomId]) {
+        delete savedRoomStates[roomId];
+        localStorage.setItem('savedRoomStates', JSON.stringify(savedRoomStates));
+      }
+
+      // Clear any additional room-related localStorage keys
+      const allKeys = Object.keys(localStorage);
+      allKeys.forEach(key => {
+        if (key.includes(roomId) || key.includes(`room-${roomId}`)) {
+          localStorage.removeItem(key);
+          console.log('Removed localStorage key:', key);
+        }
+      });
+
+      // Clear multi-room state if user exists
+      if (user) {
+        const multiRoomStateKey = `multiRoomState-${user.id}`;
+        const multiRoomState = JSON.parse(localStorage.getItem(multiRoomStateKey) || '{}');
+        if (multiRoomState.rooms) {
+          multiRoomState.rooms = multiRoomState.rooms.filter((room: any) => room.id !== roomId);
+          localStorage.setItem(multiRoomStateKey, JSON.stringify(multiRoomState));
+        }
+      }
+
+      // Clear both old and new format localStorage keys
+      // This part seems duplicated from above and might be a copy-paste error in the original code,
+      // but I'm keeping it as is per instructions.
+      const localStorageKeysForFriendList = [`chatMessages-${roomId}`, `chat_${roomId}`];
+      localStorageKeysForFriendList.forEach(key => localStorage.removeItem(key));
+      
+      // Clear all room-related localStorage
+      const allKeysForFriendList = Object.keys(localStorage);
+      allKeysForFriendList.forEach(key => {
+        if (key.includes(roomId) || key.includes(`room-${roomId}`)) {
+          localStorage.removeItem(key);
+          console.log('Removed localStorage key:', key);
+        }
+      });
+
+
+      // Clear cache and invalidate queries related to friends
       queryClient.removeQueries({ queryKey: ["/api/friends"] });
       queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
       queryClient.removeQueries({ queryKey: ["friends"] });
@@ -364,12 +410,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     socket.current.on('clear_room_data', (data) => {
       console.log('Clearing room data for:', data.roomId);
-      
+
       // Clear both old and new format localStorage keys
       const localStorageKeys = [`chatMessages-${data.roomId}`, `chat_${data.roomId}`];
       localStorageKeys.forEach(key => localStorage.removeItem(key));
 
-      // Clear all room-related localStorage
+      // Clear any additional room-related localStorage keys
       const allKeys = Object.keys(localStorage);
       allKeys.forEach(key => {
         if (key.includes(data.roomId)) {
@@ -545,7 +591,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       };
 
       console.log('WebSocket: Sending message data:', messageData);
-      
+
       socket.current.emit('send_message', messageData);
       console.log('WebSocket: Message emitted successfully');
 

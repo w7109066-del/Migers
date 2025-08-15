@@ -694,7 +694,7 @@ export function ChatRoom({
 
           console.log('Adding new message to chat:', messageToAdd.id);
           const newMessages = [...prev, messageToAdd];
-          
+
           // Auto-scroll to bottom immediately - no delay
           requestAnimationFrame(() => {
             const messagesContainer = document.querySelector('.chat-room-messages');
@@ -702,7 +702,7 @@ export function ChatRoom({
               messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
           });
-          
+
           return newMessages;
         });
       }
@@ -721,6 +721,15 @@ export function ChatRoom({
         messageType: 'system'
       };
       setMessages(prev => [...prev, errorMessage]);
+    };
+
+    const handleRoomLeft = (event: CustomEvent) => {
+      const { roomId: leftRoomId, success } = event.detail;
+      if (leftRoomId === roomId && success) {
+        console.log('Successfully left room:', leftRoomId);
+        setIsRoomJoined(false);
+        joinAttemptRef.current = false;
+      }
     };
 
     const handleUserJoin = (event: CustomEvent) => {
@@ -845,42 +854,46 @@ export function ChatRoom({
       }
     };
 
-    // Listen for bot message
-    const handleBotMessage = (event: CustomEvent) => {
-      const { botName, message, cardImage, roomId: eventRoomId } = event.detail;
-      if (eventRoomId === roomId) {
-        setMessages(prev => [...prev, {
-          id: `bot-${Date.now()}-${botName}`,
-          content: message,
-          senderId: 'system', // Or a dedicated bot ID
-          createdAt: new Date().toISOString(),
-          sender: { id: 'system', username: botName, level: 0, isOnline: true },
-          messageType: 'bot',
-          cardImage: cardImage // Pass the card image here
-        }]);
+    const handleRoomJoined = (event: CustomEvent) => {
+      const { roomId: joinedRoomId, success } = event.detail;
+      if (joinedRoomId === roomId && success) {
+        console.log('Room joined successfully via event:', joinedRoomId);
+        setIsRoomJoined(true);
+        joinAttemptRef.current = false;
+
+        // Load messages after successful join
+        setTimeout(async () => {
+          await loadRoomMessages();
+        }, 500);
+      } else if (joinedRoomId === roomId && !success) {
+        console.error('Failed to join room:', joinedRoomId);
+        setIsRoomJoined(false);
+        joinAttemptRef.current = false;
       }
     };
 
     window.addEventListener('newMessage', handleNewMessage as EventListener);
     window.addEventListener('userJoined', handleUserJoin as EventListener);
     window.addEventListener('userLeft', handleUserLeave as EventListener);
-    window.addEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
-    window.addEventListener('userKicked', handleUserKicked as EventListener);
-    window.addEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
-    window.addEventListener('socketError', handleSocketError as EventListener);
-    window.addEventListener('botMessage', handleBotMessage as EventListener); // Listen for bot messages
+    window.addEventListener('userTyping', handleUserTyping);
+    window.addEventListener('botMessage', handleBotMessage);
+    window.addEventListener('roomJoined', handleRoomJoined);
+    window.addEventListener('roomLeft', handleRoomLeft);
+    window.addEventListener('forcedLeaveRoom', handleForcedLeave);
+    window.addEventListener('socketError', handleSocketError);
 
     return () => {
       window.removeEventListener('newMessage', handleNewMessage as EventListener);
       window.removeEventListener('userJoined', handleUserJoin as EventListener);
       window.removeEventListener('userLeft', handleUserLeave as EventListener);
-      window.removeEventListener('forceMemberRefresh', handleForceMemberRefresh as EventListener);
-      window.removeEventListener('userKicked', handleUserKicked as EventListener);
-      window.removeEventListener('forcedLeaveRoom', handleForcedLeave as EventListener);
-      window.removeEventListener('socketError', handleSocketError as EventListener);
-      window.removeEventListener('botMessage', handleBotMessage as EventListener); // Remove listener for bot messages
+      window.removeEventListener('userTyping', handleUserTyping);
+      window.removeEventListener('botMessage', handleBotMessage);
+      window.removeEventListener('roomJoined', handleRoomJoined);
+      window.removeEventListener('roomLeft', handleRoomLeft);
+      window.removeEventListener('forcedLeaveRoom', handleForcedLeave);
+      window.removeEventListener('socketError', handleSocketError);
     };
-  }, [roomId, refetchMembers, messages, blockedUsers]); // Added messages and blockedUsers to dependencies
+  }, [roomId, refetchMembers, messages, blockedUsers, user, roomName, isRoomJoined, joinAttemptRef, loadRoomMessages]); // Added roomName and isRoomJoined
 
   const handleSendMessage = useCallback((content: string) => {
     if (!content.trim()) {

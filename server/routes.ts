@@ -3186,7 +3186,6 @@ export function registerRoutes(app: Express): Server {
     });
 
     socket.on('leave_room', async (data) => {
-
       if (!data.roomId || !userId) return;
 
       try {
@@ -3196,6 +3195,14 @@ export function registerRoutes(app: Express): Server {
         // Check if user is actually in this room
         const userConn = userConnections.get(userId);
         if (userConn?.currentRoomId === data.roomId) {
+          // Remove from mock rooms
+          if (['2', '3', '4'].includes(data.roomId)) {
+            const roomMembers = mockRoomMembers.get(data.roomId);
+            if (roomMembers && roomMembers.has(userId)) {
+              roomMembers.delete(userId);
+            }
+          }
+
           await storage.leaveRoom(data.roomId, userId);
 
           // Clear user's current room
@@ -3213,8 +3220,11 @@ export function registerRoutes(app: Express): Server {
             userLevel: user?.level || 1
           });
 
-          // Clear any room-specific data for this user
-          socket.emit('clear_room_data', { roomId: data.roomId });
+          // Send confirmation to user who left
+          socket.emit('room_left', {
+            roomId: data.roomId,
+            success: true
+          });
 
           console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
 
@@ -3232,6 +3242,12 @@ export function registerRoutes(app: Express): Server {
           }, 500);
         } else {
           console.log(`User ${userId} not in room ${data.roomId}, skipping leave`);
+          // Still send confirmation even if not in room
+          socket.emit('room_left', {
+            roomId: data.roomId,
+            success: true,
+            message: 'Not in room'
+          });
         }
       } catch (error) {
         console.error('Leave room error:', error);
@@ -3271,34 +3287,34 @@ export function registerRoutes(app: Express): Server {
             return;
           }
 
-          // Check if user is actually a member of the room (except for system rooms)
-          if (!['1', '2', '3', '4'].includes(data.roomId)) {
+          // Check if user is actually a member of the room
+          let isMember = false;
+          
+          if (['2', '3', '4'].includes(data.roomId)) {
+            // For mock rooms (2-4), check mock room members
+            const roomMembers = mockRoomMembers.get(data.roomId);
+            isMember = roomMembers && roomMembers.has(userId);
+          } else {
+            // For real rooms (including MeChat with ID "1"), check database
             try {
               const roomMembers = await storage.getRoomMembers(data.roomId);
-              const isMember = roomMembers?.some(member => member.user.id === userId);
-
-              if (!isMember) {
-                socket.emit('error', {
-                  message: 'You are not in the chatroom',
-                });
-                return;
-              }
+              isMember = roomMembers?.some(member => member.user.id === userId) || false;
             } catch (error) {
               console.error('Error checking room membership:', error);
-              socket.emit('error', {
-                message: 'You are not in the chatroom',
-              });
-              return;
+              // Don't block message if error checking membership
+              isMember = true;
             }
-          } else {
-            // For mock rooms (1-4), check if user is in the mock room members
-            const roomMembers = mockRoomMembers.get(data.roomId);
-            if (!roomMembers || !roomMembers.has(userId)) {
-              socket.emit('error', {
-                message: 'You are not in the chatroom',
-              });
-              return;
-            }
+          }
+
+          // Also check if user is currently connected to this room via WebSocket
+          const userConn = userConnections.get(userId);
+          const isConnectedToRoom = userConn?.currentRoomId === data.roomId;
+
+          if (!isMember && !isConnectedToRoom) {
+            socket.emit('error', {
+              message: 'You are not in the chatroom. Please join the room first.',
+            });
+            return;
           }
         }
 
