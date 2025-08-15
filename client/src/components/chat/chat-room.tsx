@@ -160,7 +160,7 @@ export function ChatRoom({
   const previousRoomIdRef = useRef<string | null>(null);
   const joinAttemptRef = useRef<boolean>(false);
 
-  // Function to load messages - defined outside useEffect to make it accessible
+  // Function to load messages - defined with useCallback to make it accessible
   const loadRoomMessages = useCallback(async () => {
     if (!roomId || !roomName) return;
     
@@ -644,6 +644,20 @@ export function ChatRoom({
 
     return () => clearInterval(interval);
   }, [roomId, roomName, isRoomJoined]);
+
+  // Missing event handlers
+  const handleUserTyping = (event: CustomEvent) => {
+    // Handle user typing event
+    console.log('User typing:', event.detail);
+  };
+
+  const handleBotMessage = (event: CustomEvent) => {
+    // Handle bot message event
+    const botMessage = event.detail;
+    if (botMessage.roomId === roomId) {
+      setMessages(prev => [...prev, botMessage]);
+    }
+  };
 
   // WebSocket event listeners
   useEffect(() => {
