@@ -777,7 +777,45 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User') || content.includes('LowcardBot has joined');
           const isKickMessage = content.includes('has been kicked') || content.includes('kick vote') || content.includes('Vote expires') || content.includes('You has been kicked by admin');
           const isBotOffMessage = content.includes('bot is off') || content.includes('Bot is off') || content.includes('bot off');
-          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage;g-red-50 px-3 py-1 rounded-full border border-red-200">
+          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage;
+
+          return (
+            <div key={message.id} className="flex justify-center mb-2">
+              <div className="max-w-md w-full">
+                {isWelcomeMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                      <span className="text-green-600 font-medium text-xs">{roomName || 'System'}: </span>
+                      <span className="text-green-800 text-xs">{content}</span>
+                    </div>
+                  </div>
+                )}
+                {isCurrentlyInRoom && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div className="text-gray-700">
+                      <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
+                    </div>
+                  </div>
+                )}
+                {isRoomManaged && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+                      <span className="text-purple-600 font-medium text-xs">{roomName || 'System'}: </span>
+                      <span className="text-purple-800 text-xs">{content}</span>
+                    </div>
+                  </div>
+                )}
+                {isUserEnterLeave && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                      <span className="text-blue-600 font-medium text-xs">{roomName || 'System'}: </span>
+                      <span className="text-blue-800 text-xs">{content}</span>
+                    </div>
+                  </div>
+                )}
+                {isKickMessage && (
+                  <div className="flex items-center justify-center">
+                    <div className="bg-red-50 px-3 py-1 rounded-full border border-red-200">
                       <span className="text-red-600 font-medium text-xs">{roomName || 'System'}: </span>
                       <span className="text-red-800 text-xs font-semibold">{content}</span>
                     </div>
