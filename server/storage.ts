@@ -1987,3 +1987,45 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Helper functions for bots
+export async function getUserBalance(userId: string): Promise<number> {
+  try {
+    const user = await storage.getUser(userId);
+    return user?.coins || 0;
+  } catch (error) {
+    console.error('Error getting user balance:', error);
+    return 0;
+  }
+}
+
+export async function tambahCoin(userId: string, amount: number): Promise<boolean> {
+  try {
+    const user = await storage.getUser(userId);
+    if (!user) return false;
+    
+    const newBalance = (user.coins || 0) + amount;
+    const updatedUser = await storage.updateUserCoins(userId, newBalance);
+    return !!updatedUser;
+  } catch (error) {
+    console.error('Error adding coins:', error);
+    return false;
+  }
+}
+
+export async function potongCoin(userId: string, amount: number): Promise<boolean> {
+  try {
+    const user = await storage.getUser(userId);
+    if (!user) return false;
+    
+    const currentBalance = user.coins || 0;
+    if (currentBalance < amount) return false;
+    
+    const newBalance = currentBalance - amount;
+    const updatedUser = await storage.updateUserCoins(userId, newBalance);
+    return !!updatedUser;
+  } catch (error) {
+    console.error('Error deducting coins:', error);
+    return false;
+  }
+}
