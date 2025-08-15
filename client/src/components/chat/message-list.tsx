@@ -55,7 +55,11 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
   // Filter out bot commands that shouldn't be displayed
   const filteredMessages = messages.filter(message => {
-    if (!message || !message.content) return true;
+    // Safety check for message existence and structure
+    if (!message || !message.id || !message.sender) return false;
+    
+    // Check if content exists and is a string
+    if (!message.content || typeof message.content !== 'string') return true;
     
     const content = message.content.trim();
     
@@ -130,10 +134,12 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   };
 
   const isGiftMessage = (content: string) => {
+    if (!content || typeof content !== 'string') return false;
     return content.includes('🎁GIFT:') || (content.includes('🎁 sent a') && content.includes('gift to'));
   };
 
   const parseGiftMessage = (content: string) => {
+    if (!content || typeof content !== 'string') return null;
     // Parse new format with JSON data: "🎁GIFT:{json data}"
     const jsonMatch = content.match(/🎁GIFT:(.+)$/);
     if (jsonMatch) {
@@ -637,7 +643,8 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   };
 
   const renderMessageContent = (content: string) => {
-    if (!content || typeof content !== 'string') return content || '';
+    // Enhanced safety check
+    if (!content || typeof content !== 'string') return '';
 
     // Process custom emojis first
     let processedContent = content;
