@@ -680,16 +680,26 @@ export function ChatRoom({
 
         // Check if message already exists (prevent duplicates)
         setMessages(prev => {
-          const messageExists = prev.some(msg =>
+          // Remove any temporary optimistic messages with same content from same user
+          const filteredPrev = prev.filter(msg => {
+            if (msg.id.startsWith('temp-') && 
+                msg.senderId === newMessage.senderId && 
+                msg.content === newMessage.content) {
+              return false; // Remove optimistic message
+            }
+            return true;
+          });
+
+          const messageExists = filteredPrev.some(msg =>
             msg.id === newMessage.id ||
             (msg.senderId === newMessage.senderId &&
              msg.content === newMessage.content &&
-             Math.abs(new Date(msg.createdAt).getTime() - new Date(newMessage.createdAt).getTime()) < 1000)
+             Math.abs(new Date(msg.createdAt).getTime() - new Date(newMessage.createdAt).getTime()) < 2000)
           );
 
           if (messageExists) {
             console.log('Message already exists, skipping:', newMessage.id);
-            return prev;
+            return filteredPrev;
           }
 
           // Ensure message has required structure for display
@@ -706,11 +716,12 @@ export function ChatRoom({
             },
             messageType: newMessage.messageType || 'text',
             cardImage: newMessage.cardImage,
-            roomId: newMessage.roomId
+            roomId: newMessage.roomId,
+            metadata: newMessage.metadata
           };
 
           console.log('Adding new message to chat:', messageToAdd.id);
-          const newMessages = [...prev, messageToAdd];
+          const newMessages = [...filteredPrev, messageToAdd];
 
           // Auto-scroll to bottom immediately - no delay
           requestAnimationFrame(() => {
@@ -931,7 +942,8 @@ export function ChatRoom({
           username: 'System',
           level: 0,
           isOnline: true
-        }
+        },
+        messageType: 'system'
       }]);
       return;
     }
@@ -941,11 +953,48 @@ export function ChatRoom({
       return;
     }
 
+    if (!user) {
+      console.log('Cannot send message: no user data');
+      return;
+    }
+
     console.log('ChatRoom: Sending message:', content, 'to room:', roomId);
 
     try {
+      // Create optimistic message to show immediately
+      const optimisticMessage = {
+        id: `temp-${Date.now()}-${Math.random()}`,
+        content: content.trim(),
+        senderId: user.id,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: user.id,
+          username: user.username || 'You',
+          level: user.level || 1,
+          isOnline: true,
+          profilePhotoUrl: user.profilePhotoUrl,
+          isMentor: user.isMentor,
+          isMerchant: user.isMerchant
+        },
+        messageType: 'text',
+        roomId: roomId
+      };
+
+      // Add message immediately to local state for instant feedback
+      setMessages(prev => [...prev, optimisticMessage]);
+
+      // Send message via WebSocket
       sendChatMessage(content, roomId);
       console.log('Message sent successfully via WebSocket');
+
+      // Auto-scroll to bottom immediately
+      requestAnimationFrame(() => {
+        const messagesContainer = document.querySelector('.chat-room-messages');
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      });
+
     } catch (error) {
       console.error('Error sending message:', error);
       // Show error message to user
@@ -959,10 +1008,11 @@ export function ChatRoom({
           username: 'System',
           level: 0,
           isOnline: true
-        }
+        },
+        messageType: 'system'
       }]);
     }
-  }, [roomId, isConnected, sendChatMessage]);
+  }, [roomId, isConnected, sendChatMessage, user]);
 
 
   const handleChatUser = (user: any) => {

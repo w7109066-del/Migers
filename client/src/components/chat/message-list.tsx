@@ -777,40 +777,396 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User') || content.includes('LowcardBot has joined');
           const isKickMessage = content.includes('has been kicked') || content.includes('kick vote') || content.includes('Vote expires') || content.includes('You has been kicked by admin');
           const isBotOffMessage = content.includes('bot is off') || content.includes('Bot is off') || content.includes('bot off');
-          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage;
+          const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMesimport React, { useEffect, useRef, useState, useCallback } from "react";
+import { UserAvatar } from "@/components/user/user-avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Heart, User, MessageCircle, Flag, UserX, Crown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Lottie from "react-lottie-player";
 
-          return (
-            <div key={message.id} className="mb-2">
-              <div className="text-sm">
-                {isWelcomeMessage && (
-                  <div>
-                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
-                    <span className="text-gray-800">{message.content}</span>
+interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    username: string;
+    level: number;
+    isOnline: boolean;
+    profilePhotoUrl?: string;
+    isMentor?: boolean;
+    isMerchant?: boolean;
+  };
+  messageType?: string;
+  cardImage?: string;
+  metadata?: any;
+}
+
+interface MessageListProps {
+  messages: Message[];
+  onUserClick: (user: any) => void;
+  roomName?: string;
+  isAdmin?: boolean;
+  currentUserId?: string;
+}
+
+export function MessageList({ 
+  messages, 
+  onUserClick, 
+  roomName, 
+  isAdmin = false,
+  currentUserId 
+}: MessageListProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  const scrollToBottom = useCallback(() => {
+    if (shouldAutoScroll && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [shouldAutoScroll]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  const handleScroll = useCallback(() => {
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShouldAutoScroll(isNearBottom);
+    }
+  }, []);
+
+  const handleUserInteraction = (user: any, action: string) => {
+    switch (action) {
+      case 'profile':
+        onUserClick(user);
+        break;
+      case 'dm':
+        window.dispatchEvent(new CustomEvent('openDirectMessage', {
+          detail: {
+            id: user.id,
+            username: user.username,
+            level: user.level,
+            isOnline: user.isOnline,
+            profilePhotoUrl: user.profilePhotoUrl
+          }
+        }));
+        break;
+      case 'whois':
+        window.dispatchEvent(new CustomEvent('sendWhoisCommand', {
+          detail: { content: `/whois ${user.username}` }
+        }));
+        break;
+    }
+  };
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  };
+
+  const renderMessage = (message: Message) => {
+    const isSystemMessage = message.senderId === 'system';
+    const isCurrentUser = message.senderId === currentUserId;
+    const isActionMessage = message.messageType === 'action' || message.metadata?.isAction;
+    
+    // System message checks
+    const isWelcomeMessage = message.content.includes('Welcome to') && isSystemMessage;
+    const isCurrentlyInRoom = message.content.includes('Currently user in the room') && isSystemMessage;
+    const isRoomManaged = message.content.includes('managed by') && isSystemMessage;
+    const isUserEnterLeave = (message.content.includes('has entered') || 
+                             message.content.includes('has left') || 
+                             message.content.includes('has left the room')) && isSystemMessage;
+    const isKickMessage = message.content.includes('kicked') && isSystemMessage;
+    const isBotOffMessage = message.content.includes('bot off') && isSystemMessage;
+
+    // Gift message check
+    const isGiftMessage = message.content.startsWith('🎁GIFT:');
+
+    // Check if this is a card game message
+    const isCardMessage = message.cardImage && message.cardImage.length > 0;
+
+    if (isGiftMessage) {
+      try {
+        const giftData = JSON.parse(message.content.replace('🎁GIFT:', ''));
+        return (
+          <div key={message.id} className="mb-4">
+            <div className="flex justify-center">
+              <Card className="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-200 max-w-sm">
+                <CardContent className="p-4 text-center">
+                  <div className="flex justify-center mb-2">
+                    {giftData.isCustom ? (
+                      <img 
+                        src={giftData.fileUrl} 
+                        alt={giftData.giftName}
+                        className="w-12 h-12 object-contain"
+                      />
+                    ) : giftData.lottie ? (
+                      <Lottie
+                        loop
+                        animationData={giftData.lottie}
+                        play
+                        style={{ width: 48, height: 48 }}
+                      />
+                    ) : (
+                      <span className="text-4xl">{giftData.emoji}</span>
+                    )}
                   </div>
-                )}
-                {isCurrentlyInRoom && (
-                  <div>
-                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
-                    <span className="text-gray-800">{message.content}</span>
+                  <p className="text-sm font-medium text-purple-800">
+                    🎁 {giftData.senderName} sent {giftData.giftName} to {giftData.recipientName}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Value: {giftData.value} coins ✨
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
+      } catch (error) {
+        console.error('Error parsing gift message:', error);
+      }
+    }
+
+    if (isCardMessage) {
+      return (
+        <div key={message.id} className="mb-4">
+          <div className={cn(
+            "flex items-start space-x-3",
+            isCurrentUser ? "flex-row-reverse space-x-reverse" : ""
+          )}>
+            <UserAvatar
+              username={message.sender.username}
+              size="sm"
+              isOnline={message.sender.isOnline}
+              profilePhotoUrl={message.sender.profilePhotoUrl}
+              isAdmin={(message.sender.level || 0) >= 5}
+              isMentor={message.sender.isMentor}
+              isMerchant={message.sender.isMerchant}
+              userLevel={message.sender.level || 1}
+            />
+            <div className={cn(
+              "flex-1 min-w-0",
+              isCurrentUser ? "text-right" : ""
+            )}>
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="font-medium text-sm text-blue-600">
+                  {message.sender.username}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {formatTime(message.createdAt)}
+                </span>
+              </div>
+              <div className="text-sm text-gray-800 mb-2">
+                {message.content}
+              </div>
+              {message.cardImage && (
+                <div className="flex flex-wrap gap-1">
+                  {message.cardImage.map((card: string, index: number) => (
+                    <img
+                      key={index}
+                      src={`/cards/${card}.png`}
+                      alt={card}
+                      className="w-12 h-16 object-contain"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (isSystemMessage) {
+      return (
+        <div key={message.id} className="mb-2">
+          <div className="text-sm">
+            {isWelcomeMessage && (
+              <div>
+                <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
+                <span className="text-gray-800">{message.content}</span>
+              </div>
+            )}
+            {isCurrentlyInRoom && (
+              <div>
+                <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
+                <span className="text-gray-800">{message.content}</span>
+              </div>
+            )}
+            {isRoomManaged && (
+              <div>
+                <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
+                <span className="text-gray-800">{message.content}</span>
+              </div>
+            )}
+            {isUserEnterLeave && (
+              <div className="mb-2">
+                <div className="text-sm">
+                  <span className="text-red-500 font-medium">{roomName || 'Room'}: </span>
+                  <span className="text-gray-800">{message.content}</span>
+                </div>
+              </div>
+            )}
+            {isKickMessage && (
+              <div className="flex items-center justify-center">
+                <div className="bg-red-100 border border-red-300 rounded-lg p-2 max-w-md">
+                  <span className="text-red-800 font-medium text-sm">
+                    🚫 {message.content}
+                  </span>
+                </div>
+              </div>
+            )}
+            {isBotOffMessage && (
+              <div className="flex items-center justify-center">
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-2 max-w-md">
+                  <span className="text-yellow-800 font-medium text-sm">
+                    🤖 {message.content}
+                  </span>
+                </div>
+              </div>
+            )}
+            {!isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isKickMessage && !isBotOffMessage && (
+              <div className="text-center">
+                <span className="text-gray-600 text-sm bg-gray-100 px-3 py-1 rounded-full">
+                  {message.content}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (isActionMessage) {
+      return (
+        <div key={message.id} className="mb-3">
+          <div className="text-center">
+            <span className="text-purple-600 italic text-sm bg-purple-50 px-3 py-1 rounded-full">
+              {message.content}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Regular user message
+    return (
+      <div key={message.id} className="mb-4">
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <div className={cn(
+              "flex items-start space-x-3 hover:bg-gray-50 p-2 rounded-lg transition-colors",
+              isCurrentUser ? "flex-row-reverse space-x-reverse" : ""
+            )}>
+              <UserAvatar
+                username={message.sender.username}
+                size="sm"
+                isOnline={message.sender.isOnline}
+                profilePhotoUrl={message.sender.profilePhotoUrl}
+                isAdmin={(message.sender.level || 0) >= 5}
+                isMentor={message.sender.isMentor}
+                isMerchant={message.sender.isMerchant}
+                userLevel={message.sender.level || 1}
+              />
+              <div className={cn(
+                "flex-1 min-w-0",
+                isCurrentUser ? "text-right" : ""
+              )}>
+                <div className={cn(
+                  "flex items-center space-x-2 mb-1",
+                  isCurrentUser ? "justify-end" : ""
+                )}>
+                  <div className="flex items-center space-x-1">
+                    <span className={cn(
+                      "font-medium text-sm",
+                      message.sender.isMentor ? "text-red-600" :
+                      ((message.sender.level || 0) >= 5) ? "text-orange-600" : "text-blue-600"
+                    )}>
+                      {message.sender.username}
+                    </span>
+                    {message.sender.isMentor && (
+                      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0">
+                        M
+                      </Badge>
+                    )}
+                    {message.sender.isMerchant && (
+                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                        🛍️
+                      </Badge>
+                    )}
+                    {(message.sender.level || 0) >= 5 && (
+                      <Crown className="w-3 h-3 text-yellow-500" />
+                    )}
+                    <Badge variant="outline" className="text-xs">
+                      {message.sender.level || 1}
+                    </Badge>
                   </div>
-                )}
-                {isRoomManaged && (
-                  <div>
-                    <span className="text-red-500 font-medium">{roomName || 'System'}: </span>
-                    <span className="text-gray-800">{message.content}</span>
-                  </div>
-                )}
-                {isUserEnterLeave && (
-                  <div className="mb-2">
-                    <div className="text-sm">
-                      <span className="text-red-500 font-medium">{roomName || 'Room'}: </span>
-                      <span className="text-gray-800">{message.content}</span>
-                    </div>
-                  </div>
-                )}
-                {isKickMessage && (
-                  <div className="flex items-center justify-center">
-                    <div className="bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                  <span className="text-xs text-gray-500">
+                    {formatTime(message.createdAt)}
+                  </span>
+                </div>
+                <div className={cn(
+                  "inline-block max-w-xs lg:max-w-md xl:max-w-lg px-3 py-2 rounded-lg text-sm",
+                  isCurrentUser 
+                    ? "bg-blue-500 text-white" 
+                    : "bg-gray-100 text-gray-800"
+                )}>
+                  {message.content}
+                </div>
+              </div>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem 
+              onClick={() => handleUserInteraction(message.sender, 'profile')}
+            >
+              <User className="w-4 h-4 mr-2" />
+              View Profile
+            </ContextMenuItem>
+            <ContextMenuItem 
+              onClick={() => handleUserInteraction(message.sender, 'dm')}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Send Message
+            </ContextMenuItem>
+            <ContextMenuItem 
+              onClick={() => handleUserInteraction(message.sender, 'whois')}
+            >
+              <Flag className="w-4 h-4 mr-2" />
+              User Info
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      </div>
+    );
+  };
+
+  return (
+    <div 
+      ref={containerRef}
+      className="message-list-container"
+      onScroll={handleScroll}
+    >
+      <div className="space-y-2">
+        {messages.map(renderMessage)}
+      </div>
+      <div ref={messagesEndRef} />
+    </div>
+  );
+}g-red-50 px-3 py-1 rounded-full border border-red-200">
                       <span className="text-red-600 font-medium text-xs">{roomName || 'System'}: </span>
                       <span className="text-red-800 text-xs font-semibold">{content}</span>
                     </div>
