@@ -1496,7 +1496,7 @@ export function ChatRoom({
             setMemberListError(true);
           }
         }}>
-            <SheetContent side="right" className="w-80" onPointerDownOutside={(e) => {
+            <SheetContent side="right" className="w-64" onPointerDownOutside={(e) => {
               // Prevent closing when clicking on trigger button
               const target = e.target as Element;
               if (target.closest('[data-member-trigger]')) {
@@ -1504,7 +1504,7 @@ export function ChatRoom({
               }
             }}>
               <SheetHeader>
-                <SheetTitle>Room Members ({roomMembers?.length || 0})</SheetTitle>
+                <SheetTitle>Participants ({roomMembers?.length || 0})</SheetTitle>
               </SheetHeader>
               <div className="mt-4 space-y-2">
                 {isLoadingMembers ? (
@@ -2150,10 +2150,10 @@ export function ChatRoom({
 
       {/* Conditional rendering for member list sidebar */}
       {userListOpen && !memberListError && (
-        <div className="w-64 border-l border-gray-200 bg-white flex-shrink-0 overflow-hidden relative z-20">
+        <div className="w-56 border-l border-gray-200 bg-white flex-shrink-0 overflow-hidden relative z-20">
           <div className="h-full flex flex-col">
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-medium text-gray-800">Members ({roomMembers?.length || 0})</h3>
+              <h3 className="font-medium text-gray-800">Participants ({roomMembers?.length || 0})</h3>
               <button
                 onClick={() => {
                   setUserListOpen(false);
