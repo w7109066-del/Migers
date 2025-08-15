@@ -3377,13 +3377,7 @@ export function registerRoutes(app: Express): Server {
               console.log('Handling LowCard bot command for user:', senderUser?.username);
               processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             }
-            return; // Exit early - don't save command message;
-            }
-
-            // Handle LowCard command as fallback
-            console.log('Handling LowCard bot command for user:', senderUser?.username);
-            processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            return;
+            return; // Exit early - don't save command message
           }
 
           // Check if message is a kick command
