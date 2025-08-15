@@ -199,13 +199,7 @@ io.on("connection", async (socket: Socket) => {
         return; // Exit early - don't save command message
       }
 
-      // Check if message is a LowCard command
-      if (data.message.startsWith('!')) {
-        console.log('LowCard command detected in index.ts:', data.message, 'for room:', data.roomId);
-        // Emit command event to the socket for lowcard bot handling
-        socket.emit('command', data.roomId, data.message);
-        return;
-      }
+      // Bot commands are now handled in routes.ts - remove duplicate handling
 
       // Save message to database
       await db.insert(messages).values({
