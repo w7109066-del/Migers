@@ -190,9 +190,15 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
 
   // Handle /bot off command specifically
   if (msg.trim() === '/bot off') {
+    // Check if bot is already off
+    if (!botPresence[room]) {
+      io.to(room).emit('bot_message', 'LowCardBot', `⚠️ Bot is off in room`, null, room);
+      return;
+    }
+
     // Remove bot presence from room
     delete botPresence[room];
-    
+
     // Cancel any ongoing games in this room
     const data = rooms[room];
     if (data) {
@@ -200,7 +206,7 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
       data.players.forEach(player => {
         tambahCoin(player.id, player.bet);
       });
-      
+
       // Clear timeouts
       if (data.timeout) {
         clearTimeout(data.timeout);
@@ -208,11 +214,11 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
       if (data.drawTimeout) {
         clearTimeout(data.drawTimeout);
       }
-      
+
       // Remove room data
       delete rooms[room];
     }
-    
+
     // Send goodbye message
     io.to(room).emit('bot_message', 'LowCardBot', '🎮 LowCardBot has left the room. Type "/add bot lowcard" to add the bot back.', null, room);
     return;

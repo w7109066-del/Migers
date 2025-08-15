@@ -1,4 +1,3 @@
-
 import { Server } from 'socket.io';
 import { getUserBalance, tambahCoin, potongCoin } from '../storage';
 
@@ -243,10 +242,10 @@ export function initializeSicboBot(io: Server): void {
 
           const player = data.players[playerIndex];
           data.players.splice(playerIndex, 1);
-          
+
           // Refund bet
           tambahCoin(player.id, player.bet);
-          
+
           io.to(room).emit('bot_message', 'SicboBot', `${username} left the game. Bet refunded.`, null, room);
 
           // Cancel game if not enough players
@@ -273,14 +272,14 @@ export function initializeSicboBot(io: Server): void {
         const playerIndex = data.players.findIndex(p => p.socketId === socket.id);
         if (playerIndex !== -1) {
           const player = data.players[playerIndex];
-          
+
           if (!data.isRunning) {
             // Game not started - remove player and refund
             data.players.splice(playerIndex, 1);
             tambahCoin(player.id, player.bet);
-            
+
             io.to(room).emit('bot_message', 'SicboBot', `${player.username} disconnected and left the game.`, null, room);
-            
+
             // Cancel game if not enough players
             if (data.players.length === 0 && data.timeout) {
               clearTimeout(data.timeout);
@@ -300,9 +299,15 @@ export function initializeSicboBot(io: Server): void {
 export function processSicboCommand(io: Server, roomId: string, command: string, userId: string, username: string): void {
   // Handle /bot off command specifically
   if (command.trim() === '/bot off') {
+    // Check if bot is already off
+    if (!botPresence[roomId]) {
+      io.to(roomId).emit('bot_message', 'SicboBot', `⚠️ Bot is off in room`, null, roomId);
+      return;
+    }
+
     // Remove bot presence from room
     delete botPresence[roomId];
-    
+
     // Cancel any ongoing games in this room
     const data = rooms[roomId];
     if (data) {
@@ -310,16 +315,16 @@ export function processSicboCommand(io: Server, roomId: string, command: string,
       data.players.forEach(player => {
         tambahCoin(player.id, player.bet);
       });
-      
+
       // Clear timeouts
       if (data.timeout) {
         clearTimeout(data.timeout);
       }
-      
+
       // Remove room data
       delete rooms[roomId];
     }
-    
+
     // Send goodbye message
     io.to(roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has left the room. Type "/add bot sicbo" to add the bot back.', null, roomId);
     return;
@@ -329,7 +334,7 @@ export function processSicboCommand(io: Server, roomId: string, command: string,
   if (!botPresence[roomId]) {
     botPresence[roomId] = true;
   }
-  
+
   io.emit('sicbo_command', roomId, command, userId, username);
 }
 
