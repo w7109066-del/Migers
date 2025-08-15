@@ -160,6 +160,247 @@ export function ChatRoom({
   const previousRoomIdRef = useRef<string | null>(null);
   const joinAttemptRef = useRef<boolean>(false);
 
+  // Function to load messages - defined outside useEffect to make it accessible
+  const loadRoomMessages = useCallback(async () => {
+    if (!roomId || !roomName) return;
+    
+    console.log('Loading messages for joined room:', roomId);
+
+    const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+    // Try to restore messages from localStorage for this room using consistent key format
+    const localStorageKeys = [`chat_${roomId}`, `chatMessages-${roomId}`];
+    let storedData = null;
+
+    for (const key of localStorageKeys) {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        storedData = stored;
+        break;
+      }
+    }
+
+    let shouldShowWelcome = false;
+
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+
+        // Check if this is old format (array) or new format (object with timestamp)
+        if (Array.isArray(parsedData)) {
+          console.log('Found old format messages, clearing and showing welcome messages');
+          // Old format - clear and show welcome messages
+          localStorage.removeItem(`chat_${roomId}`);
+          shouldShowWelcome = true;
+        } else if (parsedData.messages && parsedData.savedAt) {
+          // New format with timestamp - check if expired
+          const messageAge = Date.now() - parsedData.savedAt;
+
+          if (messageAge > MESSAGE_EXPIRY_TIME) {
+            console.log('Messages expired (', Math.round(messageAge / 1000 / 60), 'minutes old), showing welcome messages only');
+            localStorage.removeItem(`chat_${roomId}`);
+            shouldShowWelcome = true;
+          } else {
+            console.log('Restoring valid messages from localStorage for room:', roomId, parsedData.messages.length);
+
+            // Check if welcome messages exist in stored messages
+            const hasWelcomeMessage = parsedData.messages.some(msg =>
+              msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
+            );
+            const hasManagedByMessage = parsedData.messages.some(msg =>
+              msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
+            );
+
+            // If welcome messages are missing, we need to regenerate them
+            if (!hasWelcomeMessage || !hasManagedByMessage) {
+              shouldShowWelcome = true;
+            } else {
+              setMessages(parsedData.messages);
+              return; // Exit early if messages loaded successfully
+            }
+          }
+        } else {
+          // Invalid format
+          console.log('Invalid message format, clearing and showing welcome messages');
+          localStorage.removeItem(`chat_${roomId}`);
+          shouldShowWelcome = true;
+        }
+      } catch (error) {
+        console.error('Failed to parse stored messages for room:', roomId, error);
+        localStorage.removeItem(`chat_${roomId}`);
+        shouldShowWelcome = true;
+      }
+    } else if (savedMessages.length > 0) {
+      console.log('Restoring saved messages for room:', roomId, savedMessages.length);
+
+      // Check if welcome messages exist in saved messages
+      const hasWelcomeMessage = savedMessages.some(msg =>
+        msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
+      );
+      const hasManagedByMessage = savedMessages.some(msg =>
+        msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
+      );
+
+      if (!hasWelcomeMessage || !hasManagedByMessage) {
+        shouldShowWelcome = true;
+      } else {
+        setMessages(savedMessages);
+        // Save to consistent localStorage key with timestamp
+        const messagesWithTimestamp = {
+          messages: savedMessages,
+          savedAt: Date.now(),
+          roomId: roomId
+        };
+        localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
+        return; // Exit early if messages loaded successfully
+      }
+    } else {
+      shouldShowWelcome = true;
+    }
+
+    // Generate welcome messages if needed
+    if (shouldShowWelcome) {
+      // Generate welcome messages
+      const welcomeMessages = [
+        {
+          id: `welcome-${roomId}`,
+          content: `Welcome to ${roomName} official chat room.`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        }
+      ];
+
+      // Add current user join message
+      if (user && user.username) {
+        welcomeMessages.push({
+          id: `current-user-${roomId}`,
+          content: `Currently user in the room: ${user.username}[${user.level || 1}]`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        });
+      }
+
+      // For non-system rooms (not rooms 1-4), fetch room info to show creator
+      if (!['1', '2', '3', '4'].includes(roomId)) {
+        try {
+          const response = await fetch(`/api/rooms/${roomId}/info`);
+          if (response.ok) {
+            const roomData = await response.json();
+            console.log('Room data received:', roomData);
+            const creatorName = roomData.createdBy || 'Unknown';
+            welcomeMessages.push({
+              id: `room-managed-${roomId}`,
+              content: `This room is managed by ${creatorName}`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            });
+          } else {
+            welcomeMessages.push({
+              id: `room-managed-${roomId}`,
+              content: `This room is managed by room creator`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch room creator info:', error);
+          welcomeMessages.push({
+            id: `room-managed-${roomId}`,
+            content: `This room is managed by room creator`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          });
+        }
+      } else {
+        // For system rooms, show system as manager
+        welcomeMessages.push({
+          id: `room-managed-${roomId}`,
+          content: `This room is managed by System`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        });
+      }
+
+      // Merge with existing messages if any (excluding old welcome messages)
+      let existingMessages = [];
+      if (storedData) {
+        try {
+          const parsedMessages = JSON.parse(storedData);
+          if (Array.isArray(parsedMessages)) {
+            existingMessages = parsedMessages.filter(msg =>
+              !msg.id?.startsWith('welcome-') &&
+              !msg.id?.startsWith('room-managed-') &&
+              !msg.id?.startsWith('current-user-') &&
+              !msg.content?.includes(`Welcome to ${roomName}`) &&
+              !msg.content?.includes('managed by') &&
+              !msg.content?.includes('Currently user in the room')
+            );
+          } else if (parsedMessages.messages) {
+            existingMessages = parsedMessages.messages.filter(msg =>
+              !msg.id?.startsWith('welcome-') &&
+              !msg.id?.startsWith('room-managed-') &&
+              !msg.id?.startsWith('current-user-') &&
+              !msg.content?.includes(`Welcome to ${roomName}`) &&
+              !msg.content?.includes('managed by') &&
+              !msg.content?.includes('Currently user in the room')
+            );
+          }
+        } catch (error) {
+          console.error('Error parsing stored messages:', error);
+        }
+      } else if (savedMessages.length > 0) {
+        existingMessages = savedMessages.filter(msg =>
+          !msg.id?.startsWith('welcome-') &&
+          !msg.id?.startsWith('room-managed-') &&
+          !msg.id?.startsWith('current-user-') &&
+          !msg.content?.includes(`Welcome to ${roomName}`) &&
+          !msg.content?.includes('managed by') &&
+          !msg.content?.includes('Currently user in the room')
+        );
+      }
+
+      const finalMessages = [...welcomeMessages, ...existingMessages];
+      console.log('Setting welcome messages for room:', roomId, finalMessages);
+      setMessages(finalMessages);
+
+      // Save updated messages to consistent localStorage key with timestamp
+      const messagesWithTimestamp = {
+        messages: finalMessages,
+        savedAt: Date.now(),
+        roomId: roomId
+      };
+      localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
+      console.log('Generated and saved welcome messages with timestamp for room:', roomId);
+
+      // Force scroll to bottom multiple times to ensure it works
+      const scrollToBottom = () => {
+        const messagesContainer = document.querySelector('.chat-room-messages');
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          console.log('Scrolled to bottom:', messagesContainer.scrollHeight);
+        }
+      };
+
+      // Multiple scroll attempts with different delays
+      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 300);
+      setTimeout(scrollToBottom, 500);
+      setTimeout(scrollToBottom, 1000);
+    }
+  }, [roomId, roomName, savedMessages, user]);
+
   // Initialize room and messages
   useEffect(() => {
     const initializeRoom = async () => {
@@ -211,245 +452,7 @@ export function ChatRoom({
 
       previousRoomIdRef.current = roomId;
     };
-
-    // Function to load messages only after confirming user has joined
-    const loadRoomMessages = async () => {
-      console.log('Loading messages for joined room:', roomId);
-
-      const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-      // Try to restore messages from localStorage for this room using consistent key format
-      const localStorageKeys = [`chat_${roomId}`, `chatMessages-${roomId}`];
-      let storedData = null;
-
-      for (const key of localStorageKeys) {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          storedData = stored;
-          break;
-        }
-      }
-
-      let shouldShowWelcome = false;
-
-      if (storedData) {
-        try {
-          const parsedData = JSON.parse(storedData);
-
-          // Check if this is old format (array) or new format (object with timestamp)
-          if (Array.isArray(parsedData)) {
-            console.log('Found old format messages, clearing and showing welcome messages');
-            // Old format - clear and show welcome messages
-            localStorage.removeItem(`chat_${roomId}`);
-            shouldShowWelcome = true;
-          } else if (parsedData.messages && parsedData.savedAt) {
-            // New format with timestamp - check if expired
-            const messageAge = Date.now() - parsedData.savedAt;
-
-            if (messageAge > MESSAGE_EXPIRY_TIME) {
-              console.log('Messages expired (', Math.round(messageAge / 1000 / 60), 'minutes old), showing welcome messages only');
-              localStorage.removeItem(`chat_${roomId}`);
-              shouldShowWelcome = true;
-            } else {
-              console.log('Restoring valid messages from localStorage for room:', roomId, parsedData.messages.length);
-
-              // Check if welcome messages exist in stored messages
-              const hasWelcomeMessage = parsedData.messages.some(msg =>
-                msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
-              );
-              const hasManagedByMessage = parsedData.messages.some(msg =>
-                msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
-              );
-
-              // If welcome messages are missing, we need to regenerate them
-              if (!hasWelcomeMessage || !hasManagedByMessage) {
-                shouldShowWelcome = true;
-              } else {
-                setMessages(parsedData.messages);
-                return; // Exit early if messages loaded successfully
-              }
-            }
-          } else {
-            // Invalid format
-            console.log('Invalid message format, clearing and showing welcome messages');
-            localStorage.removeItem(`chat_${roomId}`);
-            shouldShowWelcome = true;
-          }
-        } catch (error) {
-          console.error('Failed to parse stored messages for room:', roomId, error);
-          localStorage.removeItem(`chat_${roomId}`);
-          shouldShowWelcome = true;
-        }
-      } else if (savedMessages.length > 0) {
-        console.log('Restoring saved messages for room:', roomId, savedMessages.length);
-
-        // Check if welcome messages exist in saved messages
-        const hasWelcomeMessage = savedMessages.some(msg =>
-          msg.id === `welcome-${roomId}` || msg.content.includes(`Welcome to ${roomName}`)
-        );
-        const hasManagedByMessage = savedMessages.some(msg =>
-          msg.id === `room-managed-${roomId}` || msg.content.includes('managed by')
-        );
-
-        if (!hasWelcomeMessage || !hasManagedByMessage) {
-          shouldShowWelcome = true;
-        } else {
-          setMessages(savedMessages);
-          // Save to consistent localStorage key with timestamp
-          const messagesWithTimestamp = {
-            messages: savedMessages,
-            savedAt: Date.now(),
-            roomId: roomId
-          };
-          localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
-          return; // Exit early if messages loaded successfully
-        }
-      } else {
-        shouldShowWelcome = true;
-      }
-
-      // Generate welcome messages if needed
-      if (shouldShowWelcome) {
-        // Generate welcome messages
-        const welcomeMessages = [
-          {
-            id: `welcome-${roomId}`,
-            content: `Welcome to ${roomName} official chat room.`,
-            senderId: 'system',
-            createdAt: new Date().toISOString(),
-            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-            messageType: 'system'
-          }
-        ];
-
-        // Add current user join message
-        if (user && user.username) {
-          welcomeMessages.push({
-            id: `current-user-${roomId}`,
-            content: `Currently user in the room: ${user.username}[${user.level || 1}]`,
-            senderId: 'system',
-            createdAt: new Date().toISOString(),
-            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-            messageType: 'system'
-          });
-        }
-
-        // For non-system rooms (not rooms 1-4), fetch room info to show creator
-        if (!['1', '2', '3', '4'].includes(roomId)) {
-          try {
-            const response = await fetch(`/api/rooms/${roomId}/info`);
-            if (response.ok) {
-              const roomData = await response.json();
-              console.log('Room data received:', roomData);
-              const creatorName = roomData.createdBy || 'Unknown';
-              welcomeMessages.push({
-                id: `room-managed-${roomId}`,
-                content: `This room is managed by ${creatorName}`,
-                senderId: 'system',
-                createdAt: new Date().toISOString(),
-                sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-                messageType: 'system'
-              });
-            } else {
-              welcomeMessages.push({
-                id: `room-managed-${roomId}`,
-                content: `This room is managed by room creator`,
-                senderId: 'system',
-                createdAt: new Date().toISOString(),
-                sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-                messageType: 'system'
-              });
-            }
-          } catch (error) {
-            console.error('Failed to fetch room creator info:', error);
-            welcomeMessages.push({
-              id: `room-managed-${roomId}`,
-              content: `This room is managed by room creator`,
-              senderId: 'system',
-              createdAt: new Date().toISOString(),
-              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-              messageType: 'system'
-            });
-          }
-        } else {
-          // For system rooms, show system as manager
-          welcomeMessages.push({
-            id: `room-managed-${roomId}`,
-            content: `This room is managed by System`,
-            senderId: 'system',
-            createdAt: new Date().toISOString(),
-            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
-            messageType: 'system'
-          });
-        }
-
-        // Merge with existing messages if any (excluding old welcome messages)
-        let existingMessages = [];
-        if (storedData) {
-          try {
-            const parsedMessages = JSON.parse(storedData);
-            if (Array.isArray(parsedMessages)) {
-              existingMessages = parsedMessages.filter(msg =>
-                !msg.id?.startsWith('welcome-') &&
-                !msg.id?.startsWith('room-managed-') &&
-                !msg.id?.startsWith('current-user-') &&
-                !msg.content?.includes(`Welcome to ${roomName}`) &&
-                !msg.content?.includes('managed by') &&
-                !msg.content?.includes('Currently user in the room')
-              );
-            } else if (parsedMessages.messages) {
-              existingMessages = parsedMessages.messages.filter(msg =>
-                !msg.id?.startsWith('welcome-') &&
-                !msg.id?.startsWith('room-managed-') &&
-                !msg.id?.startsWith('current-user-') &&
-                !msg.content?.includes(`Welcome to ${roomName}`) &&
-                !msg.content?.includes('managed by') &&
-                !msg.content?.includes('Currently user in the room')
-              );
-            }
-          } catch (error) {
-            console.error('Error parsing stored messages:', error);
-          }
-        } else if (savedMessages.length > 0) {
-          existingMessages = savedMessages.filter(msg =>
-            !msg.id?.startsWith('welcome-') &&
-            !msg.id?.startsWith('room-managed-') &&
-            !msg.id?.startsWith('current-user-') &&
-            !msg.content?.includes(`Welcome to ${roomName}`) &&
-            !msg.content?.includes('managed by') &&
-            !msg.content?.includes('Currently user in the room')
-          );
-        }
-
-        const finalMessages = [...welcomeMessages, ...existingMessages];
-        console.log('Setting welcome messages for room:', roomId, finalMessages);
-        setMessages(finalMessages);
-
-        // Save updated messages to consistent localStorage key with timestamp
-        const messagesWithTimestamp = {
-          messages: finalMessages,
-          savedAt: Date.now(),
-          roomId: roomId
-        };
-        localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
-        console.log('Generated and saved welcome messages with timestamp for room:', roomId);
-
-        // Force scroll to bottom multiple times to ensure it works
-        const scrollToBottom = () => {
-          const messagesContainer = document.querySelector('.chat-room-messages');
-          if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            console.log('Scrolled to bottom:', messagesContainer.scrollHeight);
-          }
-        };
-
-        // Multiple scroll attempts with different delays
-        setTimeout(scrollToBottom, 100);
-        setTimeout(scrollToBottom, 300);
-        setTimeout(scrollToBottom, 500);
-        setTimeout(scrollToBottom, 1000);
-      }
-    };
+      
 
     // Reset join attempt flag when room changes
     if (previousRoomIdRef.current !== roomId) {
@@ -472,7 +475,7 @@ export function ChatRoom({
       // Only explicit user action (clicking Leave Room button) should trigger actual room leave
       console.log('ChatRoom cleanup completed - WebSocket connection preserved');
     };
-  }, [roomId, roomName, isConnected, joinRoom, savedMessages.length]);
+  }, [roomId, roomName, isConnected, joinRoom, savedMessages.length, loadRoomMessages]);
 
   // Effect to handle room switching - preserve connection and only reset if completely different room
   useEffect(() => {
