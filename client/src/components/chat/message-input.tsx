@@ -302,10 +302,8 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
           setShowEmojis(false);
           setShowGifts(false);
 
-          // Reset submission state after a short delay
-          setTimeout(() => {
-            setIsSubmitting(false);
-          }, 100);
+          // Reset submission state immediately
+          setIsSubmitting(false);
           return;
         }
 
@@ -321,10 +319,8 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
           setShowEmojis(false);
           setShowGifts(false);
 
-          // Reset submission state after a short delay
-          setTimeout(() => {
-            setIsSubmitting(false);
-          }, 100);
+          // Reset submission state immediately
+          setIsSubmitting(false);
           return;
         }
 
@@ -340,10 +336,8 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
           setShowEmojis(false);
           setShowGifts(false);
 
-          // Reset submission state after a short delay
-          setTimeout(() => {
-            setIsSubmitting(false);
-          }, 100);
+          // Reset submission state immediately
+          setIsSubmitting(false);
           return;
         }
 
@@ -400,10 +394,8 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
         console.error('Error sending message:', error);
       }
 
-      // Reset submission state after a short delay
-      setTimeout(() => {
-        setIsSubmitting(false);
-      }, 200);
+      // Reset submission state immediately
+      setIsSubmitting(false);
     } else if (!isConnected) {
       console.error('Cannot send message: not connected to server');
     } else if (!message.trim()) {

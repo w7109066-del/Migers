@@ -695,13 +695,13 @@ export function ChatRoom({
           console.log('Adding new message to chat:', messageToAdd.id);
           const newMessages = [...prev, messageToAdd];
           
-          // Auto-scroll to bottom when new message arrives
-          setTimeout(() => {
+          // Auto-scroll to bottom immediately - no delay
+          requestAnimationFrame(() => {
             const messagesContainer = document.querySelector('.chat-room-messages');
             if (messagesContainer) {
               messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
-          }, 100);
+          });
           
           return newMessages;
         });

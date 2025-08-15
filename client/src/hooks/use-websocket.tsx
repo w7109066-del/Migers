@@ -103,12 +103,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     socket.current.on('new_message', (data) => {
       console.log('WebSocket: Received new_message event:', data);
-      // Handle new room message
+      // Handle new room message - immediate dispatch
       const messageData = data.message || data;
       console.log('WebSocket: Dispatching newMessage event:', messageData);
-      window.dispatchEvent(new CustomEvent('newMessage', {
+      
+      // Dispatch immediately without any delay
+      const event = new CustomEvent('newMessage', {
         detail: messageData
-      }));
+      });
+      window.dispatchEvent(event);
+      
+      // Also trigger a secondary event for backup
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('newMessage', {
+          detail: messageData
+        }));
+      }, 10);
     });
 
     socket.current.on('new_direct_message', (data) => {

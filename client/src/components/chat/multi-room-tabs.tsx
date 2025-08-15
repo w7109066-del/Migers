@@ -268,19 +268,14 @@ export function MultiRoomTabs({
             };
             localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
 
-            // Auto-scroll to bottom if this is the active room
+            // Auto-scroll to bottom if this is the active room - immediate
             if (currentActiveRoom && message.roomId === currentActiveRoom.id) {
-              // Multiple scroll attempts to ensure it works
-              const scrollToBottom = () => {
+              requestAnimationFrame(() => {
                 const messagesContainer = document.querySelector('.chat-room-messages');
                 if (messagesContainer) {
                   messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
-              };
-              
-              setTimeout(scrollToBottom, 100);
-              setTimeout(scrollToBottom, 300);
-              setTimeout(scrollToBottom, 500);
+              });
             }
 
             // If message is for a room that's not currently active, mark it as having new messages
