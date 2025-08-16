@@ -771,10 +771,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
               <div key={message.id} className="flex items-start space-x-3 mb-2">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm" style={{ color: '#29876b', fontWeight: 'bold', fontFamily: 'Roboto, sans-serif' }}>
+                    <span className="text-sm" style={{ color: '#2563eb', fontWeight: 'bold', fontFamily: 'Roboto, sans-serif' }}>
                       {message.sender?.username || 'LowCardBot'}:
                     </span>
-                    <div className="text-sm flex items-center gap-2" style={{ color: '#29876b', fontFamily: 'Roboto, sans-serif' }}>
+                    <div className="text-sm flex items-center gap-2" style={{ color: '#1d4ed8', fontFamily: 'Roboto, sans-serif' }}>
                       <span>{message.content || ''}</span>
                       {message.cardImage && (
                         <img 
