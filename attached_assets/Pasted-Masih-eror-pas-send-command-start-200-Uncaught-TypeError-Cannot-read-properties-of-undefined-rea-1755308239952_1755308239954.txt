@@ -1,0 +1,32 @@
+Masih eror pas send  command !start 200
+Uncaught TypeError: Cannot read properties of undefined (reading 'startsWith')
+󰀨 The above error occurred in the <ChatRoom> component:
+
+    at ChatRoom (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/src/components/chat/chat-room.tsx:42:3)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at MultiRoomTabs (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/src/components/chat/multi-room-tabs.tsx:32:3)
+    at div
+    at div
+    at div
+    at div
+    at HomePageContent (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/src/pages/home-page.tsx:77:80)
+    at WebSocketProvider (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/src/hooks/use-websocket.tsx:25:37)
+    at NotificationProvider (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/src/hooks/use-notifications.tsx:21:40)
+    at HomePage
+    at ProtectedRoute (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/src/App.tsx?t=1755308026942&v=MhpCsmBpKyWJN7nMclAU9:28:27)
+    at RenderedRoute (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=754ddf5d:5525:26)
+    at Routes (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=754ddf5d:6261:3)
+    at Router (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=754ddf5d:6204:13)
+    at BrowserRouter (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=754ddf5d:9273:3)
+    at AuthProvider (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://fdcd4a7d-60b2-4806-a4c5-5b80373ebb24-00-zye2wt135f6n.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=754ddf5d:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
