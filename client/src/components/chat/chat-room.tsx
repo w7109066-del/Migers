@@ -680,7 +680,7 @@ export function ChatRoom({
         console.error('ChatRoom: Received null or undefined message');
         return;
       }
-      
+
       if (typeof newMessage !== 'object') {
         console.error('ChatRoom: Invalid message object type:', typeof newMessage, 'value:', newMessage);
         return;
@@ -691,12 +691,12 @@ export function ChatRoom({
         console.error('ChatRoom: Message content is null or undefined:', newMessage);
         return;
       }
-      
+
       if (typeof newMessage.content !== 'string') {
         console.error('ChatRoom: Message content is not a string, type:', typeof newMessage.content, 'content:', newMessage.content);
         return;
       }
-      
+
       if (newMessage.content.length === 0) {
         console.error('ChatRoom: Message content is empty string:', newMessage);
         return;
@@ -713,12 +713,10 @@ export function ChatRoom({
         setMessages(prev => {
           // Remove any temporary optimistic messages with same content from same user
           const filteredPrev = prev.filter(msg => {
-            
             if (msg.id?.startsWith('temp-') &&
-    msg.senderId === newMessage.senderId &&
-    msg.content === newMessage.content) {
-  return false;
-} // Remove optimistic message
+                msg.senderId === newMessage.senderId &&
+                msg.content === newMessage.content) {
+              return false; // Remove optimistic message
             }
             return true;
           });
@@ -962,12 +960,12 @@ export function ChatRoom({
       console.error('Message content is null or undefined:', content);
       return;
     }
-    
+
     if (typeof content !== 'string') {
       console.error('Message content is not a string, type:', typeof content, 'value:', content);
       return;
     }
-    
+
     if (content.length === 0 || !content.trim()) {
       console.log('Cannot send empty or invalid message:', JSON.stringify(content));
       return;
@@ -1018,7 +1016,7 @@ export function ChatRoom({
         console.error('Error converting content to string:', conversionError, 'content:', content);
         return;
       }
-      
+
       if (!safeContent || safeContent.length === 0) {
         console.log('Content became empty after trimming, original:', JSON.stringify(content));
         return;
@@ -1135,7 +1133,7 @@ export function ChatRoom({
   };
 
   const handleUserInfo = (username: string) => {
-    // Send enhanced whois command with room context
+    // Send enhanced whois commands with room context
     if (roomId) {
       // Send whois command that will show user info in room context
       sendChatMessage(`/whois ${username}`, roomId);
@@ -1562,7 +1560,7 @@ export function ChatRoom({
 
       if (response.ok) {
         leaveRoom(roomId);
-        // Navigate back or show success message
+        // Navigate back to room list or show success message
         window.history.back();
       }
     } catch (error) {
