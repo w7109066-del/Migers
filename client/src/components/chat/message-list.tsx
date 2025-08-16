@@ -763,31 +763,39 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
         }
 
         // Bot message rendering - handle both bot messageType and bot sender names
+        // Only render if this message belongs to the current room (additional safety check)
         if (isBotMessage || message.sender?.username === 'LowCardBot' || message.sender?.username === 'LowcardBot') {
-          return (
-            <div key={message.id} className="flex items-start space-x-3 mb-2">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm" style={{ color: '#29876b', fontWeight: 'bold', fontFamily: 'Roboto, sans-serif' }}>
-                    {message.sender?.username || 'Bot'}:
-                  </span>
-                  <div className="text-sm flex items-center gap-1" style={{ color: '#29876b', fontFamily: 'Roboto, sans-serif' }}>
-                    <span>{message.content || ''}</span>
-                    {message.cardImage && (
-                      <img 
-                        src={message.cardImage} 
-                        alt="Card" 
-                        className="w-4 h-6 object-contain inline-block ml-1"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
+          // Validate that this bot message has proper roomId context
+          if (message.roomId && roomName) {
+            return (
+              <div key={message.id} className="flex items-start space-x-3 mb-2">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm" style={{ color: '#29876b', fontWeight: 'bold', fontFamily: 'Roboto, sans-serif' }}>
+                      {message.sender?.username || 'LowCardBot'}:
+                    </span>
+                    <div className="text-sm flex items-center gap-1" style={{ color: '#29876b', fontFamily: 'Roboto, sans-serif' }}>
+                      <span>{message.content || ''}</span>
+                      {message.cardImage && (
+                        <img 
+                          src={message.cardImage} 
+                          alt="Card" 
+                          className="w-4 h-6 object-contain inline-block ml-1"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
+            );
+          } else {
+            // Skip rendering bot message without proper room context
+            console.log('MessageList: Skipping bot message without room context:', message);
+            return null;
+          }
         }
 
         // System message rendering

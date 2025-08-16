@@ -229,63 +229,77 @@ export function MultiRoomTabs({
         return;
       }
 
+      // Strict roomId filtering - only process messages for existing rooms
+      const targetRoom = rooms.find(room => room.id === message.roomId);
+      if (!targetRoom) {
+        console.log('MultiRoomTabs: Message for non-existent room ignored:', message.roomId);
+        return;
+      }
+
       if (message.roomId) {
         const currentActiveRoom = rooms[activeRoomIndex];
 
-        // Update room messages for all rooms, not just inactive ones
-        const targetRoom = rooms.find(room => room.id === message.roomId);
-        if (targetRoom) {
-          console.log('MultiRoomTabs: Adding message to room:', message.roomId);
+        console.log('MultiRoomTabs: Adding message to room:', message.roomId);
+        
+        // Ensure message has proper structure with strict roomId validation
+        const messageToAdd = {
+          id: message.id || `msg-${Date.now()}-${Math.random()}`,
+          content: message.content,
+          senderId: message.senderId,
+          createdAt: message.createdAt || new Date().toISOString(),
+          sender: message.sender || {
+            id: message.senderId,
+            username: message.messageType === 'bot' ? 'LowCardBot' : 'User',
+            level: message.messageType === 'bot' ? 0 : 1,
+            isOnline: true
+          },
+          messageType: message.messageType || 'text',
+          cardImage: message.cardImage,
+          roomId: message.roomId // Ensure roomId is preserved
+        };
           
-          // Ensure message has proper structure
-          const messageToAdd = {
-            id: message.id || `msg-${Date.now()}-${Math.random()}`,
-            content: message.content,
-            senderId: message.senderId,
-            createdAt: message.createdAt || new Date().toISOString(),
-            sender: message.sender || {
-              id: message.senderId,
-              username: 'User',
-              level: 1,
-              isOnline: true
-            },
-            messageType: message.messageType || 'text',
-            cardImage: message.cardImage,
-            roomId: message.roomId
-          };
-          
-          // Update the room's messages - ensure we don't duplicate messages
-          const existingMessageIds = new Set((targetRoom.messages || []).map(m => m.id));
-          if (!existingMessageIds.has(messageToAdd.id)) {
-            targetRoom.messages = [...(targetRoom.messages || []), messageToAdd];
+          // Double-check roomId matches before adding to prevent cross-room contamination
+          if (messageToAdd.roomId === targetRoom.id) {
+            // Update the room's messages - ensure we don't duplicate messages
+            const existingMessageIds = new Set((targetRoom.messages || []).map(m => m.id));
+            if (!existingMessageIds.has(messageToAdd.id)) {
+              targetRoom.messages = [...(targetRoom.messages || []), messageToAdd];
 
             // Save to localStorage immediately with timestamp
-            const localStorageKey = `chat_${message.roomId}`;
-            const messagesWithTimestamp = {
-              messages: targetRoom.messages,
-              savedAt: Date.now(),
-              roomId: message.roomId
-            };
-            localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
+              const localStorageKey = `chat_${message.roomId}`;
+              const messagesWithTimestamp = {
+                messages: targetRoom.messages,
+                savedAt: Date.now(),
+                roomId: message.roomId
+              };
+              localStorage.setItem(localStorageKey, JSON.stringify(messagesWithTimestamp));
 
-            // Auto-scroll to bottom if this is the active room - immediate
-            if (currentActiveRoom && message.roomId === currentActiveRoom.id) {
-              requestAnimationFrame(() => {
-                const messagesContainer = document.querySelector('.chat-room-messages');
-                if (messagesContainer) {
-                  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-              });
-            }
+              // Auto-scroll to bottom if this is the active room - immediate
+              if (currentActiveRoom && message.roomId === currentActiveRoom.id) {
+                requestAnimationFrame(() => {
+                  const messagesContainer = document.querySelector('.chat-room-messages');
+                  if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                  }
+                });
+              }
 
-            // If message is for a room that's not currently active, mark it as having new messages
-            if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
-              setHasNewMessages(prev => {
-                const newMap = new Map(prev);
-                newMap.set(message.roomId, true);
-                return newMap;
-              });
+              // If message is for a room that's not currently active, mark it as having new messages
+              if (currentActiveRoom && message.roomId !== currentActiveRoom.id) {
+                setHasNewMessages(prev => {
+                  const newMap = new Map(prev);
+                  newMap.set(message.roomId, true);
+                  return newMap;
+                });
+              }
+            } else {
+              console.log('MultiRoomTabs: Duplicate message ignored:', messageToAdd.id);
             }
+          } else {
+            console.error('MultiRoomTabs: RoomId mismatch - message not added:', {
+              messageRoomId: messageToAdd.roomId,
+              targetRoomId: targetRoom.id
+            });
           }
         }
       }

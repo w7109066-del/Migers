@@ -117,23 +117,29 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     socket.current.on('bot_message', (senderName, content, imageUrl, roomId) => {
       console.log('Bot message received:', { senderName, content, imageUrl, roomId });
 
+      // Ensure we have a valid roomId before processing
+      if (!roomId) {
+        console.error('Bot message received without roomId, skipping:', { senderName, content });
+        return;
+      }
+
       const botMessage = {
         id: `bot-${Date.now()}-${Math.random()}`,
         content: content,
         senderId: 'bot',
-        roomId: roomId,
-        messageType: 'system',
+        roomId: roomId, // Ensure roomId is properly set
+        messageType: 'bot',
         createdAt: new Date().toISOString(),
-        imageUrl: imageUrl,
+        cardImage: imageUrl, // Use cardImage instead of imageUrl for consistency
         sender: {
           id: 'bot',
-          username: senderName || 'Bot',
+          username: senderName || 'LowCardBot',
           level: 0,
           isOnline: true,
         }
       };
 
-      window.dispatchEvent(new CustomEvent('newMessage', { // Dispatching as 'newMessage' for consistent handling
+      window.dispatchEvent(new CustomEvent('newMessage', {
         detail: botMessage
       }));
     });
@@ -204,7 +210,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    
+
 
     socket.current.on('error', (data) => {
       console.log('Socket error:', data);
@@ -507,7 +513,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     if (socket.current && socket.current.connected && user) {
       console.log('Sending join_room request for:', roomId);
-      
+
       // Always send join_room request to ensure proper server-side room membership
       sendMessage('join_room', {
         roomId,
