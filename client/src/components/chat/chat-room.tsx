@@ -713,10 +713,12 @@ export function ChatRoom({
         setMessages(prev => {
           // Remove any temporary optimistic messages with same content from same user
           const filteredPrev = prev.filter(msg => {
-            if (msg.id.startsWith('temp-') &&
-                msg.senderId === newMessage.senderId &&
-                msg.content === newMessage.content) {
-              return false; // Remove optimistic message
+            
+            if (msg.id?.startsWith('temp-') &&
+    msg.senderId === newMessage.senderId &&
+    msg.content === newMessage.content) {
+  return false;
+} // Remove optimistic message
             }
             return true;
           });
