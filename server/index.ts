@@ -11,6 +11,7 @@ import { createServer } from "http";
 import { handleLowCardBot } from "./bots/lowcard";
 import * as db from "./db";
 import { messages } from "../shared/schema";
+import path from "path";
 
 
 const PostgresSessionStore = connectPg(session);
@@ -43,6 +44,9 @@ async function getSessionFromCookie(cookieString: string) {
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Serve static files from client/public directory
+app.use(express.static(path.join(import.meta.dirname, '..', 'client', 'public')));
 
 app.use((req, res, next) => {
   const start = Date.now();
