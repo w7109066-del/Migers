@@ -163,7 +163,7 @@ export function ChatRoom({
   // Function to load messages - defined with useCallback to make it accessible
   const loadRoomMessages = useCallback(async () => {
     if (!roomId || !roomName) return;
-    
+
     console.log('Loading messages for joined room:', roomId);
 
     const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -422,7 +422,7 @@ export function ChatRoom({
           const canJoin = await checkTempBan(roomId);
           if (canJoin) {
             console.log('Attempting to join room:', roomId);
-            
+
             // Add small delay to ensure any previous leave operations are completed
             setTimeout(() => {
               joinRoom(roomId);
@@ -462,7 +462,7 @@ export function ChatRoom({
 
       previousRoomIdRef.current = roomId;
     };
-      
+
 
     // Reset join attempt flag when room changes
     if (previousRoomIdRef.current !== roomId) {
@@ -697,8 +697,8 @@ export function ChatRoom({
         setMessages(prev => {
           // Remove any temporary optimistic messages with same content from same user
           const filteredPrev = prev.filter(msg => {
-            if (msg.id.startsWith('temp-') && 
-                msg.senderId === newMessage.senderId && 
+            if (msg.id.startsWith('temp-') &&
+                msg.senderId === newMessage.senderId &&
                 msg.content === newMessage.content) {
               return false; // Remove optimistic message
             }
@@ -2221,7 +2221,7 @@ export function ChatRoom({
         <MessageInput onSendMessage={handleSendMessage} roomId={roomId} />
       </div>
 
-      
+
 
 
     </div>

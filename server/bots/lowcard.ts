@@ -194,17 +194,27 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
     return;
   }
 
-  // Check if msg is undefined, null, or not a string
-  if (!msg || typeof msg !== 'string' || msg.trim() === '') {
-    console.error('Invalid or empty message received:', msg, 'type:', typeof msg);
+  // Enhanced message validation with multiple checks
+  if (msg === null || msg === undefined) {
+    console.error('Message is null or undefined');
+    return;
+  }
+
+  if (typeof msg !== 'string') {
+    console.error('Message is not a string, received type:', typeof msg, 'value:', msg);
+    return;
+  }
+
+  if (msg.length === 0) {
+    console.error('Message is empty string');
     return;
   }
 
   const trimmedMsg = msg.trim();
   
   // Additional safety check after trimming
-  if (!trimmedMsg) {
-    console.error('Message became empty after trimming');
+  if (!trimmedMsg || trimmedMsg.length === 0) {
+    console.error('Message became empty after trimming, original:', JSON.stringify(msg));
     return;
   }
 
@@ -244,9 +254,14 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
     return;
   }
 
-  // Safety check for startsWith
-  if (!trimmedMsg.startsWith('!')) {
-    console.log('Not a bot command, ignoring');
+  // Enhanced safety check for startsWith with comprehensive validation
+  try {
+    if (!trimmedMsg || typeof trimmedMsg !== 'string' || !trimmedMsg.startsWith('!')) {
+      console.log('Not a bot command, ignoring. Message:', JSON.stringify(trimmedMsg));
+      return;
+    }
+  } catch (error) {
+    console.error('Error checking if message starts with !:', error, 'Message:', JSON.stringify(trimmedMsg));
     return;
   }
 
