@@ -350,6 +350,21 @@ export const customEmojisRelations = relations(customEmojis, ({ one }) => ({
   }),
 }));
 
+// User statistics table for tracking activities
+export const userStatistics = pgTable("user_statistics", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
+  gameWins: integer("game_wins").default(0),
+  gameLosses: integer("game_losses").default(0),
+  coinsEarned: integer("coins_earned").default(0),
+  coinsSpent: integer("coins_spent").default(0),
+  giftsSent: integer("gifts_sent").default(0),
+  giftsReceived: integer("gifts_received").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relation for the user statistics table
 export const userStatisticsRelations = relations(userStatistics, ({ one }) => ({
   user: one(users, {
@@ -470,21 +485,6 @@ export const insertCustomEmojiSchema = createInsertSchema(customEmojis).pick({
   fileType: true,
   category: true,
   createdBy: true,
-});
-
-// User statistics table for tracking activities
-export const userStatistics = pgTable("user_statistics", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
-  gameWins: integer("game_wins").default(0),
-  gameLosses: integer("game_losses").default(0),
-  coinsEarned: integer("coins_earned").default(0),
-  coinsSpent: integer("coins_spent").default(0),
-  giftsSent: integer("gifts_sent").default(0),
-  giftsReceived: integer("gifts_received").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Schema for user statistics
