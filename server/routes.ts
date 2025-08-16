@@ -2797,6 +2797,32 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/toprank/wealth/:period', requireAuth, async (req, res) => {
+    try {
+      const { period } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      if (!['daily', 'weekly', 'all'].includes(period)) {
+        return res.status(400).json({ message: 'Invalid period. Use daily, weekly, or all.' });
+      }
+
+      const rankings = await storage.getWealthTopRank(period as 'daily' | 'weekly' | 'all', limit);
+
+      res.json(rankings.map(user => ({
+        id: user.id,
+        username: user.username,
+        level: user.level,
+        profilePhotoUrl: user.profilePhotoUrl,
+        coins: user.coins || user.coinsSpent || 0,
+        rank: user.rank,
+        isOnline: user.isOnline
+      })));
+    } catch (error) {
+      console.error('Error fetching wealth top rank:', error);
+      res.status(500).json({ message: 'Failed to fetch wealth rankings' });
+    }
+  });
+
   app.get('/api/toprank/gifts/:period', requireAuth, async (req, res) => {
     try {
       const { period } = req.params;
