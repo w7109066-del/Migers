@@ -214,6 +214,9 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
 
     window.addEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
 
+    // Force refresh member counts when component mounts
+    refetchMemberCounts();
+
     return () => {
       window.removeEventListener('room_member_count_updated', handleMemberCountUpdate as EventListener);
     };

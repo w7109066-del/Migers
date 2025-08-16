@@ -2895,6 +2895,14 @@ export function registerRoutes(app: Express): Server {
         if (connection.socket && !connection.socket.connected) {
           console.log(`Removing stale connection for user ${userId}`);
           userConnections.delete(userId);
+          
+          // Also clean up from all mock rooms
+          for (const [roomId, roomMembers] of mockRoomMembers.entries()) {
+            if (roomMembers.has(userId)) {
+              roomMembers.delete(userId);
+              console.log(`Removed stale user ${userId} from mock room ${roomId}`);
+            }
+          }
         }
       }
 
@@ -2918,6 +2926,49 @@ export function registerRoutes(app: Express): Server {
       console.error('Error during periodic cleanup:', error);
     }
   }, 5 * 60 * 1000); // Every 5 minutes
+
+  // Force refresh room member counts every 30 seconds
+  setInterval(async () => {
+    try {
+      console.log('Force refreshing room member counts...');
+      
+      // Broadcast current counts for all rooms
+      const allRoomIds = ['1', '2', '3', '4'];
+      for (const roomId of allRoomIds) {
+        try {
+          const currentCount = await getRoomMemberCount(roomId);
+          io.emit('room_member_count_updated', {
+            roomId: roomId,
+            memberCount: currentCount
+          });
+        } catch (countError) {
+          console.error(`Error refreshing count for room ${roomId}:`, countError);
+        }
+      }
+
+      // Also refresh database rooms
+      try {
+        const allRooms = await storage.getAllRooms();
+        if (allRooms && Array.isArray(allRooms)) {
+          for (const room of allRooms) {
+            try {
+              const currentCount = await getRoomMemberCount(room.id);
+              io.emit('room_member_count_updated', {
+                roomId: room.id,
+                memberCount: currentCount
+              });
+            } catch (countError) {
+              console.error(`Error refreshing count for database room ${room.id}:`, countError);
+            }
+          }
+        }
+      } catch (dbError) {
+        console.error('Error fetching rooms for count refresh:', dbError);
+      }
+    } catch (error) {
+      console.error('Error during member count refresh:', error);
+    }
+  }, 30 * 1000); // Every 30 seconds
 
   io.on('connection', async (socket) => {
     console.log('New Socket.IO connection:', socket.id);
@@ -3196,6 +3247,7 @@ export function registerRoutes(app: Express): Server {
             const roomMembers = mockRoomMembers.get(data.roomId);
             if (roomMembers && roomMembers.has(userId)) {
               roomMembers.delete(userId);
+              console.log(`Removed user ${userId} from mock room ${data.roomId} on explicit leave`);
             }
           }
 
@@ -3224,18 +3276,13 @@ export function registerRoutes(app: Express): Server {
 
           console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
 
-          // Broadcast updated member count
-          setTimeout(async () => {
-            try {
-              const currentCount = await getRoomMemberCount(data.roomId);
-              io.emit('room_member_count_updated', {
-                roomId: data.roomId,
-                memberCount: currentCount
-              });
-            } catch (countError) {
-              console.error(`Error broadcasting member count for ${data.roomId}:`, countError);
-            }
-          }, 500);
+          // Broadcast updated member count immediately
+          const currentCount = await getRoomMemberCount(data.roomId);
+          io.emit('room_member_count_updated', {
+            roomId: data.roomId,
+            memberCount: currentCount
+          });
+          console.log(`Updated member count for room ${data.roomId}: ${currentCount} after user leave`);
         } else {
           console.log(`User ${userId} not in room ${data.roomId}, skipping leave`);
           // Still send confirmation even if not in room
@@ -3942,6 +3989,57 @@ export function registerRoutes(app: Express): Server {
           if (connection && connection.socket.id === socket.id) {
             userConnections.delete(userId);
 
+            // Clean up ALL room memberships for this user on disconnect
+            const allRoomIds = ['1', '2', '3', '4']; // Mock rooms
+            
+            // Clean up mock room members
+            for (const roomId of allRoomIds) {
+              const roomMembers = mockRoomMembers.get(roomId);
+              if (roomMembers && roomMembers.has(userId)) {
+                roomMembers.delete(userId);
+                console.log(`Removed user ${userId} from mock room ${roomId}`);
+                
+                // Broadcast updated member count immediately
+                const currentCount = roomMembers.size;
+                io.emit('room_member_count_updated', {
+                  roomId: roomId,
+                  memberCount: currentCount
+                });
+                console.log(`Updated member count for room ${roomId}: ${currentCount}`);
+              }
+            }
+
+            // Clean up database rooms
+            try {
+              const allRooms = await storage.getAllRooms();
+              if (allRooms && Array.isArray(allRooms)) {
+                for (const room of allRooms) {
+                  try {
+                    const members = await storage.getRoomMembers(room.id);
+                    const isUserInRoom = members?.some(member => member.user.id === userId);
+                    
+                    if (isUserInRoom) {
+                      await storage.leaveRoom(room.id, userId);
+                      console.log(`Removed user ${userId} from database room ${room.id}`);
+                      
+                      // Broadcast updated member count
+                      const updatedMembers = await storage.getRoomMembers(room.id);
+                      const currentCount = updatedMembers?.length || 0;
+                      io.emit('room_member_count_updated', {
+                        roomId: room.id,
+                        memberCount: currentCount
+                      });
+                      console.log(`Updated member count for database room ${room.id}: ${currentCount}`);
+                    }
+                  } catch (roomError) {
+                    console.error(`Error cleaning up room ${room.id} for user ${userId}:`, roomError);
+                  }
+                }
+              }
+            } catch (dbError) {
+              console.error(`Error fetching rooms for cleanup:`, dbError);
+            }
+
             // Don't update offline status immediately - user might reconnect quickly
             setTimeout(async () => {
               try {
@@ -3962,28 +4060,6 @@ export function registerRoutes(app: Express): Server {
                 console.log(`User session removed for ${userId} (socket: ${socket.id})`);
               } catch (error) {
                 console.error(`Error removing user session for ${userId}:`, error);
-              }
-            }
-
-            // Clean up room membership on disconnect
-            if (currentRoomId) {
-              try {
-                // Leave room from database (works for all rooms)
-                await storage.leaveRoom(currentRoomId, userId);
-                console.log(`User ${userId} left room ${currentRoomId} on disconnect`);
-
-                // Broadcast room count update to all clients
-                try {
-                  const currentCount = await getRoomMemberCount(currentRoomId);
-                  io.emit('room_member_count_updated', {
-                    roomId: currentRoomId,
-                    memberCount: currentCount
-                  });
-                } catch (countError) {
-                  console.error(`Error getting room member count for ${currentRoomId}:`, countError);
-                }
-              } catch (roomError) {
-                console.error(`Error cleaning up room ${currentRoomId} for user ${userId}:`, roomError);
               }
             }
           }
