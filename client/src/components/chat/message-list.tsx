@@ -774,14 +774,15 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     <span className="text-sm" style={{ color: '#29876b', fontWeight: 'bold', fontFamily: 'Roboto, sans-serif' }}>
                       {message.sender?.username || 'LowCardBot'}:
                     </span>
-                    <div className="text-sm flex items-center gap-1" style={{ color: '#29876b', fontFamily: 'Roboto, sans-serif' }}>
+                    <div className="text-sm flex items-center gap-2" style={{ color: '#29876b', fontFamily: 'Roboto, sans-serif' }}>
                       <span>{message.content || ''}</span>
                       {message.cardImage && (
                         <img 
-                          src={message.cardImage} 
+                          src={`/${message.cardImage}`}
                           alt="Card" 
-                          className="w-4 h-6 object-contain inline-block ml-1"
+                          className="w-12 h-16 object-contain inline-block border rounded"
                           onError={(e) => {
+                            console.error('Failed to load card image:', message.cardImage);
                             e.currentTarget.style.display = 'none';
                           }}
                         />
