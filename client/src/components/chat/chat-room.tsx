@@ -675,14 +675,30 @@ export function ChatRoom({
       const newMessage = event.detail;
       console.log('ChatRoom: Received new message event:', newMessage);
 
-      // Ensure we have required fields with proper null/undefined checks
-      if (!newMessage || typeof newMessage !== 'object') {
-        console.error('ChatRoom: Invalid message object received:', newMessage);
+      // Enhanced validation with detailed error checking
+      if (!newMessage) {
+        console.error('ChatRoom: Received null or undefined message');
+        return;
+      }
+      
+      if (typeof newMessage !== 'object') {
+        console.error('ChatRoom: Invalid message object type:', typeof newMessage, 'value:', newMessage);
         return;
       }
 
-      if (!newMessage.content || typeof newMessage.content !== 'string') {
-        console.error('ChatRoom: Invalid or missing message content:', newMessage);
+      // Check if content exists and is valid
+      if (newMessage.content === null || newMessage.content === undefined) {
+        console.error('ChatRoom: Message content is null or undefined:', newMessage);
+        return;
+      }
+      
+      if (typeof newMessage.content !== 'string') {
+        console.error('ChatRoom: Message content is not a string, type:', typeof newMessage.content, 'content:', newMessage.content);
+        return;
+      }
+      
+      if (newMessage.content.length === 0) {
+        console.error('ChatRoom: Message content is empty string:', newMessage);
         return;
       }
 
@@ -939,9 +955,19 @@ export function ChatRoom({
   }, [roomId, refetchMembers, messages, blockedUsers, user, roomName, isRoomJoined, joinAttemptRef, loadRoomMessages]); // Added roomName and isRoomJoined
 
   const handleSendMessage = useCallback((content: string) => {
-    // Add comprehensive null/undefined checks
-    if (!content || typeof content !== 'string' || !content.trim()) {
-      console.log('Cannot send empty or invalid message:', content);
+    // Add comprehensive null/undefined checks with detailed logging
+    if (content === null || content === undefined) {
+      console.error('Message content is null or undefined:', content);
+      return;
+    }
+    
+    if (typeof content !== 'string') {
+      console.error('Message content is not a string, type:', typeof content, 'value:', content);
+      return;
+    }
+    
+    if (content.length === 0 || !content.trim()) {
+      console.log('Cannot send empty or invalid message:', JSON.stringify(content));
       return;
     }
 
@@ -977,14 +1003,26 @@ export function ChatRoom({
     console.log('ChatRoom: Sending message:', content, 'to room:', roomId);
 
     try {
-      // Ensure content is a valid string before processing
-      const safeContent = String(content).trim();
-      if (!safeContent) {
-        console.log('Content became empty after trimming');
+      // Ensure content is a valid string before processing with comprehensive checks
+      let safeContent;
+      try {
+        safeContent = String(content);
+        if (!safeContent || typeof safeContent !== 'string') {
+          console.error('Failed to convert content to string:', content);
+          return;
+        }
+        safeContent = safeContent.trim();
+      } catch (conversionError) {
+        console.error('Error converting content to string:', conversionError, 'content:', content);
+        return;
+      }
+      
+      if (!safeContent || safeContent.length === 0) {
+        console.log('Content became empty after trimming, original:', JSON.stringify(content));
         return;
       }
 
-      // Create optimistic message to show immediately
+      // Create optimistic message to show immediately with safe content handling
       const optimisticMessage = {
         id: `temp-${Date.now()}-${Math.random()}`,
         content: safeContent,
@@ -1003,8 +1041,20 @@ export function ChatRoom({
         roomId: roomId
       };
 
+      // Additional validation before adding to messages
+      if (!optimisticMessage.content || typeof optimisticMessage.content !== 'string') {
+        console.error('Failed to create valid optimistic message:', optimisticMessage);
+        return;
+      }
+
       // Add message immediately to local state for instant feedback
       setMessages(prev => [...prev, optimisticMessage]);
+
+      // Additional safety check before sending to WebSocket
+      if (!safeContent || typeof safeContent !== 'string') {
+        console.error('Cannot send message: invalid content before WebSocket send:', safeContent);
+        return;
+      }
 
       // Send message via WebSocket
       sendChatMessage(safeContent, roomId);
