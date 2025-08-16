@@ -505,14 +505,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Check if already joined this room to prevent duplicate joins
-    if (joinedRoomsRef.current.has(roomId)) {
-      console.log('Already joined room:', roomId, '- skipping WebSocket join');
-      return;
-    }
-
     if (socket.current && socket.current.connected && user) {
       console.log('Sending join_room request for:', roomId);
+      
+      // Always send join_room request to ensure proper server-side room membership
       sendMessage('join_room', {
         roomId,
         sessionId: sessionId.current,

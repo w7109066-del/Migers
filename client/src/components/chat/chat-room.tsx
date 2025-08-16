@@ -422,23 +422,33 @@ export function ChatRoom({
           const canJoin = await checkTempBan(roomId);
           if (canJoin) {
             console.log('Attempting to join room:', roomId);
-            joinRoom(roomId);
-            setIsRoomJoined(true);
-            console.log('Successfully joined room:', roomId);
+            
+            // Add small delay to ensure any previous leave operations are completed
+            setTimeout(() => {
+              joinRoom(roomId);
+              setIsRoomJoined(true);
+              console.log('Successfully joined room:', roomId);
 
-            // Only load messages AFTER successfully joining the room
-            loadRoomMessages();
+              // Load messages after successful join with additional delay
+              setTimeout(() => {
+                loadRoomMessages();
+              }, 200);
+            }, 100);
           }
         } catch (error) {
           console.error('Error checking temp ban or joining room:', error);
           // Still try to join if check fails
           try {
-            joinRoom(roomId);
-            setIsRoomJoined(true);
-            console.log('Joined room after error recovery:', roomId);
+            setTimeout(() => {
+              joinRoom(roomId);
+              setIsRoomJoined(true);
+              console.log('Joined room after error recovery:', roomId);
 
-            // Load messages after successful recovery join
-            loadRoomMessages();
+              // Load messages after successful recovery join
+              setTimeout(() => {
+                loadRoomMessages();
+              }, 200);
+            }, 100);
           } catch (joinError) {
             console.error('Failed to join room:', joinError);
           }

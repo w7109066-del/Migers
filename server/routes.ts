@@ -3101,8 +3101,6 @@ export function registerRoutes(app: Express): Server {
 
         console.log(`User ${user.username} (${userId}) attempting to join room ${data.roomId}`);
 
-        console.log(`User ${user.username} attempting to join room ${data.roomId}`);
-
         // Check if user is banned from rooms
         if (user.isBanned) {
           socket.emit('error', {
@@ -3126,103 +3124,94 @@ export function registerRoutes(app: Express): Server {
           }
         }
 
-        // Check if user is already active in this room
-        const isAlreadyInRoom = userConnections.get(userId)?.currentRoomId === data.roomId;
-
-        if (!isAlreadyInRoom) {
-          // Leave previous room if in another room
-          if (userConnections.get(userId)?.currentRoomId) {
-            try {
-              await storage.leaveRoom(userConnections.get(userId)!.currentRoomId!, userId);
-              socket.to(userConnections.get(userId)!.currentRoomId!).emit('user_left', {
-                userId,
-                roomId: userConnections.get(userId)!.currentRoomId!,
-                username: user.username
-              });
-              socket.leave(userConnections.get(userId)!.currentRoomId!);
-            } catch (leaveError) {
-              console.error('Error leaving previous room:', leaveError);
-            }
-          }
-
-          // Join new room
-          socket.join(data.roomId);
-
-          // For mock rooms (excluding MeChat)
-          if (['2', '3', '4'].includes(data.roomId)) {
-            if (!mockRoomMembers.has(data.roomId)) {
-              mockRoomMembers.set(data.roomId, new Map());
-            }
-            const roomMembers = mockRoomMembers.get(data.roomId)!;
-
-            // Get fresh user data to ensure profilePhotoUrl is current
-            const freshUser = await storage.getUser(userId);
-            roomMembers.set(userId, {
-              id: userId,
-              username: freshUser?.username || user.username,
-              level: freshUser?.level || user.level || 1,
-              isOnline: freshUser?.isOnline || user.isOnline,
-              profilePhotoUrl: freshUser?.profilePhotoUrl || null,
-              isAdmin: freshUser?.isAdmin || user.isAdmin || false,
-              isMerchant: freshUser?.isMerchant || user.isMerchant,
-              merchantRegisteredAt: freshUser?.merchantRegisteredAt || user.merchantRegisteredAt,
+        // Always leave previous room first to ensure clean state
+        if (userConnections.get(userId)?.currentRoomId) {
+          const previousRoomId = userConnections.get(userId)!.currentRoomId!;
+          try {
+            await storage.leaveRoom(previousRoomId, userId);
+            socket.to(previousRoomId).emit('user_left', {
+              userId,
+              roomId: previousRoomId,
+              username: user.username
             });
+            socket.leave(previousRoomId);
+            console.log(`User ${user.username} left previous room ${previousRoomId}`);
+          } catch (leaveError) {
+            console.error('Error leaving previous room:', leaveError);
           }
-
-          // Real room (including MeChat)
-          await storage.joinRoom(data.roomId, userId);
-
-          // Update user's current room
-          if (userConnections.has(userId)) {
-            userConnections.get(userId)!.currentRoomId = data.roomId;
-          }
-          currentRoomId = data.roomId;
-
-          // Send success confirmation to user
-          socket.emit('room_joined', {
-            roomId: data.roomId,
-            success: true
-          });
-
-          // Emit user joined event to room
-          socket.to(data.roomId).emit('user_joined', {
-            username: user.username,
-            userId: user.id,
-            userLevel: user.level || 1,
-            roomId: data.roomId
-          });
-
-          // Show bot status to the user who just joined
-          if (isBotActiveInRoom(data.roomId)) {
-            setTimeout(() => {
-              const status = getBotStatus(data.roomId);
-              io.to(socket.id).emit('bot_message', 'LowCardBot', `👋 Welcome ${user.username}! ${status}`, null, data.roomId);
-            }, 1000); // Small delay to ensure user is fully connected
-          }
-
-          console.log(`User ${user.username} successfully joined room ${data.roomId}`);
-
-          // Broadcast updated member count
-          setTimeout(async () => {
-            try {
-              const currentCount = await getRoomMemberCount(data.roomId);
-              io.emit('room_member_count_updated', {
-                roomId: data.roomId,
-                memberCount: currentCount
-              });
-            } catch (countError) {
-              console.error(`Error broadcasting member count for ${data.roomId}:`, countError);
-            }
-          }, 500);
-        } else {
-          // Already in room, send confirmation
-          socket.emit('room_joined', {
-            roomId: data.roomId,
-            success: true,
-            message: 'Already in room'
-          });
-          console.log(`User ${userId} already in room ${data.roomId}`);
         }
+
+        // Always join the Socket.IO room regardless of current state
+        socket.join(data.roomId);
+        console.log(`Socket ${socket.id} joined Socket.IO room ${data.roomId}`);
+
+        // For mock rooms (excluding MeChat)
+        if (['2', '3', '4'].includes(data.roomId)) {
+          if (!mockRoomMembers.has(data.roomId)) {
+            mockRoomMembers.set(data.roomId, new Map());
+          }
+          const roomMembers = mockRoomMembers.get(data.roomId)!;
+
+          // Get fresh user data to ensure profilePhotoUrl is current
+          const freshUser = await storage.getUser(userId);
+          roomMembers.set(userId, {
+            id: userId,
+            username: freshUser?.username || user.username,
+            level: freshUser?.level || user.level || 1,
+            isOnline: freshUser?.isOnline || user.isOnline,
+            profilePhotoUrl: freshUser?.profilePhotoUrl || null,
+            isAdmin: freshUser?.isAdmin || user.isAdmin || false,
+            isMerchant: freshUser?.isMerchant || user.isMerchant,
+            merchantRegisteredAt: freshUser?.merchantRegisteredAt || user.merchantRegisteredAt,
+          });
+        }
+
+        // Real room (including MeChat) - always call joinRoom to ensure database consistency
+        await storage.joinRoom(data.roomId, userId);
+
+        // Update user's current room
+        if (userConnections.has(userId)) {
+          userConnections.get(userId)!.currentRoomId = data.roomId;
+        }
+        currentRoomId = data.roomId;
+
+        // Send success confirmation to user
+        socket.emit('room_joined', {
+          roomId: data.roomId,
+          success: true
+        });
+
+        // Emit user joined event to room (only to others, not to self)
+        socket.to(data.roomId).emit('user_joined', {
+          username: user.username,
+          userId: user.id,
+          userLevel: user.level || 1,
+          roomId: data.roomId
+        });
+
+        // Show bot status to the user who just joined
+        if (isBotActiveInRoom(data.roomId)) {
+          setTimeout(() => {
+            const status = getBotStatus(data.roomId);
+            io.to(socket.id).emit('bot_message', 'LowCardBot', `👋 Welcome ${user.username}! ${status}`, null, data.roomId);
+          }, 1000); // Small delay to ensure user is fully connected
+        }
+
+        console.log(`User ${user.username} successfully joined room ${data.roomId}`);
+
+        // Broadcast updated member count
+        setTimeout(async () => {
+          try {
+            const currentCount = await getRoomMemberCount(data.roomId);
+            io.emit('room_member_count_updated', {
+              roomId: data.roomId,
+              memberCount: currentCount
+            });
+          } catch (countError) {
+            console.error(`Error broadcasting member count for ${data.roomId}:`, countError);
+          }
+        }, 500);
+
       } catch (error) {
         console.error('Join room error:', error);
         socket.emit('error', {
