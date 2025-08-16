@@ -64,8 +64,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
     const content = message.content.trim();
     
     // Filter out bot commands
-    if (content === '/add bot lowcard' || 
-        content === '/add bot sicbo' || 
+    if (content === '/add bot lowcard' ||   
         content === '/bot off' || 
         content.startsWith('!')) {
       return false;
@@ -797,12 +796,12 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
           const isWelcomeMessage = content.includes('Welcome to');
           const isCurrentlyInRoom = content.includes('Currently in the room:');
           const isRoomManaged = content.includes('This room is managed by');
-          const isUserEnterLeave = content.includes('has entered') || content.includes('has left') || content.includes('has left the room');
+          const isUserEnterLeave = content.includes('has entered') || content.includes('has left');
           const isWhoisMessage = content.includes('📋 User Info for') || content.includes('❌ User');
           const isKickMessage = content.includes('has been kicked') || content.includes('kick vote') || content.includes('Vote expires') || content.includes('You has been kicked by admin');
           const isBotOffMessage = content.includes('bot is off') || content.includes('Bot is off') || content.includes('bot off');
-          const isBotJoinMessage = content.includes('LowCardBot has joined') || content.includes('SicboBot has joined') || content.includes('LowCardBot is now active') || content.includes('SicboBot is now active');
-          const isBotGameMessage = content.includes('LowCard') || content.includes('Sicbo') || content.includes('🎮') || content.includes('🎲') || content.includes('Type !start') || content.includes('Type !j') || content.includes('drew a card') || content.includes('wins the game') || content.includes('dice rolled');
+          const isBotJoinMessage = content.includes('LowCardBot has joined') || content.includes('LowCardBot is now active');
+          const isBotGameMessage = content.includes('LowCard') || content.includes('🎮') || content.includes('Type !start') || content.includes('Type !j') || content.includes('drew a card') || content.includes('wins the game');
           const isOtherSystemMessage = !isWelcomeMessage && !isCurrentlyInRoom && !isRoomManaged && !isUserEnterLeave && !isWhoisMessage && !isKickMessage && !isBotOffMessage && !isBotJoinMessage && !isBotGameMessage;
 
           return (
