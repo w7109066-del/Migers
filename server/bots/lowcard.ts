@@ -95,7 +95,7 @@ function startDrawPhase(io: Server, room: string): void {
     data.players.forEach(player => {
       if (!player.card) {
         player.card = drawCard();
-        io.to(room).emit('bot_message', 'LowCardBot', `${player.username} auto drew a card.`, `/cards/${player.card.filename}`, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `${player.username} auto drew a card.`, `cards/${player.card.filename}`, room);
       }
     });
 
@@ -125,17 +125,17 @@ function finishRound(io: Server, room: string): void {
   if (losers.length > 1) {
     // Tie breaker - random selection
     finalLoser = losers[Math.floor(Math.random() * losers.length)];
-    io.to(room).emit('bot_message', 'LowCardBot', `Tie broken! ${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `Tie broken! ${finalLoser.username} is OUT with the lowest card!`, `cards/${finalLoser.card!.filename}`, room);
   } else {
     finalLoser = losers[0];
-    io.to(room).emit('bot_message', 'LowCardBot', `${finalLoser.username} is OUT with the lowest card!`, `/cards/${finalLoser.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `${finalLoser.username} is OUT with the lowest card!`, `cards/${finalLoser.card!.filename}`, room);
   }
 
   // Show Final Results first
   io.to(room).emit('bot_message', 'LowCardBot', `Final Results:`, null, room);
   sorted.forEach(player => {
     const status = player.username === finalLoser.username ? " (LOSER)" : "";
-    io.to(room).emit('bot_message', 'LowCardBot', `${player.username}: ${player.card!.value.toUpperCase()}${player.card!.suit.toUpperCase()}${status}`, `/cards/${player.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `${player.username}: ${player.card!.value.toUpperCase()}${player.card!.suit.toUpperCase()}${status}`, `cards/${player.card!.filename}`, room);
   });
 
   // Calculate winnings
@@ -148,13 +148,13 @@ function finishRound(io: Server, room: string): void {
   if (remainingPlayers.length === 1) {
     const winner = remainingPlayers[0];
     tambahCoin(winner.id, winAmount);
-    io.to(room).emit('bot_message', 'LowCardBot', `${winner.username} wins the game! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `${winner.username} wins the game! +${winAmount.toFixed(1)} COIN`, `cards/${winner.card!.filename}`, room);
   } else {
     // Multiple remaining players - highest card wins
     const sortedRemaining = remainingPlayers.sort((a, b) => getCardValue(b.card!) - getCardValue(a.card!));
     const winner = sortedRemaining[0];
     tambahCoin(winner.id, winAmount);
-    io.to(room).emit('bot_message', 'LowCardBot', `${winner.username} wins with the highest card! +${winAmount.toFixed(1)} COIN`, `/cards/${winner.card!.filename}`, room);
+    io.to(room).emit('bot_message', 'LowCardBot', `${winner.username} wins with the highest card! +${winAmount.toFixed(1)} COIN`, `cards/${winner.card!.filename}`, room);
   }
 
   // Show House cut last
@@ -211,7 +211,7 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
   }
 
   const trimmedMsg = msg.trim();
-  
+
   // Additional safety check after trimming
   if (!trimmedMsg || trimmedMsg.length === 0) {
     console.error('Message became empty after trimming, original:', JSON.stringify(msg));
@@ -370,7 +370,7 @@ function handleLowCardCommand(io: Server, room: string, command: string, args: s
         }
 
         player.card = drawCard();
-        io.to(room).emit('bot_message', 'LowCardBot', `${username} drew a card!`, `/cards/${player.card.filename}`, room);
+        io.to(room).emit('bot_message', 'LowCardBot', `${username} drew a card!`, `cards/${player.card.filename}`, room);
 
         // Check if all players have drawn
         const allDrawn = data.players.every(p => p.card);
