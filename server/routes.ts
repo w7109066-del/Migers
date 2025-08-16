@@ -15,7 +15,6 @@ import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
 import { handleLowCardBot, isBotActiveInRoom, getBotStatus, processLowCardCommand } from './bots/lowcard';
-import { initializeSicboBot, processSicboCommand, isSicboBotActiveInRoom } from './bots/sicbo';
 
 // Helper function to get video duration
 async function getVideoDuration(filePath: string): Promise<number> {
@@ -2870,9 +2869,6 @@ export function registerRoutes(app: Express): Server {
     pingInterval: 25000
   });
 
-  // Initialize bots
-  initializeSicboBot(io);
-
   // Track users in mock rooms with detailed user info
   const mockRoomMembers = new Map<string, Map<string, any>>();
 
@@ -3326,16 +3322,7 @@ export function registerRoutes(app: Express): Server {
             return; // Exit early - don't save command message
           }
 
-          // Check if message is /add bot sicbo command
-          if (data.content.trim() === '/add bot sicbo') {
-            console.log('Processing /add bot sicbo command');
-            // Activate sicbo bot in this room
-            const { activateSicboBot } = await import('./bots/sicbo');
-            activateSicboBot(data.roomId);
-
-            io.to(data.roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
-            return; // Exit early - don't save command message
-          }
+          
 
           // Check if message is /bot off command
           if (data.content.trim() === '/bot off') {
@@ -3343,20 +3330,11 @@ export function registerRoutes(app: Express): Server {
             // Get user info for bot command processing
             const senderUser = await storage.getUser(userId);
 
-            // Check if it's a Sicbo bot room first
-            const { isSicboBotActiveInRoom, processSicboCommand } = await import('./bots/sicbo');
-            const { isBotActiveInRoom, processLowCardCommand } = await import('./bots/lowcard');
-
-            if (isSicboBotActiveInRoom(data.roomId)) {
-              console.log('Handling /bot off for Sicbo bot');
-              processSicboCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            } else if (isBotActiveInRoom(data.roomId)) {
-              console.log('Handling /bot off for LowCard bot');
-              processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            } else {
-              console.log('Handling /bot off for LowCard bot (default)');
-              processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            }
+            // Handle LowCard bot off command
+            const { processLowCardCommand } = await import('./bots/lowcard');
+            
+            console.log('Handling /bot off for LowCard bot');
+            processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             return; // Exit early - don't save command message
           }
 
@@ -3369,21 +3347,11 @@ export function registerRoutes(app: Express): Server {
             const senderUser = await storage.getUser(userId);
 
             // Import bot modules
-            const { isSicboBotActiveInRoom, processSicboCommand } = await import('./bots/sicbo');
-            const { isBotActiveInRoom, processLowCardCommand } = await import('./bots/lowcard');
+            const { processLowCardCommand } = await import('./bots/lowcard');
 
-            // Check if it's a Sicbo command first (since Sicbo bot was added more recently)
-            if (isSicboBotActiveInRoom(data.roomId)) {
-              console.log('Handling Sicbo bot command for user:', senderUser?.username);
-              processSicboCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            } else if (isBotActiveInRoom(data.roomId)) {
-              console.log('Handling LowCard bot command for user:', senderUser?.username);
-              processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            } else {
-              // If no bot is active, try LowCard as default
-              console.log('No active bot found, trying LowCard bot command for user:', senderUser?.username);
-              processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
-            }
+            // Handle LowCard bot command
+            console.log('Handling LowCard bot command for user:', senderUser?.username);
+            processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             return; // Exit early - don't save command message
           }
 

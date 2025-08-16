@@ -204,10 +204,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    // Handle Sicbo commands
-    socket.current.on('sicbo_command', (room, command, userId, username) => {
-      console.log('Sicbo command event received:', { room, command, userId, username });
-    });
+    
 
     socket.current.on('error', (data) => {
       console.log('Socket error:', data);
