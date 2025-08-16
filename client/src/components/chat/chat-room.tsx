@@ -939,8 +939,9 @@ export function ChatRoom({
   }, [roomId, refetchMembers, messages, blockedUsers, user, roomName, isRoomJoined, joinAttemptRef, loadRoomMessages]); // Added roomName and isRoomJoined
 
   const handleSendMessage = useCallback((content: string) => {
-    if (!content.trim()) {
-      console.log('Cannot send empty message');
+    // Add comprehensive null/undefined checks
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      console.log('Cannot send empty or invalid message:', content);
       return;
     }
 
@@ -976,10 +977,17 @@ export function ChatRoom({
     console.log('ChatRoom: Sending message:', content, 'to room:', roomId);
 
     try {
+      // Ensure content is a valid string before processing
+      const safeContent = String(content).trim();
+      if (!safeContent) {
+        console.log('Content became empty after trimming');
+        return;
+      }
+
       // Create optimistic message to show immediately
       const optimisticMessage = {
         id: `temp-${Date.now()}-${Math.random()}`,
-        content: content.trim(),
+        content: safeContent,
         senderId: user.id,
         createdAt: new Date().toISOString(),
         sender: {
@@ -999,7 +1007,7 @@ export function ChatRoom({
       setMessages(prev => [...prev, optimisticMessage]);
 
       // Send message via WebSocket
-      sendChatMessage(content, roomId);
+      sendChatMessage(safeContent, roomId);
       console.log('Message sent successfully via WebSocket');
 
       // Auto-scroll to bottom immediately

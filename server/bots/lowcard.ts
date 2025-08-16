@@ -188,13 +188,25 @@ export function getBotStatus(roomId: string): string {
 export function processLowCardCommand(io: Server, room: string, msg: string, userId: string, username: string): void {
   console.log('Processing LowCard command directly:', msg, 'in room:', room, 'for user:', username);
 
+  // Comprehensive validation of all parameters
+  if (!io || !room || !userId || !username) {
+    console.error('Invalid parameters for LowCard command:', { io: !!io, room, userId, username });
+    return;
+  }
+
   // Check if msg is undefined, null, or not a string
   if (!msg || typeof msg !== 'string' || msg.trim() === '') {
-    console.log('Invalid or empty message received:', msg);
+    console.error('Invalid or empty message received:', msg, 'type:', typeof msg);
     return;
   }
 
   const trimmedMsg = msg.trim();
+  
+  // Additional safety check after trimming
+  if (!trimmedMsg) {
+    console.error('Message became empty after trimming');
+    return;
+  }
 
   // Handle /bot off command specifically
   if (trimmedMsg === '/bot off') {

@@ -2895,7 +2895,7 @@ export function registerRoutes(app: Express): Server {
         if (connection.socket && !connection.socket.connected) {
           console.log(`Removing stale connection for user ${userId}`);
           userConnections.delete(userId);
-          
+
           // Also clean up from all mock rooms
           for (const [roomId, roomMembers] of mockRoomMembers.entries()) {
             if (roomMembers.has(userId)) {
@@ -2931,7 +2931,7 @@ export function registerRoutes(app: Express): Server {
   setInterval(async () => {
     try {
       console.log('Force refreshing room member counts...');
-      
+
       // Broadcast current counts for all rooms
       const allRoomIds = ['1', '2', '3', '4'];
       for (const roomId of allRoomIds) {
@@ -3323,7 +3323,7 @@ export function registerRoutes(app: Express): Server {
           let isMember = false;
 
           if (['2', '3', '4'].includes(data.roomId)) {
-            // For mock rooms (2-4), check mock room members
+            // For mock rooms, check mock room members
             const roomMembers = mockRoomMembers.get(data.roomId);
             isMember = roomMembers && roomMembers.has(userId);
           } else {
@@ -3980,14 +3980,14 @@ export function registerRoutes(app: Express): Server {
 
             // Clean up ALL room memberships for this user on disconnect
             const allRoomIds = ['1', '2', '3', '4']; // Mock rooms
-            
+
             // Clean up mock room members
             for (const roomId of allRoomIds) {
               const roomMembers = mockRoomMembers.get(roomId);
               if (roomMembers && roomMembers.has(userId)) {
                 roomMembers.delete(userId);
                 console.log(`Removed user ${userId} from mock room ${roomId}`);
-                
+
                 // Broadcast updated member count immediately
                 const currentCount = roomMembers.size;
                 io.emit('room_member_count_updated', {
@@ -4006,11 +4006,11 @@ export function registerRoutes(app: Express): Server {
                   try {
                     const members = await storage.getRoomMembers(room.id);
                     const isUserInRoom = members?.some(member => member.user.id === userId);
-                    
+
                     if (isUserInRoom) {
                       await storage.leaveRoom(room.id, userId);
                       console.log(`Removed user ${userId} from database room ${room.id}`);
-                      
+
                       // Broadcast updated member count
                       const updatedMembers = await storage.getRoomMembers(room.id);
                       const currentCount = updatedMembers?.length || 0;
