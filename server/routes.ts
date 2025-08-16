@@ -600,24 +600,24 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/rooms/search/:roomName", requireAuth, async (req, res) => {
     try {
       const { roomName } = req.params;
-      
+
       // Search for room by name (case insensitive)
       const rooms = await storage.getAllRooms();
-      const targetRoom = rooms?.find(room => 
+      const targetRoom = rooms?.find(room =>
         room.name.toLowerCase() === roomName.toLowerCase()
       );
-      
+
       if (!targetRoom) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           message: `Room "${roomName}" not found`,
-          memberCount: 0 
+          memberCount: 0
         });
       }
-      
+
       // Get member count
       const members = await storage.getRoomMembers(targetRoom.id);
       const memberCount = members?.length || 0;
-      
+
       // Get member details
       const memberDetails = members?.map(member => ({
         id: member.user.id,
@@ -627,7 +627,7 @@ export function registerRoutes(app: Express): Server {
         isMerchant: member.user.isMerchant || false,
         profilePhotoUrl: member.user.profilePhotoUrl
       })) || [];
-      
+
       res.json({
         room: {
           id: targetRoom.id,
@@ -637,7 +637,7 @@ export function registerRoutes(app: Express): Server {
         },
         members: memberDetails
       });
-      
+
     } catch (error) {
       console.error("Error searching room:", error);
       res.status(500).json({ message: "Failed to search room" });
@@ -1341,14 +1341,14 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/admin/merchant-area-check', requireAdmin, async (req, res) => {
     try {
       console.log('Checking merchant area room...');
-      
+
       // Search for "merchant area" room
       const rooms = await storage.getAllRooms();
-      const merchantAreaRoom = rooms?.find(room => 
-        room.name.toLowerCase().includes('merchant') && 
+      const merchantAreaRoom = rooms?.find(room =>
+        room.name.toLowerCase().includes('merchant') &&
         room.name.toLowerCase().includes('area')
       );
-      
+
       if (!merchantAreaRoom) {
         return res.json({
           found: false,
@@ -1357,15 +1357,15 @@ export function registerRoutes(app: Express): Server {
           availableRooms: rooms?.map(r => r.name) || []
         });
       }
-      
+
       // Get all members in merchant area
       const members = await storage.getRoomMembers(merchantAreaRoom.id);
       const memberCount = members?.length || 0;
-      
+
       // Separate merchants from regular users
       const merchants = members?.filter(m => m.user.isMerchant) || [];
       const regularUsers = members?.filter(m => !m.user.isMerchant) || [];
-      
+
       // Get detailed member info
       const memberDetails = members?.map(member => ({
         id: member.user.id,
@@ -1378,7 +1378,7 @@ export function registerRoutes(app: Express): Server {
         profilePhotoUrl: member.user.profilePhotoUrl,
         joinedAt: member.joinedAt || new Date().toISOString()
       })) || [];
-      
+
       res.json({
         found: true,
         room: {
@@ -1396,10 +1396,10 @@ export function registerRoutes(app: Express): Server {
         },
         members: memberDetails
       });
-      
+
     } catch (error) {
       console.error('Error checking merchant area:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to check merchant area',
         message: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -3289,7 +3289,7 @@ export function registerRoutes(app: Express): Server {
 
           // Check if user is actually a member of the room
           let isMember = false;
-          
+
           if (['2', '3', '4'].includes(data.roomId)) {
             // For mock rooms (2-4), check mock room members
             const roomMembers = mockRoomMembers.get(data.roomId);
@@ -3332,7 +3332,7 @@ export function registerRoutes(app: Express): Server {
             // Activate sicbo bot in this room
             const { activateSicboBot } = await import('./bots/sicbo');
             activateSicboBot(data.roomId);
-            
+
             io.to(data.roomId).emit('bot_message', 'SicboBot', '🎲 SicboBot has joined the room! Type !start <bet> to begin playing.', null, data.roomId);
             return; // Exit early - don't save command message
           }
@@ -3346,7 +3346,7 @@ export function registerRoutes(app: Express): Server {
             // Check if it's a Sicbo bot room first
             const { isSicboBotActiveInRoom, processSicboCommand } = await import('./bots/sicbo');
             const { isBotActiveInRoom, processLowCardCommand } = await import('./bots/lowcard');
-            
+
             if (isSicboBotActiveInRoom(data.roomId)) {
               console.log('Handling /bot off for Sicbo bot');
               processSicboCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
@@ -3361,7 +3361,8 @@ export function registerRoutes(app: Express): Server {
           }
 
           // Check if message is a bot command and handle it
-          if (data.content.startsWith('!')) {
+          // Added safety check for data.content being a string
+          if (data.content && typeof data.content === 'string' && (data.content.startsWith('!') || data.content.startsWith('/bot'))) {
             console.log('Processing bot command:', data.content, 'in room:', data.roomId);
 
             // Get user info for bot command processing

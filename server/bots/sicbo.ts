@@ -296,9 +296,17 @@ export function initializeSicboBot(io: Server): void {
   });
 }
 
-export function processSicboCommand(io: Server, roomId: string, command: string, userId: string, username: string): void {
+export function processSicboCommand(io: Server, room: string, msg: string, userId: string, username: string): void {
+  console.log('Processing Sicbo command directly:', msg, 'in room:', room, 'for user:', username);
+
+  // Check if msg is undefined or null
+  if (!msg || typeof msg !== 'string') {
+    console.log('Invalid message received:', msg);
+    return;
+  }
+
   // Handle /bot off command specifically
-  if (command.trim() === '/bot off') {
+  if (msg.trim() === '/bot off') {
     // Check if bot is already off
     if (!botPresence[roomId]) {
       io.to(roomId).emit('bot_message', 'SicboBot', `⚠️ Bot is off in room`, null, roomId);
@@ -335,7 +343,13 @@ export function processSicboCommand(io: Server, roomId: string, command: string,
     botPresence[roomId] = true;
   }
 
-  io.emit('sicbo_command', roomId, command, userId, username);
+  // Safety check for startsWith
+  if (!msg || typeof msg !== 'string' || !msg.startsWith('!')) {
+    console.log('Not a bot command, ignoring');
+    return;
+  }
+
+  io.emit('sicbo_command', roomId, msg, userId, username);
 }
 
 export function activateSicboBot(roomId: string): void {

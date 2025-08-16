@@ -188,6 +188,12 @@ export function getBotStatus(roomId: string): string {
 export function processLowCardCommand(io: Server, room: string, msg: string, userId: string, username: string): void {
   console.log('Processing LowCard command directly:', msg, 'in room:', room, 'for user:', username);
 
+  // Check if msg is undefined or null
+  if (!msg || typeof msg !== 'string') {
+    console.log('Invalid message received:', msg);
+    return;
+  }
+
   // Handle /bot off command specifically
   if (msg.trim() === '/bot off') {
     // Check if bot is already off
@@ -224,7 +230,8 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
     return;
   }
 
-  if (!msg.startsWith('!')) {
+  // Safety check for startsWith
+  if (!msg || typeof msg !== 'string' || !msg.startsWith('!')) {
     console.log('Not a bot command, ignoring');
     return;
   }
