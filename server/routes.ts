@@ -755,6 +755,15 @@ export function registerRoutes(app: Express): Server {
       await storage.updateUserCoins(senderId, (sender.coins || 0) - actualTotalCost);
       // Note: In a real gift system, you might not give the full amount to recipient or have different logic
 
+      // Update gift statistics
+      await storage.updateUserStatistics(senderId, { 
+        giftsSent: quantity, 
+        coinsSpent: actualTotalCost 
+      });
+      await storage.updateUserStatistics(recipientId, { 
+        giftsReceived: quantity 
+      });
+
       // Create direct message with gift info
       const giftMessage = `🎁 ${gift.name} x${quantity} (${actualTotalCost} coins)`;
 
@@ -1219,6 +1228,11 @@ export function registerRoutes(app: Express): Server {
 
       // Perform transfer
       await storage.transferCoins(senderId, recipient.id, amount);
+
+      // Update spending statistics for sender
+      await storage.updateUserStatistics(senderId, { 
+        coinsSpent: amount 
+      });
 
       try {
         // Create notification for recipient
@@ -2724,6 +2738,88 @@ export function registerRoutes(app: Express): Server {
       res.sendFile(path.resolve(filePath));
     } else {
       res.status(404).json({ message: 'Image not found' });
+    }
+  });
+
+  // Top Rank API Endpoints
+  app.get('/api/toprank/games/:period', requireAuth, async (req, res) => {
+    try {
+      const { period } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      let rankings;
+      if (period === 'daily') {
+        rankings = await storage.getDailyGameTopRank(limit);
+      } else if (period === 'weekly') {
+        rankings = await storage.getWeeklyGameTopRank(limit);
+      } else {
+        return res.status(400).json({ message: 'Invalid period. Use daily or weekly.' });
+      }
+
+      res.json(rankings.map(user => ({
+        id: user.id,
+        username: user.username,
+        level: user.level,
+        profilePhotoUrl: user.profilePhotoUrl,
+        coins: user.gameWins || 0,
+        rank: user.rank,
+        isOnline: user.isOnline
+      })));
+    } catch (error) {
+      console.error('Error fetching game top rank:', error);
+      res.status(500).json({ message: 'Failed to fetch game rankings' });
+    }
+  });
+
+  app.get('/api/toprank/wealth/:period', requireAuth, async (req, res) => {
+    try {
+      const { period } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      if (!['daily', 'weekly', 'all'].includes(period)) {
+        return res.status(400).json({ message: 'Invalid period. Use daily, weekly, or all.' });
+      }
+
+      const rankings = await storage.getWealthTopRank(period as 'daily' | 'weekly' | 'all', limit);
+
+      res.json(rankings.map(user => ({
+        id: user.id,
+        username: user.username,
+        level: user.level,
+        profilePhotoUrl: user.profilePhotoUrl,
+        coins: user.coins || user.coinsSpent || 0,
+        rank: user.rank,
+        isOnline: user.isOnline
+      })));
+    } catch (error) {
+      console.error('Error fetching wealth top rank:', error);
+      res.status(500).json({ message: 'Failed to fetch wealth rankings' });
+    }
+  });
+
+  app.get('/api/toprank/gifts/:period', requireAuth, async (req, res) => {
+    try {
+      const { period } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      if (!['daily', 'weekly'].includes(period)) {
+        return res.status(400).json({ message: 'Invalid period. Use daily or weekly.' });
+      }
+
+      const rankings = await storage.getGiftTopRank(period as 'daily' | 'weekly', limit);
+
+      res.json(rankings.map(user => ({
+        id: user.id,
+        username: user.username,
+        level: user.level,
+        profilePhotoUrl: user.profilePhotoUrl,
+        coins: user.giftsSent || 0,
+        rank: user.rank,
+        isOnline: user.isOnline
+      })));
+    } catch (error) {
+      console.error('Error fetching gift top rank:', error);
+      res.status(500).json({ message: 'Failed to fetch gift rankings' });
     }
   });
 

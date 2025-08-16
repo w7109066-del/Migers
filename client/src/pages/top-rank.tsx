@@ -60,6 +60,9 @@ export default function TopRankPage() {
   const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "monthly">("daily");
   const { user } = useAuth();
 
+  // Assume rankingType is derived from activeTab for display purposes
+  const rankingType = activeTab === "daily" ? "games" : activeTab === "weekly" ? "games" : "gift"; // Simplified mapping for display logic
+
   const { data: topUsers = mockTopUsers, isLoading } = useQuery<RankedUser[]>({
     queryKey: ["/api/users/toprank", activeTab],
     queryFn: async () => {
@@ -194,7 +197,7 @@ export default function TopRankPage() {
               )}
               <h3 className="text-gray-900 font-bold text-lg">{topUsers[0].username}</h3>
               <div className="text-orange-600 font-semibold">
-                🔥 {topUsers[0].coins.toLocaleString()}
+                {rankingType === 'games' ? '🏆' : rankingType === 'wealth' ? '💰' : '🎁'} {topUsers[0].coins.toLocaleString()}
               </div>
             </div>
           </div>
@@ -239,7 +242,7 @@ export default function TopRankPage() {
                       )}
                     </div>
                     <div className="text-orange-600 text-sm font-medium">
-                      🔥 {user.coins.toLocaleString()}
+                      {rankingType === 'games' ? '🏆' : rankingType === 'wealth' ? '💰' : '🎁'} {user.coins.toLocaleString()}
                     </div>
                   </div>
                 </div>

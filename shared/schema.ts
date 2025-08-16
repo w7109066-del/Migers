@@ -350,6 +350,14 @@ export const customEmojisRelations = relations(customEmojis, ({ one }) => ({
   }),
 }));
 
+// Relation for the user statistics table
+export const userStatisticsRelations = relations(userStatistics, ({ one }) => ({
+  user: one(users, {
+    fields: [userStatistics.userId],
+    references: [users.id],
+  }),
+}));
+
 
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -464,6 +472,33 @@ export const insertCustomEmojiSchema = createInsertSchema(customEmojis).pick({
   createdBy: true,
 });
 
+// User statistics table for tracking activities
+export const userStatistics = pgTable("user_statistics", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
+  gameWins: integer("game_wins").default(0),
+  gameLosses: integer("game_losses").default(0),
+  coinsEarned: integer("coins_earned").default(0),
+  coinsSpent: integer("coins_spent").default(0),
+  giftsSent: integer("gifts_sent").default(0),
+  giftsReceived: integer("gifts_received").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Schema for user statistics
+export const insertUserStatisticsSchema = createInsertSchema(userStatistics).pick({
+  userId: true,
+  date: true,
+  gameWins: true,
+  gameLosses: true,
+  coinsEarned: true,
+  coinsSpent: true,
+  giftsSent: true,
+  giftsReceived: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -494,3 +529,5 @@ export type Gift = typeof gifts.$inferSelect;
 export type InsertGift = z.infer<typeof insertGiftSchema>;
 export type CustomEmoji = typeof customEmojis.$inferSelect;
 export type InsertCustomEmoji = z.infer<typeof insertCustomEmojiSchema>;
+export type UserStatistics = typeof userStatistics.$inferSelect;
+export type InsertUserStatistics = z.infer<typeof insertUserStatisticsSchema>;

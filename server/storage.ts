@@ -28,7 +28,9 @@ import {
   notifications,
   customEmojis,
   type CustomEmoji,
-  type InsertCustomEmoji
+  type InsertCustomEmoji,
+  userStatistics, // Added import for userStatistics
+  type UserStatistics // Added import for UserStatistics type
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, asc, isNull, inArray, count } from "drizzle-orm";
@@ -120,6 +122,20 @@ export interface IStorage {
   createGift(giftData: any): Promise<any>;
   deleteGift(giftId: string): Promise<void>;
   createGiftTransaction(transactionData: any): Promise<any>;
+
+  // User Statistics Functions
+  updateUserStatistics(userId: string, data: {
+    gameWins?: number;
+    gameLosses?: number;
+    coinsEarned?: number;
+    coinsSpent?: number;
+    giftsSent?: number;
+    giftsReceived?: number;
+  }): Promise<void>;
+  getDailyGameTopRank(limit?: number): Promise<any[]>;
+  getWeeklyGameTopRank(limit?: number): Promise<any[]>;
+  getWealthTopRank(period: 'daily' | 'weekly' | 'all', limit?: number): Promise<any[]>;
+  getGiftTopRank(period: 'daily' | 'weekly', limit?: number): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1002,7 +1018,7 @@ export class DatabaseStorage implements IStorage {
 
       // Get sender info
       const sender = await this.getUser(messageData.senderId);
-      
+
       if (!sender) {
         throw new Error('Sender not found');
       }
@@ -1910,8 +1926,231 @@ export class DatabaseStorage implements IStorage {
     return updatedEmoji;
   }
 
-  async deleteCustomEmoji(emojiId: string): Promise<void> {
-    await this.db.delete(customEmojis).where(eq(customEmojis.id, emojiId));
+  async deleteCustomEmoji(id: string) {
+    await this.db.delete(customEmojis).where(eq(customEmojis.id, id));
+  }
+
+  // User Statistics Functions
+  async updateUserStatistics(userId: string, data: {
+    gameWins?: number;
+    gameLosses?: number;
+    coinsEarned?: number;
+    coinsSpent?: number;
+    giftsSent?: number;
+    giftsReceived?: number;
+  }) {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    // Check if record exists for today
+    const existing = await this.db
+      .select()
+      .from(userStatistics)
+      .where(and(
+        eq(userStatistics.userId, userId),
+        eq(userStatistics.date, today)
+      ))
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Update existing record
+      const updateData: any = { updatedAt: new Date() };
+      if (data.gameWins !== undefined) updateData.gameWins = sql`${userStatistics.gameWins} + ${data.gameWins}`;
+      if (data.gameLosses !== undefined) updateData.gameLosses = sql`${userStatistics.gameLosses} + ${data.gameLosses}`;
+      if (data.coinsEarned !== undefined) updateData.coinsEarned = sql`${userStatistics.coinsEarned} + ${data.coinsEarned}`;
+      if (data.coinsSpent !== undefined) updateData.coinsSpent = sql`${userStatistics.coinsSpent} + ${data.coinsSpent}`;
+      if (data.giftsSent !== undefined) updateData.giftsSent = sql`${userStatistics.giftsSent} + ${data.giftsSent}`;
+      if (data.giftsReceived !== undefined) updateData.giftsReceived = sql`${userStatistics.giftsReceived} + ${data.giftsReceived}`;
+
+      await this.db
+        .update(userStatistics)
+        .set(updateData)
+        .where(eq(userStatistics.id, existing[0].id));
+    } else {
+      // Create new record
+      await this.db.insert(userStatistics).values({
+        userId,
+        date: today,
+        gameWins: data.gameWins || 0,
+        gameLosses: data.gameLosses || 0,
+        coinsEarned: data.coinsEarned || 0,
+        coinsSpent: data.coinsSpent || 0,
+        giftsSent: data.giftsSent || 0,
+        giftsReceived: data.giftsReceived || 0,
+      });
+    }
+  }
+
+  // Get top ranked users for daily games
+  async getDailyGameTopRank(limit: number = 50) {
+    const today = new Date().toISOString().split('T')[0];
+
+    const result = await this.db
+      .select({
+        id: users.id,
+        username: users.username,
+        profilePhotoUrl: users.profilePhotoUrl,
+        level: users.level,
+        isOnline: users.isOnline,
+        gameWins: userStatistics.gameWins,
+        rank: sql<number>`row_number() over (order by ${userStatistics.gameWins} desc, ${userStatistics.coinsEarned} desc)`.as('rank')
+      })
+      .from(userStatistics)
+      .innerJoin(users, eq(userStatistics.userId, users.id))
+      .where(eq(userStatistics.date, today))
+      .orderBy(desc(userStatistics.gameWins), desc(userStatistics.coinsEarned))
+      .limit(limit);
+
+    return result;
+  }
+
+  // Get top ranked users for weekly games
+  async getWeeklyGameTopRank(limit: number = 50) {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const weekStart = oneWeekAgo.toISOString().split('T')[0];
+
+    const result = await this.db
+      .select({
+        id: users.id,
+        username: users.username,
+        profilePhotoUrl: users.profilePhotoUrl,
+        level: users.level,
+        isOnline: users.isOnline,
+        gameWins: sql<number>`sum(${userStatistics.gameWins})`.as('gameWins'),
+        rank: sql<number>`row_number() over (order by sum(${userStatistics.gameWins}) desc, sum(${userStatistics.coinsEarned}) desc)`.as('rank')
+      })
+      .from(userStatistics)
+      .innerJoin(users, eq(userStatistics.userId, users.id))
+      .where(sql`${userStatistics.date} >= ${weekStart}`)
+      .groupBy(users.id, users.username, users.profilePhotoUrl, users.level, users.isOnline)
+      .orderBy(sql`sum(${userStatistics.gameWins}) desc`, sql`sum(${userStatistics.coinsEarned}) desc`)
+      .limit(limit);
+
+    return result;
+  }
+
+  // Get top users by coins spent (wealth ranking)
+  async getWealthTopRank(period: 'daily' | 'weekly' | 'all', limit: number = 50) {
+    if (period === 'all') {
+      // All-time wealth ranking based on total coins
+      const result = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          profilePhotoUrl: users.profilePhotoUrl,
+          level: users.level,
+          isOnline: users.isOnline,
+          coins: users.coins,
+          rank: sql<number>`row_number() over (order by ${users.coins} desc)`.as('rank')
+        })
+        .from(users)
+        .where(sql`${users.coins} > 0`)
+        .orderBy(desc(users.coins))
+        .limit(limit);
+
+      return result;
+    } else if (period === 'daily') {
+      const today = new Date().toISOString().split('T')[0];
+
+      const result = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          profilePhotoUrl: users.profilePhotoUrl,
+          level: users.level,
+          isOnline: users.isOnline,
+          coinsSpent: userStatistics.coinsSpent,
+          rank: sql<number>`row_number() over (order by ${userStatistics.coinsSpent} desc)`.as('rank')
+        })
+        .from(userStatistics)
+        .innerJoin(users, eq(userStatistics.userId, users.id))
+        .where(and(
+          eq(userStatistics.date, today),
+          sql`${userStatistics.coinsSpent} > 0`
+        ))
+        .orderBy(desc(userStatistics.coinsSpent))
+        .limit(limit);
+
+      return result;
+    } else {
+      // Weekly
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const weekStart = oneWeekAgo.toISOString().split('T')[0];
+
+      const result = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          profilePhotoUrl: users.profilePhotoUrl,
+          level: users.level,
+          isOnline: users.isOnline,
+          coinsSpent: sql<number>`sum(${userStatistics.coinsSpent})`.as('coinsSpent'),
+          rank: sql<number>`row_number() over (order by sum(${userStatistics.coinsSpent}) desc)`.as('rank')
+        })
+        .from(userStatistics)
+        .innerJoin(users, eq(userStatistics.userId, users.id))
+        .where(sql`${userStatistics.date} >= ${weekStart}`)
+        .groupBy(users.id, users.username, users.profilePhotoUrl, users.level, users.isOnline)
+        .having(sql`sum(${userStatistics.coinsSpent}) > 0`)
+        .orderBy(sql`sum(${userStatistics.coinsSpent}) desc`)
+        .limit(limit);
+
+      return result;
+    }
+  }
+
+  // Get top gift senders
+  async getGiftTopRank(period: 'daily' | 'weekly', limit: number = 50) {
+    if (period === 'daily') {
+      const today = new Date().toISOString().split('T')[0];
+
+      const result = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          profilePhotoUrl: users.profilePhotoUrl,
+          level: users.level,
+          isOnline: users.isOnline,
+          giftsSent: userStatistics.giftsSent,
+          rank: sql<number>`row_number() over (order by ${userStatistics.giftsSent} desc)`.as('rank')
+        })
+        .from(userStatistics)
+        .innerJoin(users, eq(userStatistics.userId, users.id))
+        .where(and(
+          eq(userStatistics.date, today),
+          sql`${userStatistics.giftsSent} > 0`
+        ))
+        .orderBy(desc(userStatistics.giftsSent))
+        .limit(limit);
+
+      return result;
+    } else {
+      // Weekly
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const weekStart = oneWeekAgo.toISOString().split('T')[0];
+
+      const result = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          profilePhotoUrl: users.profilePhotoUrl,
+          level: users.level,
+          isOnline: users.isOnline,
+          giftsSent: sql<number>`sum(${userStatistics.giftsSent})`.as('giftsSent'),
+          rank: sql<number>`row_number() over (order by sum(${userStatistics.giftsSent}) desc)`.as('rank')
+        })
+        .from(userStatistics)
+        .innerJoin(users, eq(userStatistics.userId, users.id))
+        .where(sql`${userStatistics.date} >= ${weekStart}`)
+        .groupBy(users.id, users.username, users.profilePhotoUrl, users.level, users.isOnline)
+        .having(sql`sum(${userStatistics.giftsSent}) > 0`)
+        .orderBy(sql`sum(${userStatistics.giftsSent}) desc`)
+        .limit(limit);
+
+      return result;
+    }
   }
 
   // Gift management methods
@@ -2003,7 +2242,7 @@ export async function tambahCoin(userId: string, amount: number): Promise<boolea
   try {
     const user = await storage.getUser(userId);
     if (!user) return false;
-    
+
     const newBalance = (user.coins || 0) + amount;
     const updatedUser = await storage.updateUserCoins(userId, newBalance);
     return !!updatedUser;
@@ -2017,10 +2256,10 @@ export async function potongCoin(userId: string, amount: number): Promise<boolea
   try {
     const user = await storage.getUser(userId);
     if (!user) return false;
-    
+
     const currentBalance = user.coins || 0;
     if (currentBalance < amount) return false;
-    
+
     const newBalance = currentBalance - amount;
     const updatedUser = await storage.updateUserCoins(userId, newBalance);
     return !!updatedUser;
