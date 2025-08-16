@@ -3322,7 +3322,7 @@ export function registerRoutes(app: Express): Server {
             return; // Exit early - don't save command message
           }
 
-          
+
 
           // Check if message is /bot off command
           if (data.content.trim() === '/bot off') {
@@ -3332,7 +3332,7 @@ export function registerRoutes(app: Express): Server {
 
             // Handle LowCard bot off command
             const { processLowCardCommand } = await import('./bots/lowcard');
-            
+
             console.log('Handling /bot off for LowCard bot');
             processLowCardCommand(io, data.roomId, data.content, userId, senderUser?.username || 'User');
             return; // Exit early - don't save command message
@@ -3340,7 +3340,7 @@ export function registerRoutes(app: Express): Server {
 
           // Check if message is a bot command and handle it
           // Added safety check for data.content being a string
-          if (data.content && typeof data.content === 'string' && (data.content.startsWith('!') || data.content.startsWith('/bot'))) {
+          if (data.content && typeof data.content === 'string' && data.content.trim().startsWith('!')) {
             console.log('Processing bot command:', data.content, 'in room:', data.roomId);
 
             // Get user info for bot command processing

@@ -188,14 +188,16 @@ export function getBotStatus(roomId: string): string {
 export function processLowCardCommand(io: Server, room: string, msg: string, userId: string, username: string): void {
   console.log('Processing LowCard command directly:', msg, 'in room:', room, 'for user:', username);
 
-  // Check if msg is undefined or null
-  if (!msg || typeof msg !== 'string') {
-    console.log('Invalid message received:', msg);
+  // Check if msg is undefined, null, or not a string
+  if (!msg || typeof msg !== 'string' || msg.trim() === '') {
+    console.log('Invalid or empty message received:', msg);
     return;
   }
 
+  const trimmedMsg = msg.trim();
+
   // Handle /bot off command specifically
-  if (msg.trim() === '/bot off') {
+  if (trimmedMsg === '/bot off') {
     // Check if bot is already off
     if (!botPresence[room]) {
       io.to(room).emit('bot_message', 'LowCardBot', `⚠️ Bot is off in room`, null, room);
@@ -231,7 +233,7 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
   }
 
   // Safety check for startsWith
-  if (!msg || typeof msg !== 'string' || !msg.startsWith('!')) {
+  if (!trimmedMsg.startsWith('!')) {
     console.log('Not a bot command, ignoring');
     return;
   }
@@ -239,7 +241,7 @@ export function processLowCardCommand(io: Server, room: string, msg: string, use
   // Ensure bot is present in the room when any command is used
   ensureBotPresence(io, room);
 
-  const [command, ...args] = msg.trim().split(' ');
+  const [command, ...args] = trimmedMsg.split(' ');
 
   handleLowCardCommand(io, room, command, args, userId, username);
 }

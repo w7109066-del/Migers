@@ -665,9 +665,14 @@ export function ChatRoom({
       const newMessage = event.detail;
       console.log('ChatRoom: Received new message event:', newMessage);
 
-      // Ensure we have required fields
-      if (!newMessage || !newMessage.content) {
-        console.error('ChatRoom: Invalid message data received:', newMessage);
+      // Ensure we have required fields with proper null/undefined checks
+      if (!newMessage || typeof newMessage !== 'object') {
+        console.error('ChatRoom: Invalid message object received:', newMessage);
+        return;
+      }
+
+      if (!newMessage.content || typeof newMessage.content !== 'string') {
+        console.error('ChatRoom: Invalid or missing message content:', newMessage);
         return;
       }
 
