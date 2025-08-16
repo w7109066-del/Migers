@@ -303,7 +303,7 @@ export function MultiRoomTabs({
           }
         }
       }
-    }
+    };
 
     const handleErrorMessage = (event: CustomEvent) => {
       const { message } = event.detail;
