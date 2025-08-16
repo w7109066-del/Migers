@@ -780,7 +780,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                         <img 
                           src={`/${message.cardImage}`}
                           alt="Card" 
-                          className="w-12 h-16 object-contain inline-block border rounded"
+                          className="w-8 h-12 object-contain inline-block border rounded"
                           onError={(e) => {
                             console.error('Failed to load card image:', message.cardImage);
                             e.currentTarget.style.display = 'none';
@@ -1011,7 +1011,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                       <img
                         src={message.cardImage}
                         alt="Card"
-                        className="w-16 h-24 object-cover rounded-lg border"
+                        className="w-10 h-15 object-cover rounded-lg border"
                       />
                     </div>
                   )}
