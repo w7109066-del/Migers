@@ -123,6 +123,9 @@ app.use((req, res, next) => {
 
 const server = createServer(app);
 const io = new Server(server, {
+  pingInterval: 10000, // setiap 10 detik kirim ping
+  pingTimeout: 30000,  // tunggu hingga 30 detik sebelum dianggap mati
+  transports: ['websocket'],
   cors: {
     origin: process.env.NODE_ENV === 'production'
       ? ["https://your-domain.com"]
