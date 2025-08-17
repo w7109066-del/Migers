@@ -19,6 +19,7 @@ import { PrivacySecurityModal } from "@/components/ui/privacy-security-modal";
 import { HelpSupportModal } from "@/components/ui/help-support-modal";
 
 import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -96,6 +97,7 @@ function HomePageContent() {
     retryConnection
   } = useWebSocket();
   const { notifications, markAsRead } = useNotifications();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedProfile, setSelectedProfile] = useState<MiniProfileData | null>(null);
@@ -2002,7 +2004,6 @@ function HomePageContent() {
 
 export default function HomePage() {
   const { user, logout, isDarkMode, toggleDarkMode } = useAuth();
-  const { toast } = useToast();
   return (
     <NotificationProvider>
       <WebSocketProvider>
