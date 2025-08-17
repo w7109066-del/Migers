@@ -169,17 +169,17 @@ export function ChatRoom({
     // Check if user has explicitly left this room before - if so, don't load old messages
     const userLeftRoomsKey = `userLeftRooms-${user?.id || 'anonymous'}`;
     const leftRooms = JSON.parse(localStorage.getItem(userLeftRoomsKey) || '[]');
-    
+
     if (leftRooms.includes(roomId)) {
       console.log('User has previously left this room, starting fresh without old messages');
       // Remove from left rooms list since user is joining again
       const updatedLeftRooms = leftRooms.filter((id: string) => id !== roomId);
       localStorage.setItem(userLeftRoomsKey, JSON.stringify(updatedLeftRooms));
-      
+
       // Clear any existing stored data for this room
       localStorage.removeItem(`chat_${roomId}`);
       localStorage.removeItem(`chatMessages-${roomId}`);
-      
+
       // Start with fresh welcome messages only
       const welcomeMessages = [
         {
@@ -242,7 +242,7 @@ export function ChatRoom({
       }
 
       setMessages(welcomeMessages);
-      
+
       // Save fresh welcome messages
       const messagesWithTimestamp = {
         messages: welcomeMessages,
@@ -1638,7 +1638,7 @@ export function ChatRoom({
   const handleBackToRoomList = () => {
     // Clear messages when going back to room list (user is leaving the room UI)
     setMessages([]);
-    
+
     // Mark that user has left this room UI to start fresh next time
     if (roomId && user?.id) {
       const userLeftRoomsKey = `userLeftRooms-${user.id}`;
@@ -1648,13 +1648,13 @@ export function ChatRoom({
         localStorage.setItem(userLeftRoomsKey, JSON.stringify(leftRooms));
       }
     }
-    
+
     // Clear localStorage for this room
     if (roomId) {
       localStorage.removeItem(`chat_${roomId}`);
       localStorage.removeItem(`chatMessages-${roomId}`);
     }
-    
+
     console.log('Navigating back to room list and clearing messages for room:', roomId);
     if (onLeaveRoom) {
       onLeaveRoom(); // This should only hide UI, not send WebSocket leave
@@ -1731,7 +1731,7 @@ export function ChatRoom({
             setMemberListError(true);
           }
         }}>
-            <SheetContent side="right" className="w-64" onPointerDownOutside={(e) => {
+            <SheetContent side="right" className={cn("w-64", isDarkMode ? "bg-gray-800 border-gray-700" : "")} onPointerDownOutside={(e) => {
               // Prevent closing when clicking on trigger button
               const target = e.target as Element;
               if (target.closest('[data-member-trigger]')) {
@@ -1824,7 +1824,7 @@ export function ChatRoom({
                             return (
                               <div
                                 key={`${member.user.id}-${member.user.username}`}
-                                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                                className={cn("flex items-center space-x-3 p-2 rounded-lg cursor-pointer", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
                                 onClick={() => {
                                   try {
                                     const profileData = {
@@ -1976,7 +1976,12 @@ export function ChatRoom({
                       Block User
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-64">
+                  <SheetContent side="right" className={cn("w-64", isDarkMode ? "bg-gray-800 border-gray-700" : "")} onPointerDownOutside={(e) => {
+                    const target = e.target as Element;
+                    if (target.closest('[data-member-trigger]')) {
+                      e.preventDefault();
+                    }
+                  }}>
                     <SheetHeader>
                       <SheetTitle>Block User from Rooms</SheetTitle>
                     </SheetHeader>
@@ -2019,7 +2024,7 @@ export function ChatRoom({
                                       return null;
                                     }
                                     return (
-                                      <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                      <Card key={member.user.id} className={cn("p-3 transition-colors", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                                         <div className="flex items-center justify-between">
                                           <div className="flex items-center space-x-3">
                                             <UserAvatar
@@ -2142,7 +2147,12 @@ export function ChatRoom({
                       Kick User
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-64">
+                  <SheetContent side="right" className={cn("w-64", isDarkMode ? "bg-gray-800 border-gray-700" : "")} onPointerDownOutside={(e) => {
+                    const target = e.target as Element;
+                    if (target.closest('[data-member-trigger]')) {
+                      e.preventDefault();
+                    }
+                  }}>
                     <SheetHeader>
                       <SheetTitle>Kick User from Room</SheetTitle>
                     </SheetHeader>
@@ -2185,7 +2195,7 @@ export function ChatRoom({
                                       return null;
                                     }
                                     return (
-                                      <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                      <Card key={member.user.id} className={cn("p-3 transition-colors", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                                         <div className="flex items-center justify-between">
                                           <div className="flex items-center space-x-3">
                                             <UserAvatar
