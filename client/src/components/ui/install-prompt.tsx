@@ -48,16 +48,33 @@ export function InstallPrompt() {
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        
         setDeferredPrompt(null);
+        setShowInstallPrompt(false);
+      } catch (error) {
+        console.error('Error showing install prompt:', error);
         setShowInstallPrompt(false);
       }
     } else {
       // Manual install instructions for Android Chrome
-      alert('To install this app:\n1. Tap the menu (⋮) in Chrome\n2. Select "Add to Home screen"\n3. Tap "Add"');
+      const instructions = `Untuk menginstall aplikasi ini:
+
+1. Ketuk menu (⋮) di pojok kanan atas Chrome
+2. Pilih "Tambahkan ke layar utama" atau "Add to Home screen"
+3. Ketuk "Tambah" atau "Add"
+
+Aplikasi akan muncul di home screen Anda seperti aplikasi biasa!`;
+      
+      alert(instructions);
       setShowInstallPrompt(false);
     }
   };
@@ -79,7 +96,7 @@ export function InstallPrompt() {
           <div>
             <p className="font-medium text-sm">Install MeChat</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Add to home screen for better experience
+              Tambahkan ke layar utama untuk pengalaman lebih baik
             </p>
           </div>
         </div>
