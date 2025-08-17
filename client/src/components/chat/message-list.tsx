@@ -946,7 +946,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
         // Render /me action messages or regular messages
         return (
-          <div className="flex items-start space-x-1 group">
+          <div key={message.id} className="flex items-start space-x-1 group mb-1">
             {/* Smaller Level Badge */}
             <div 
               className="flex-shrink-0 cursor-pointer"
@@ -986,9 +986,10 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
               </div>
             </div>
 
+            {/* Message content in single line with inline flow */}
             <div className="flex-1 min-w-0">
-              {/* Single line format: {badge}{username}: message {time} */}
-              <div className="flex items-baseline flex-wrap gap-1">
+              <div className="flex items-start flex-wrap text-sm leading-relaxed">
+                {/* Username with colon */}
                 <button
                   onClick={() => {
                     if (message.senderId !== 'system' && onUserClick) {
@@ -1005,7 +1006,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     }
                   }}
                   className={cn(
-                    "font-semibold hover:underline text-left text-sm",
+                    "font-semibold hover:underline inline mr-1",
                     // Enhanced role-based colors with proper hierarchy
                     (() => {
                       const currentRoomId = message.roomId || '1'; // Default to '1' if roomId is missing
@@ -1020,41 +1021,48 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     })()
                   )}
                 >
-                  {message.sender.username}
+                  {message.sender.username}:
                 </button>
 
-                <span className="text-gray-700 dark:text-gray-300 text-sm">:</span>
+                {/* Message text flows inline */}
+                <span 
+                  className="text-gray-700 dark:text-gray-300 break-words inline"
+                  dangerouslySetInnerHTML={{ __html: renderMessageContent(message.content) }}
+                />
 
-                {/* Role badges inline */}
-                <div className="flex items-center space-x-1">
+                {/* Role badges and timestamp on same line when space allows */}
+                <div className="flex items-center space-x-1 ml-2">
                   {/* Crown only for owner in managed rooms */}
                   {(message.sender.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(message.roomId || '') && (
                     <Crown className="w-3 h-3 text-yellow-500" />
                   )}
 
-                  {/* Merchant badge - check for both boolean and truthy values */}
+                  {/* Mentor badge */}
+                  {message.sender.isMentor && (
+                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0">
+                      M
+                    </Badge>
+                  )}
+
+                  {/* Merchant badge */}
                   {(message.sender.isMerchant === true || message.sender.isMerchant) && (
                     <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
                       🛍️
                     </Badge>
                   )}
 
+                  {/* Admin badge */}
                   {((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') && (
                     <Badge variant="destructive" className="text-xs bg-red-600 px-1 py-0">
                       Admin
                     </Badge>
                   )}
+
+                  {/* Timestamp */}
+                  <span className="text-xs text-gray-500">
+                    {formatMessageTime(message.createdAt)}
+                  </span>
                 </div>
-
-                {/* Message content */}
-                <span className="text-gray-700 dark:text-gray-300 text-sm break-words">
-                  {renderMessageContent(message.content)}
-                </span>
-
-                {/* Timestamp at the end */}
-                <span className="text-xs text-gray-500 ml-auto">
-                  {formatMessageTime(message.createdAt)}
-                </span>
               </div>
             </div>
           </div>
