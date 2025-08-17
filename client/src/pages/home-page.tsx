@@ -1766,7 +1766,7 @@ function HomePageContent() {
       // Clear current room to go back to messages view
       setCurrentRoom(null);
       setRoomName('');
-      // If the user was in fullscreen mode because of a chat room, disable it
+      // If the user was in fullscreen mode because of a DM from a chat, disable it
       setIsFullscreenMode(false);
     };
 
