@@ -3,12 +3,11 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { ChevronDown, MoreVertical, Reply, Forward, Copy } from "lucide-react";
+import { ChevronDown, MoreVertical, Reply, Forward, Copy, Crown } from "lucide-react";
 import Lottie from "react-lottie-player";
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow, format } from "date-fns";
-import { Heart, Gift, Crown, Star, MessageCircle, Eye, Info, Flag, UserMinus } from "lucide-react";
 
 interface Message {
   id: string;
@@ -24,8 +23,16 @@ interface Message {
     isMentor?: boolean; // Added isMentor property
     isMerchant?: boolean; // Added isMerchant property
   };
-  messageType?: 'action' | 'normal' | 'bot'; // Added messageType for '/me' commands and bot messages
+  messageType?: 'action' | 'normal' | 'bot' | 'gift'; // Added messageType for '/me' commands and bot messages
   cardImage?: string; // Added cardImage for bot messages
+  roomId?: string; // Added roomId to message
+  metadata?: { // Added metadata for gift messages
+    giftData?: {
+      emoji: string;
+      name: string;
+      cost: string;
+    };
+  };
 }
 
 interface MessageListProps {
@@ -149,6 +156,12 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
       minute: "2-digit",
       hour12: true,
     });
+  };
+
+  // Helper to format message creation time for display
+  const formatMessageTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const isGiftMessage = (content: string) => {
@@ -724,7 +737,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
         const isCurrentUser = message.senderId === user?.id;
         const isSystemMessage = message.senderId === 'system';
-        const isGift = isGiftMessage(message.content || '');
+        const isGift = message.messageType === 'gift';
         const isBotMessage = message.messageType === 'bot';
 
         // Gift message rendering with auto-hide after 3 seconds
@@ -887,9 +900,9 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
                       <span className="text-blue-600 font-medium text-xs">Game Bot: </span>
                       <span className="text-blue-800 text-xs">{content}</span>
-                      {imageUrl && (
+                      {message.cardImage && (
                         <div className="mt-2">
-                          <img src={imageUrl} alt="Game Image" className="max-w-xs rounded" />
+                          <img src={`/${message.cardImage}`} alt="Game Image" className="max-w-xs rounded" />
                         </div>
                       )}
                     </div>
@@ -933,107 +946,152 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
         // Render /me action messages or regular messages
         return (
-          <div
-            key={message.id}
-            className={cn(
-              "flex items-start space-x-3 group",
-              message.messageType === 'action' && "italic text-purple-700"
-            )}
-          >
-            <UserAvatar
-              src={message.sender.profilePhotoUrl || ""}
-              alt={message.sender.username}
-              fallback={isBotMessage ? '🤖' : message.sender.username[0]}
-              className="w-8 h-8 flex-shrink-0"
-              level={message.sender.level}
-              isOnline={message.sender.isOnline}
-              onClick={() => onUserClick?.(message.sender)}
-            />
-            <div className="flex-grow min-w-0">
-              <div className="flex flex-col">
-                <div className="flex items-center space-x-2 mb-1">
-                  <span
-                    className={cn(
-                      "font-semibold text-sm cursor-pointer",
-                      isBotMessage ? "text-blue-600" : // Bot message color
-                      isCurrentUser ? "text-green-700" : // Own message color (dark green)
-                      // Admin color (orange tua) visible in all rooms
-                      (() => {
-                        const currentRoomId = window.location.pathname.split('/').pop();
-                        // Admin color visible in all rooms - Dark orange
-                        if (message.sender.level >= 5) return "text-orange-800"; // Admin dark orange
-                        // Merchant color - Purple (check for isMerchant property)
-                        if (message.sender.isMerchant === true || message.sender.isMerchant) return "text-purple-600"; // Merchant purple
-                        // Owner and moderator colors only in user-created rooms (not system rooms 1-4)
-                        if (!['1', '2', '3', '4'].includes(currentRoomId || '')) {
-                          // Check if user is room owner (username matches room name)
-                          if (message.sender.username.toLowerCase() === roomName?.toLowerCase()) return "text-yellow-500"; // Owner
-                          if (message.sender.level >= 3 && message.sender.level < 5) return "text-amber-600"; // Moderator
-                        }
-                        // Default user role color (blue)
-                        return "text-blue-600";
-                      })()
-                    )}
-                    onClick={() => {
-                      if (message.senderId !== 'system' && onUserClick) {
-                        onUserClick({
-                          id: message.sender.id,
-                          username: message.sender.username,
-                          level: message.sender.level,
-                          status: "Available for chat", // Assuming a default status if not provided
-                          isOnline: message.sender.isOnline,
-                          profilePhotoUrl: message.sender.profilePhotoUrl,
-                          isMentor: message.sender.isMentor,
-                          isMerchant: message.sender.isMerchant
-                        });
+          <div className="flex items-start space-x-2 group">
+            {/* Level Badge */}
+            <div 
+              className="flex-shrink-0 cursor-pointer"
+              onClick={() => {
+                if (message.senderId !== 'system' && onUserClick) {
+                  onUserClick({
+                    id: message.sender.id,
+                    username: message.sender.username,
+                    level: message.sender.level,
+                    status: "Available for chat",
+                    isOnline: message.sender.isOnline,
+                    profilePhotoUrl: message.sender.profilePhotoUrl,
+                    showMiniProfile: true,
+                    isAdmin: (message.sender.level || 0) >= 5,
+                  });
+                }
+              }}
+            >
+              <div className={cn(
+                "px-2 py-1 rounded-lg text-white font-bold text-sm min-w-[32px] text-center flex items-center justify-center",
+                "bg-gradient-to-r shadow-sm border",
+                // Role-based gradient colors with proper hierarchy
+                (() => {
+                  // Mentor color - Red gradient (highest priority)
+                  if (message.sender.isMentor) return "from-red-500 to-red-600 border-red-400";
+                  // Admin color - Orange gradient 
+                  if ((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') return "from-orange-500 to-orange-600 border-orange-400";
+                  // Merchant color - Purple gradient
+                  if (message.sender.isMerchant === true || message.sender.isMerchant) return "from-purple-500 to-purple-600 border-purple-400";
+                  // Owner color - Yellow gradient (only in user-created rooms)
+                  const currentRoomId = message.roomId || '1';
+                  if (!['1', '2', '3', '4'].includes(currentRoomId) && message.sender.username.toLowerCase() === roomName?.toLowerCase()) {
+                    return "from-yellow-500 to-yellow-600 border-yellow-400";
+                  }
+                  // Moderator color - Amber gradient (only in user-created rooms)
+                  if (!['1', '2', '3', '4'].includes(currentRoomId) && message.sender.level >= 3 && message.sender.level < 5) {
+                    return "from-amber-500 to-amber-600 border-amber-400";
+                  }
+                  // Default user color - Blue gradient
+                  return "from-blue-500 to-blue-600 border-blue-400";
+                })()
+              )}>
+                {message.sender.level || 1}
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline space-x-2">
+                <button
+                  onClick={() => {
+                    if (message.senderId !== 'system' && onUserClick) {
+                      onUserClick({
+                        id: message.sender.id,
+                        username: message.sender.username,
+                        level: message.sender.level,
+                        status: "Available for chat",
+                        isOnline: message.sender.isOnline,
+                        profilePhotoUrl: message.sender.profilePhotoUrl,
+                        showMiniProfile: true,
+                        isAdmin: (message.sender.level || 0) >= 5,
+                      });
+                    }
+                  }}
+                  className={cn(
+                    "font-semibold hover:underline text-left text-sm",
+                    // Enhanced role-based colors with proper hierarchy
+                    (() => {
+                      const currentRoomId = message.roomId || '1'; // Default to '1' if roomId is missing
+                      // Mentor color - Red (highest priority for mentors)
+                      if (message.sender.isMentor) return "text-red-600"; // Mentor red
+                      // Admin color - Orange (check for admin level first)
+                      if ((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') return "text-orange-800"; // Admin dark orange
+                      // Merchant color - Purple (check for isMerchant property)
+                      if (message.sender.isMerchant === true || message.sender.isMerchant) return "text-purple-600"; // Merchant purple
+                      // Owner and moderator colors only in user-created rooms (not system rooms 1-4)
+                      if (!['1', '2', '3', '4'].includes(currentRoomId || '')) {
+                        // Check if user is room owner (username matches room name)
+                        if (message.sender.username.toLowerCase() === roomName?.toLowerCase()) return "text-yellow-500"; // Owner
+                        if (message.sender.level >= 3 && message.sender.level < 5) return "text-amber-600"; // Moderator
                       }
-                    }}
-                  >
-                    {message.sender.username}:
-                  </span>
+                      // Default user role color (blue)
+                      return "text-blue-600";
+                    })()
+                  )}
+                >
+                  {message.sender.username}:
+                </button>
 
-                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-                    ({formatTime(message.createdAt)})
-                  </span>
+                {/* Message content on same line as username */}
+                <div className="inline">
+                  {message.messageType === 'gift' && message.metadata?.giftData ? (
+                    <div className="inline-flex items-center space-x-2">
+                      <span className="text-gray-900">sent</span>
+                      <div className="inline-flex items-center space-x-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full px-2 py-1 border border-purple-200">
+                        <span className="text-lg">{message.metadata.giftData.emoji}</span>
+                        <span className="text-sm font-semibold text-purple-700">
+                          {message.metadata.giftData.name}
+                        </span>
+                        <span className="text-xs text-purple-600">
+                          ({message.metadata.giftData.cost})
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-900 whitespace-pre-wrap">
+                      {message.content}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-                  {/* Badges */}
-                  <div className="flex items-center space-x-1">
+              {/* Second line with timestamp and additional info */}
+              <div className="flex items-center space-x-2 mt-1">
+                <div className="ml-0"> {/* Align with the username */}
+                  {/* Role badges and additional info */}
+                  <div className="flex items-center space-x-2">
+                    {/* Crown only for owner in managed rooms */}
+                    {(message.sender.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(message.roomId || '') && (
+                      <Crown className="w-3 h-3 text-yellow-500" />
+                    )}
+
+                    {/* Mentor badge */}
                     {message.sender.isMentor && (
-                      <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
                         M
                       </Badge>
                     )}
-                    {message.sender.isMerchant && (
-                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
+
+                    {/* Merchant badge - check for both boolean and truthy values */}
+                    {(message.sender.isMerchant === true || message.sender.isMerchant) && (
+                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
                         🛍️
                       </Badge>
                     )}
+
+                    {((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') && (
+                      <Badge variant="destructive" className="text-xs bg-red-600 px-1 py-0">
+                        Admin
+                      </Badge>
+                    )}
+
+                    <span className="text-xs text-gray-500">
+                      {formatMessageTime(message.createdAt)}
+                    </span>
                   </div>
-                </div>
-
-                <div className="w-full">
-                  {message.messageType === 'action' ? (
-                    <div className="italic text-purple-700 dark:text-purple-400 text-sm whitespace-pre-wrap">
-                      {message.content}
-                    </div>
-                  ) : (
-                    <div
-                      className="text-sm break-words whitespace-pre-wrap"
-                      dangerouslySetInnerHTML={{
-                        __html: renderMessageContent(message.content)
-                      }}
-                    />
-                  )}
-
-                  {message.cardImage && (
-                    <div className="mt-2">
-                      <img
-                        src={message.cardImage}
-                        alt="Card"
-                        className="w-10 h-15 object-cover rounded-lg border"
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
