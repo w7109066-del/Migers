@@ -1318,7 +1318,7 @@ export function MultiRoomTabs({
                     )}
 
                     {/* Chat Room Content */}
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-hidden" style={{ paddingTop: '8px' }}>
                       {room && room.id && room.name ? (
                         <div key={`chat-wrapper-${room.id}`}>
                           <ChatRoom

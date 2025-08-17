@@ -57,19 +57,19 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   const filteredMessages = messages.filter(message => {
     // Safety check for message existence and structure
     if (!message || !message.id || !message.sender) return false;
-    
+
     // Check if content exists and is a string
     if (!message.content || typeof message.content !== 'string') return true;
-    
+
     const content = message.content.trim();
-    
+
     // Filter out bot commands
     if (content === '/add bot lowcard' ||   
         content === '/bot off' || 
         content.startsWith('!')) {
       return false;
     }
-    
+
     return true;
   });
 
