@@ -1,12 +1,9 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { X, Gift, Coins } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { toast } from "@/hooks/use-toast";
-import Lottie from "react-lottie-player";
-import { gifts } from "@/animations/gifts";
+
+import React, { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { X, Gift, Coins } from 'lucide-react';
+import { Card, CardContent } from './card';
+import { useToast } from '@/hooks/use-toast';
 
 interface GiftSendModalProps {
   isOpen: boolean;
@@ -33,10 +30,10 @@ const defaultGifts = [
 
 export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps) {
   const { user } = useAuth();
-  const [activeCategory, setActiveCategory] = useState<keyof typeof defaultGifts>('gift_box'); // Default to the first category
   const [selectedGift, setSelectedGift] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   if (!isOpen) return null;
 
@@ -47,6 +44,16 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
     try {
       const totalCost = gift.price * quantity;
 
+      // Check if user has enough coins
+      if ((user.coins || 0) < totalCost) {
+        toast({
+          title: "Insufficient coins",
+          description: `You need ${totalCost} coins to send this gift.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const response = await fetch('/api/gifts/send', {
         method: 'POST',
         headers: {
@@ -56,31 +63,29 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
         body: JSON.stringify({
           recipientId: recipient.id,
           giftId: gift.id,
-          giftName: gift.name,
-          price: gift.price,
           quantity: quantity,
           totalCost: totalCost,
           emoji: gift.emoji,
-          category: gift.category // This might need adjustment if categories are removed
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const result = await response.json();
         toast({
           title: "Gift sent successfully!",
-          description: `You sent ${gift.name} x${quantity} to ${recipient.username} for ${totalCost} coins.`,
+          description: `Sent ${gift.name} to ${recipient.username}`,
         });
         onClose();
       } else {
-        const errorText = await response.text();
-        console.error('Gift send error:', errorText);
-        let errorMessage = "Failed to send gift";
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = errorText || errorMessage;
+        let errorMessage = data.message || 'Failed to send gift';
+        
+        if (data.error === 'insufficient_coins') {
+          errorMessage = `Insufficient coins. You need ${totalCost} coins.`;
+        } else if (data.error === 'recipient_not_found') {
+          errorMessage = 'Recipient not found.';
+        } else if (data.error === 'gift_not_found') {
+          errorMessage = 'Gift not found.';
         }
 
         toast({
@@ -143,6 +148,7 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
                 key={gift.id}
                 className="bg-gray-800 border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors relative overflow-hidden"
                 onClick={() => handleSendGift(gift)}
+                disabled={isLoading}
               >
                 <CardContent className="p-3">
                   <div className="flex flex-col items-center text-center space-y-2">
@@ -162,26 +168,6 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="bg-gray-800 p-4 border-t border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Coins className="w-5 h-5 text-yellow-400" />
-              <span className="text-white text-sm">
-                Balance: {user?.coins || 0}
-              </span>
-            </div>
-            <Button 
-              onClick={onClose}
-              variant="outline"
-              size="sm"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
-            >
-              Close
-            </Button>
           </div>
         </div>
       </div>
