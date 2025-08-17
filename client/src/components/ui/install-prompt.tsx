@@ -32,17 +32,15 @@ export function InstallPrompt() {
     
     console.log('PWA Install Status:', { isInstalled, isStandalone });
 
-    // For Android Chrome, show manual install prompt after delay if no beforeinstallprompt
+    // For Android Chrome, show manual install prompt after delay
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isChrome = /Chrome/i.test(navigator.userAgent);
     
     if (isAndroid && isChrome && !isInstalled) {
       setTimeout(() => {
-        if (!deferredPrompt) {
-          console.log('Showing manual install prompt for Android Chrome');
-          setShowInstallPrompt(true);
-        }
-      }, 3000);
+        console.log('Showing manual install prompt for Android Chrome');
+        setShowInstallPrompt(true);
+      }, 2000);
     }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -69,7 +67,7 @@ export function InstallPrompt() {
     setDeferredPrompt(null);
   };
 
-  if (!showInstallPrompt || !deferredPrompt) {
+  if (!showInstallPrompt) {
     return null;
   }
 

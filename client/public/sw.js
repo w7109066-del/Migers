@@ -1,8 +1,10 @@
 
-const CACHE_NAME = 'mechat-v1';
+const CACHE_NAME = 'mechat-v2';
 const urlsToCache = [
   '/',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
