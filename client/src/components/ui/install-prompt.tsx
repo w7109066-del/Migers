@@ -19,11 +19,18 @@ export function InstallPrompt() {
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
+      console.log('Install prompt event fired');
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstallPrompt(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
+
+    // Check if app is already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isInstalled = (window.navigator as any).standalone || isStandalone;
+    
+    console.log('PWA Install Status:', { isInstalled, isStandalone });
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
