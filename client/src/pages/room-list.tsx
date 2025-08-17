@@ -262,6 +262,17 @@ export default function RoomListPage({ onUserClick, onRoomSelect }: RoomListPage
       return;
     }
 
+    // Check if room is full before attempting to join
+    const currentMemberCount = memberCounts?.[room.id] || 0;
+    if (currentMemberCount >= room.capacity) {
+      toast({
+        title: "Room is Full",
+        description: `This room is currently full (${currentMemberCount}/${room.capacity}). Please try another room or wait for someone to leave.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Prevent multiple simultaneous join attempts
     if (joinRoomMutation.isPending) {
       console.log('Room join already in progress');

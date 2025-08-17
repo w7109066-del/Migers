@@ -756,12 +756,12 @@ export function registerRoutes(app: Express): Server {
       // Note: In a real gift system, you might not give the full amount to recipient or have different logic
 
       // Update gift statistics
-      await storage.updateUserStatistics(senderId, { 
-        giftsSent: quantity, 
-        coinsSpent: actualTotalCost 
+      await storage.updateUserStatistics(senderId, {
+        giftsSent: quantity,
+        coinsSpent: actualTotalCost
       });
-      await storage.updateUserStatistics(recipientId, { 
-        giftsReceived: quantity 
+      await storage.updateUserStatistics(recipientId, {
+        giftsReceived: quantity
       });
 
       // Create direct message with gift info
@@ -1230,8 +1230,8 @@ export function registerRoutes(app: Express): Server {
       await storage.transferCoins(senderId, recipient.id, amount);
 
       // Update spending statistics for sender
-      await storage.updateUserStatistics(senderId, { 
-        coinsSpent: amount 
+      await storage.updateUserStatistics(senderId, {
+        coinsSpent: amount
       });
 
       try {
@@ -3055,7 +3055,7 @@ export function registerRoutes(app: Express): Server {
       console.log('Force refreshing room member counts...');
 
       // Broadcast current counts for all rooms
-      const allRoomIds = ['1', '2', '3', '4'];
+      const allRoomIds = ['1', '2', '3', '4']; // Mock rooms
       for (const roomId of allRoomIds) {
         try {
           const currentCount = await getRoomMemberCount(roomId);
@@ -3362,6 +3362,14 @@ export function registerRoutes(app: Express): Server {
             if (roomMembers && roomMembers.has(userId)) {
               roomMembers.delete(userId);
               console.log(`Removed user ${userId} from mock room ${data.roomId} on explicit leave`);
+
+              // Broadcast updated member count immediately
+              const currentCount = roomMembers.size;
+              io.emit('room_member_count_updated', {
+                roomId: data.roomId,
+                memberCount: currentCount
+              });
+              console.log(`Updated member count for room ${data.roomId}: ${currentCount}`);
             }
           }
 
@@ -3390,7 +3398,7 @@ export function registerRoutes(app: Express): Server {
 
           console.log(`User ${user?.username || 'Unknown User'} left room ${data.roomId}`);
 
-          // Broadcast updated member count immediately
+          // Broadcast updated member count
           const currentCount = await getRoomMemberCount(data.roomId);
           io.emit('room_member_count_updated', {
             roomId: data.roomId,
@@ -4027,7 +4035,7 @@ export function registerRoutes(app: Express): Server {
               roomId: data.roomId,
               recipientId: null,
               messageType: data.messageType || 'text',
-              metadata: { 
+              metadata: {
                 ...data.metadata,
                 sessionBased: true, // Mark as session-based message
                 timestamp: Date.now()
@@ -4054,7 +4062,7 @@ export function registerRoutes(app: Express): Server {
               roomId: data.roomId,
               recipientId: null,
               messageType: data.messageType || 'text',
-              metadata: { 
+              metadata: {
                 ...data.metadata,
                 sessionBased: true, // Mark as session-based message
                 timestamp: Date.now()
@@ -4106,6 +4114,9 @@ export function registerRoutes(app: Express): Server {
 
       if (userId) {
         try {
+          // Get user data for proper cleanup
+          const user = await storage.getUser(userId);
+
           // Remove from user connections tracking
           const connection = userConnections.get(userId);
           if (connection && connection.socket.id === socket.id) {
@@ -4119,7 +4130,17 @@ export function registerRoutes(app: Express): Server {
               const roomMembers = mockRoomMembers.get(roomId);
               if (roomMembers && roomMembers.has(userId)) {
                 roomMembers.delete(userId);
-                console.log(`Removed user ${userId} from mock room ${roomId}`);
+                console.log(`Removed user ${userId} from mock room ${roomId} on disconnect`);
+
+                // Emit user left event to remaining room members
+                if (user) {
+                  socket.to(roomId).emit('user_left', {
+                    userId: userId,
+                    username: user.username || 'Unknown User',
+                    roomId: roomId,
+                    userLevel: user.level || 1
+                  });
+                }
 
                 // Broadcast updated member count immediately
                 const currentCount = roomMembers.size;
@@ -4127,7 +4148,7 @@ export function registerRoutes(app: Express): Server {
                   roomId: roomId,
                   memberCount: currentCount
                 });
-                console.log(`Updated member count for room ${roomId}: ${currentCount}`);
+                console.log(`Updated member count for room ${roomId}: ${currentCount} after disconnect cleanup`);
               }
             }
 
@@ -4142,7 +4163,17 @@ export function registerRoutes(app: Express): Server {
 
                     if (isUserInRoom) {
                       await storage.leaveRoom(room.id, userId);
-                      console.log(`Removed user ${userId} from database room ${room.id}`);
+                      console.log(`Removed user ${userId} from database room ${room.id} on disconnect`);
+
+                      // Emit user left event to remaining room members
+                      if (user) {
+                        io.to(room.id).emit('user_left', {
+                          userId: userId,
+                          username: user.username || 'Unknown User',
+                          roomId: room.id,
+                          userLevel: user.level || 1
+                        });
+                      }
 
                       // Broadcast updated member count
                       const updatedMembers = await storage.getRoomMembers(room.id);
@@ -4151,7 +4182,7 @@ export function registerRoutes(app: Express): Server {
                         roomId: room.id,
                         memberCount: currentCount
                       });
-                      console.log(`Updated member count for database room ${room.id}: ${currentCount}`);
+                      console.log(`Updated member count for database room ${room.id}: ${currentCount} after disconnect cleanup`);
                     }
                   } catch (roomError) {
                     console.error(`Error cleaning up room ${room.id} for user ${userId}:`, roomError);
@@ -4173,7 +4204,7 @@ export function registerRoutes(app: Express): Server {
               } catch (error) {
                 console.error(`Error updating offline status for user ${userId}:`, error);
               }
-            }, 5000); // 5 second grace period
+            }, 3000); // Reduced to 3 second grace period for faster cleanup
 
             // Clean up user session
             if (userSession && userSession.socketId === socket.id) {
