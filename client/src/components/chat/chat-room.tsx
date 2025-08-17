@@ -471,20 +471,21 @@ export function ChatRoom({
       localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
       console.log('Generated and saved welcome messages with timestamp for room:', roomId);
 
-      // Force scroll to bottom multiple times to ensure it works
+      // Delayed scroll to bottom to allow room description to be visible
       const scrollToBottom = () => {
         const messagesContainer = document.querySelector('.chat-room-messages');
         if (messagesContainer) {
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          console.log('Scrolled to bottom:', messagesContainer.scrollHeight);
+          // Check if user has manually scrolled up
+          const isAtBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 50;
+          if (isAtBottom) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            console.log('Auto-scrolled to bottom after delay');
+          }
         }
       };
 
-      // Multiple scroll attempts with different delays
-      setTimeout(scrollToBottom, 100);
-      setTimeout(scrollToBottom, 300);
-      setTimeout(scrollToBottom, 500);
-      setTimeout(scrollToBottom, 1000);
+      // Single delayed scroll to allow description messages to be seen
+      setTimeout(scrollToBottom, 800); // 800ms delay to let users see welcome/description messages
     }
   }, [roomId, roomName, savedMessages, user]);
 
@@ -841,13 +842,17 @@ export function ChatRoom({
           console.log('Adding new message to chat:', messageToAdd.id);
           const newMessages = [...filteredPrev, messageToAdd];
 
-          // Auto-scroll to bottom immediately - no delay
-          requestAnimationFrame(() => {
+          // Auto-scroll with delay and manual scroll detection
+          setTimeout(() => {
             const messagesContainer = document.querySelector('.chat-room-messages');
             if (messagesContainer) {
-              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+              const isNearBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 100;
+              // Only auto-scroll if user is near bottom (hasn't manually scrolled up)
+              if (isNearBottom) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+              }
             }
-          });
+          }, 300); // 300ms delay to allow description messages to render
 
           return newMessages;
         });
@@ -1147,13 +1152,13 @@ export function ChatRoom({
       sendChatMessage(safeContent, roomId);
       console.log('Message sent successfully via WebSocket');
 
-      // Auto-scroll to bottom immediately
-      requestAnimationFrame(() => {
+      // Auto-scroll with delay for sent messages
+      setTimeout(() => {
         const messagesContainer = document.querySelector('.chat-room-messages');
         if (messagesContainer) {
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-      });
+      }, 100); // Short delay for sent messages
 
     } catch (error) {
       console.error('Error sending message:', error);

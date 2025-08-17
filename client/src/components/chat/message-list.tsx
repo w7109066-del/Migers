@@ -74,7 +74,19 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   });
 
   useEffect(() => {
-    scrollToBottom();
+    // Add delay for auto-scroll to prevent hiding description messages
+    const timeoutId = setTimeout(() => {
+      const messagesContainer = document.querySelector('.message-list-container');
+      if (messagesContainer) {
+        const isNearBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 100;
+        // Only auto-scroll if user is near bottom
+        if (isNearBottom) {
+          scrollToBottom();
+        }
+      }
+    }, 200); // 200ms delay
+
+    return () => clearTimeout(timeoutId);
   }, [messages]);
 
   // Load custom emojis for rendering
@@ -100,7 +112,14 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
   }, []);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const messagesContainer = document.querySelector('.message-list-container');
+    if (messagesContainer) {
+      // Check if user has scrolled up manually
+      const isNearBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 100;
+      if (isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   };
 
   // Auto-hide gift messages after 3 seconds
