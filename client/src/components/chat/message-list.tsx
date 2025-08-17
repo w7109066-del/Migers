@@ -1029,40 +1029,6 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                   className="text-gray-700 dark:text-gray-300 break-words inline"
                   dangerouslySetInnerHTML={{ __html: renderMessageContent(message.content) }}
                 />
-
-                {/* Role badges and timestamp on same line when space allows */}
-                <div className="flex items-center space-x-1 ml-2">
-                  {/* Crown only for owner in managed rooms */}
-                  {(message.sender.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(message.roomId || '') && (
-                    <Crown className="w-3 h-3 text-yellow-500" />
-                  )}
-
-                  {/* Mentor badge */}
-                  {message.sender.isMentor && (
-                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0">
-                      M
-                    </Badge>
-                  )}
-
-                  {/* Merchant badge */}
-                  {(message.sender.isMerchant === true || message.sender.isMerchant) && (
-                    <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                      🛍️
-                    </Badge>
-                  )}
-
-                  {/* Admin badge */}
-                  {((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') && (
-                    <Badge variant="destructive" className="text-xs bg-red-600 px-1 py-0">
-                      Admin
-                    </Badge>
-                  )}
-
-                  {/* Timestamp */}
-                  <span className="text-xs text-gray-500">
-                    {formatMessageTime(message.createdAt)}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
