@@ -166,6 +166,93 @@ export function ChatRoom({
 
     console.log('Loading messages for joined room:', roomId);
 
+    // Check if user has explicitly left this room before - if so, don't load old messages
+    const userLeftRoomsKey = `userLeftRooms-${user?.id || 'anonymous'}`;
+    const leftRooms = JSON.parse(localStorage.getItem(userLeftRoomsKey) || '[]');
+    
+    if (leftRooms.includes(roomId)) {
+      console.log('User has previously left this room, starting fresh without old messages');
+      // Remove from left rooms list since user is joining again
+      const updatedLeftRooms = leftRooms.filter((id: string) => id !== roomId);
+      localStorage.setItem(userLeftRoomsKey, JSON.stringify(updatedLeftRooms));
+      
+      // Clear any existing stored data for this room
+      localStorage.removeItem(`chat_${roomId}`);
+      localStorage.removeItem(`chatMessages-${roomId}`);
+      
+      // Start with fresh welcome messages only
+      const welcomeMessages = [
+        {
+          id: `welcome-${roomId}`,
+          content: `Welcome to ${roomName} official chat room.`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        }
+      ];
+
+      // Add current user join message
+      if (user && user.username) {
+        welcomeMessages.push({
+          id: `current-user-${roomId}`,
+          content: `Currently user in the room: ${user.username}[${user.level || 1}]`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        });
+      }
+
+      // Add room managed by message
+      if (!['1', '2', '3', '4'].includes(roomId)) {
+        try {
+          const response = await fetch(`/api/rooms/${roomId}/info`);
+          if (response.ok) {
+            const roomData = await response.json();
+            const creatorName = roomData.createdBy || 'Unknown';
+            welcomeMessages.push({
+              id: `room-managed-${roomId}`,
+              content: `This room is managed by ${creatorName}`,
+              senderId: 'system',
+              createdAt: new Date().toISOString(),
+              sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+              messageType: 'system'
+            });
+          }
+        } catch (error) {
+          welcomeMessages.push({
+            id: `room-managed-${roomId}`,
+            content: `This room is managed by room creator`,
+            senderId: 'system',
+            createdAt: new Date().toISOString(),
+            sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+            messageType: 'system'
+          });
+        }
+      } else {
+        welcomeMessages.push({
+          id: `room-managed-${roomId}`,
+          content: `This room is managed by System`,
+          senderId: 'system',
+          createdAt: new Date().toISOString(),
+          sender: { id: 'system', username: 'System', level: 0, isOnline: true },
+          messageType: 'system'
+        });
+      }
+
+      setMessages(welcomeMessages);
+      
+      // Save fresh welcome messages
+      const messagesWithTimestamp = {
+        messages: welcomeMessages,
+        savedAt: Date.now(),
+        roomId: roomId
+      };
+      localStorage.setItem(`chat_${roomId}`, JSON.stringify(messagesWithTimestamp));
+      return;
+    }
+
     const MESSAGE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     // Try to restore messages from localStorage for this room using consistent key format
@@ -1504,7 +1591,7 @@ export function ChatRoom({
 
         console.log('Cleared ALL localStorage cache for room:', roomId);
 
-        // Clear room-specific state immediately
+        // Clear room-specific state immediately - IMPORTANT: Clear messages first
         setMessages([]);
         setIsRoomJoined(false);
         setUserListOpen(false);
@@ -1517,6 +1604,14 @@ export function ChatRoom({
           queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
         } catch (error) {
           console.log('Query client not available, skipping cache clear');
+        }
+
+        // Mark that user has explicitly left this room to prevent loading old messages
+        const userLeftRoomsKey = `userLeftRooms-${user?.id || 'anonymous'}`;
+        const leftRooms = JSON.parse(localStorage.getItem(userLeftRoomsKey) || '[]');
+        if (!leftRooms.includes(roomId)) {
+          leftRooms.push(roomId);
+          localStorage.setItem(userLeftRoomsKey, JSON.stringify(leftRooms));
         }
 
         // Actually leave the room via WebSocket with forceLeave=true
@@ -1536,14 +1631,26 @@ export function ChatRoom({
   };
 
   const handleBackToRoomList = () => {
-    // Navigate back to room list without leaving room or disconnecting WebSocket
-    // Stay connected to preserve the session and messages
-    // Save current room messages before navigating back
-    if (roomId && messages.length > 0 && onSaveMessages) {
-      console.log('Saving messages before back to room list:', roomId);
-      onSaveMessages(messages);
+    // Clear messages when going back to room list (user is leaving the room UI)
+    setMessages([]);
+    
+    // Mark that user has left this room UI to start fresh next time
+    if (roomId && user?.id) {
+      const userLeftRoomsKey = `userLeftRooms-${user.id}`;
+      const leftRooms = JSON.parse(localStorage.getItem(userLeftRoomsKey) || '[]');
+      if (!leftRooms.includes(roomId)) {
+        leftRooms.push(roomId);
+        localStorage.setItem(userLeftRoomsKey, JSON.stringify(leftRooms));
+      }
     }
-    console.log('Navigating back to room list while staying connected to room:', roomId);
+    
+    // Clear localStorage for this room
+    if (roomId) {
+      localStorage.removeItem(`chat_${roomId}`);
+      localStorage.removeItem(`chatMessages-${roomId}`);
+    }
+    
+    console.log('Navigating back to room list and clearing messages for room:', roomId);
     if (onLeaveRoom) {
       onLeaveRoom(); // This should only hide UI, not send WebSocket leave
     }

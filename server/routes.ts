@@ -3319,6 +3319,9 @@ export function registerRoutes(app: Express): Server {
           }, 1000); // Small delay to ensure user is fully connected
         }
 
+        // NOTE: We intentionally do NOT send old messages to rejoining users
+        // This ensures a fresh chat experience when users leave and rejoin
+
         console.log(`User ${user.username} successfully joined room ${data.roomId}`);
 
         // Broadcast updated member count
@@ -4024,7 +4027,11 @@ export function registerRoutes(app: Express): Server {
               roomId: data.roomId,
               recipientId: null,
               messageType: data.messageType || 'text',
-              metadata: data.metadata || null,
+              metadata: { 
+                ...data.metadata,
+                sessionBased: true, // Mark as session-based message
+                timestamp: Date.now()
+              },
               createdAt: new Date().toISOString(),
               sender: {
                 id: userId,
@@ -4035,24 +4042,28 @@ export function registerRoutes(app: Express): Server {
               }
             };
 
-            // Broadcast to room
+            // Broadcast to room - only to currently connected users in this session
             io.to(data.roomId).emit('new_message', {
               message: mockMessage,
             });
           } else {
-            // Real room message
+            // For real rooms, still save to database but mark as session-based
             const messageData = insertMessageSchema.parse({
               content: data.content,
               senderId: userId,
               roomId: data.roomId,
               recipientId: null,
               messageType: data.messageType || 'text',
-              metadata: data.metadata || null,
+              metadata: { 
+                ...data.metadata,
+                sessionBased: true, // Mark as session-based message
+                timestamp: Date.now()
+              },
             });
 
             const newMessage = await storage.createMessage(messageData);
 
-            // Broadcast to room
+            // Broadcast to room - only to currently connected users in this session
             io.to(data.roomId).emit('new_message', {
               message: newMessage,
             });
