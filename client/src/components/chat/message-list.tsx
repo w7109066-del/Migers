@@ -966,7 +966,7 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
               }}
             >
               <div className={cn(
-                "px-2 py-1 rounded-lg text-white font-bold text-sm min-w-[32px] text-center flex items-center justify-center",
+                "px-1.5 py-0.5 rounded text-white font-bold text-xs min-w-[24px] text-center flex items-center justify-center",
                 "bg-gradient-to-r shadow-sm border",
                 // Role-based gradient colors with proper hierarchy
                 (() => {
@@ -1066,13 +1066,6 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                     {/* Crown only for owner in managed rooms */}
                     {(message.sender.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(message.roomId || '') && (
                       <Crown className="w-3 h-3 text-yellow-500" />
-                    )}
-
-                    {/* Mentor badge */}
-                    {message.sender.isMentor && (
-                      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
-                        M
-                      </Badge>
                     )}
 
                     {/* Merchant badge - check for both boolean and truthy values */}
