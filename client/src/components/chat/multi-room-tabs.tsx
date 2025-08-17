@@ -136,8 +136,8 @@ export function MultiRoomTabs({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    // Remove preventDefault() as it's not needed for React SyntheticEvents
-    // and causes passive listener errors
+    // Prevent default to avoid scrolling during swipe
+    e.preventDefault();
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -145,15 +145,15 @@ export function MultiRoomTabs({
 
     const endX = e.changedTouches[0].clientX;
     const diff = startXRef.current - endX;
-    const threshold = 100;
+    const threshold = 50; // Reduced threshold for easier swiping
 
     if (Math.abs(diff) > threshold) {
-      if (diff > 0 && activeRoomIndex < rooms.length - 1) {
+      if (diff > 0 && safeActiveRoomIndex < rooms.length - 1) {
         // Swipe left - next room (UI switch only, keep connections)
-        onSwitchRoom(activeRoomIndex + 1);
-      } else if (diff < 0 && activeRoomIndex > 0) {
+        onSwitchRoom(safeActiveRoomIndex + 1);
+      } else if (diff < 0 && safeActiveRoomIndex > 0) {
         // Swipe right - previous room (UI switch only, keep connections)
-        onSwitchRoom(activeRoomIndex - 1);
+        onSwitchRoom(safeActiveRoomIndex - 1);
       }
     }
 
@@ -167,8 +167,8 @@ export function MultiRoomTabs({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    // Remove preventDefault() as it's not needed for mouse events
-    // and can cause issues with passive listeners
+    // Prevent text selection during drag
+    e.preventDefault();
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
@@ -176,15 +176,15 @@ export function MultiRoomTabs({
 
     const endX = e.clientX;
     const diff = startXRef.current - endX;
-    const threshold = 100;
+    const threshold = 50; // Reduced threshold for easier swiping
 
     if (Math.abs(diff) > threshold) {
-      if (diff > 0 && activeRoomIndex < rooms.length - 1) {
+      if (diff > 0 && safeActiveRoomIndex < rooms.length - 1) {
         // Swipe left - next room
-        onSwitchRoom(activeRoomIndex + 1);
-      } else if (diff < 0 && activeRoomIndex > 0) {
+        onSwitchRoom(safeActiveRoomIndex + 1);
+      } else if (diff < 0 && safeActiveRoomIndex > 0) {
         // Swipe right - previous room
-        onSwitchRoom(activeRoomIndex - 1);
+        onSwitchRoom(safeActiveRoomIndex - 1);
       }
     }
 
@@ -653,6 +653,12 @@ export function MultiRoomTabs({
       <div
         className="flex-1 relative"
         style={{ touchAction: 'pan-y' }} // Allow vertical scrolling but handle horizontal gestures
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
       >
         <div className="relative w-full h-full">
           {rooms.map((room, index) => {
