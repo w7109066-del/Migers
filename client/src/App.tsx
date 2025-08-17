@@ -8,6 +8,7 @@ import AuthPage from "@/pages/auth-page";
 import HomePage from "@/pages/home-page";
 import { NotFoundPage } from "@/pages/not-found";
 import TopRankPage from "@/pages/top-rank";
+import InstallPrompt from "@/components/InstallPrompt";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -46,6 +47,7 @@ function App() {
         </BrowserRouter>
       </AuthProvider>
       <Toaster />
+      <InstallPrompt />
     </QueryClientProvider>
   );
 }
