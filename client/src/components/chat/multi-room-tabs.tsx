@@ -694,11 +694,6 @@ export function MultiRoomTabs({
                                 M Mentor
                               </Badge>
                             )}
-                            {isMerchant && (
-                              <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-2 py-0.5 dark:bg-purple-900/20 dark:text-purple-200">
-                                🛍️
-                              </Badge>
-                            )}
                           </div>
                           <p className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
                             Online members

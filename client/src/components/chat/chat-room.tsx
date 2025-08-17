@@ -1877,12 +1877,6 @@ export function ChatRoom({
                                             M
                                           </Badge>
                                         )}
-                                        {/* Merchant badge - check for both boolean and truthy values */}
-                                        {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                            🛍️
-                                          </Badge>
-                                        )}
                                         {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
                                           <Badge variant="destructive" className="text-xs bg-red-600">
                                             Admin
