@@ -19,13 +19,11 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
   const { isDarkMode } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
-    emoji: '',
     price: '',
     category: 'populer'
   });
-  const [pngFile, setPngFile] = useState<File | null>(null);
-  const [jsonFile, setJsonFile] = useState<File | null>(null);
-  const [pngPreview, setPngPreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -34,32 +32,21 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePngUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type === 'image/png') {
-      setPngFile(file);
+    const allowedTypes = ['image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    
+    if (file && allowedTypes.includes(file.type)) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
-        setPngPreview(e.target?.result as string);
+        setImagePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
     } else {
       toast({
         title: "Invalid file type",
-        description: "Please select a PNG image file.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleJsonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type === 'application/json') {
-      setJsonFile(file);
-    } else {
-      toast({
-        title: "Invalid file type",
-        description: "Please select a JSON file for Lottie animation.",
+        description: "Please select a PNG, GIF, WEBP, or SVG image file.",
         variant: "destructive",
       });
     }
@@ -68,10 +55,10 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.emoji || !formData.price || !pngFile || !jsonFile) {
+    if (!formData.name || !formData.price || !imageFile) {
       toast({
         title: "Missing fields",
-        description: "Please fill all fields and upload both PNG and JSON files.",
+        description: "Please fill all fields and upload an image file.",
         variant: "destructive",
       });
       return;
@@ -82,11 +69,9 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
     try {
       const submitFormData = new FormData();
       submitFormData.append('name', formData.name);
-      submitFormData.append('emoji', formData.emoji);
       submitFormData.append('price', formData.price);
       submitFormData.append('category', formData.category);
-      submitFormData.append('pngFile', pngFile);
-      submitFormData.append('jsonFile', jsonFile);
+      submitFormData.append('imageFile', imageFile);
 
       const response = await fetch('/api/admin/gifts/add', {
         method: 'POST',
@@ -101,10 +86,9 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
         });
         
         // Reset form
-        setFormData({ name: '', emoji: '', price: '', category: 'populer' });
-        setPngFile(null);
-        setJsonFile(null);
-        setPngPreview(null);
+        setFormData({ name: '', price: '', category: 'populer' });
+        setImageFile(null);
+        setImagePreview(null);
         
         onGiftAdded();
         onClose();
@@ -154,7 +138,7 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
                 Add New Gift
               </h2>
               <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                Upload PNG and JSON Lottie files
+                Upload image file (PNG, GIF, WEBP, SVG)
               </p>
             </div>
           </div>
@@ -172,20 +156,6 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Enter gift name"
-              className={cn("", isDarkMode ? "bg-gray-800 border-gray-700 text-white" : "")}
-            />
-          </div>
-
-          {/* Emoji */}
-          <div className="space-y-2">
-            <Label className={cn("", isDarkMode ? "text-gray-300" : "text-gray-700")}>
-              Emoji
-            </Label>
-            <Input
-              type="text"
-              value={formData.emoji}
-              onChange={(e) => handleInputChange('emoji', e.target.value)}
-              placeholder="Enter emoji (e.g., 🎁)"
               className={cn("", isDarkMode ? "bg-gray-800 border-gray-700 text-white" : "")}
             />
           </div>
@@ -224,61 +194,36 @@ export function AddGiftModal({ isOpen, onClose, onGiftAdded }: AddGiftModalProps
             </select>
           </div>
 
-          {/* PNG Upload */}
+          {/* Image Upload */}
           <div className="space-y-2">
             <Label className={cn("", isDarkMode ? "text-gray-300" : "text-gray-700")}>
-              PNG Image
+              Gift Image
             </Label>
             <div className={cn("border-2 border-dashed rounded-lg p-4 text-center", 
               isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-300 bg-gray-50")}>
               <input
                 type="file"
-                accept=".png"
-                onChange={handlePngUpload}
+                accept=".png,.gif,.webp,.svg"
+                onChange={handleImageUpload}
                 className="hidden"
-                id="png-upload"
+                id="image-upload"
               />
-              <label htmlFor="png-upload" className="cursor-pointer">
-                {pngPreview ? (
+              <label htmlFor="image-upload" className="cursor-pointer">
+                {imagePreview ? (
                   <div className="space-y-2">
-                    <img src={pngPreview} alt="Preview" className="mx-auto h-16 w-16 object-cover rounded" />
+                    <img src={imagePreview} alt="Preview" className="mx-auto h-16 w-16 object-cover rounded" />
                     <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                      {pngFile?.name}
+                      {imageFile?.name}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Upload className={cn("mx-auto h-8 w-8", isDarkMode ? "text-gray-400" : "text-gray-400")} />
                     <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                      Click to upload PNG image
+                      Click to upload image (PNG, GIF, WEBP, SVG)
                     </p>
                   </div>
                 )}
-              </label>
-            </div>
-          </div>
-
-          {/* JSON Upload */}
-          <div className="space-y-2">
-            <Label className={cn("", isDarkMode ? "text-gray-300" : "text-gray-700")}>
-              Lottie JSON
-            </Label>
-            <div className={cn("border-2 border-dashed rounded-lg p-4 text-center", 
-              isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-300 bg-gray-50")}>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleJsonUpload}
-                className="hidden"
-                id="json-upload"
-              />
-              <label htmlFor="json-upload" className="cursor-pointer">
-                <div className="space-y-2">
-                  <Upload className={cn("mx-auto h-8 w-8", isDarkMode ? "text-gray-400" : "text-gray-400")} />
-                  <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
-                    {jsonFile ? jsonFile.name : "Click to upload JSON file"}
-                  </p>
-                </div>
               </label>
             </div>
           </div>

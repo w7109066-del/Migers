@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import { getVideoDurationInSeconds } from 'get-video-duration'; // For checking video duration
 import { handleLowCardBot, isBotActiveInRoom, getBotStatus, processLowCardCommand } from './bots/lowcard';
+import crypto from 'crypto'; // Import crypto module for UUID generation
 
 // Helper function to get video duration
 async function getVideoDuration(filePath: string): Promise<number> {
@@ -2634,56 +2635,37 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Admin: Add new gift with file upload
-  app.post('/api/admin/gifts/add', requireAdmin, giftUpload.fields([
-    { name: 'pngFile', maxCount: 1 },
-    { name: 'jsonFile', maxCount: 1 }
-  ]), async (req, res) => {
+  app.post('/api/admin/gifts/add', requireAuth, requireAdmin, upload.single('imageFile'), async (req, res) => {
     try {
-      const { name, emoji, price, category = 'populer' } = req.body;
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const { name, price, category } = req.body;
+      const file = req.file;
 
-      if (!name || !emoji || !price) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      if (!file) {
+        return res.status(400).send('Image file is required');
       }
 
-      const parsedPrice = parseInt(price);
-      if (isNaN(parsedPrice) || parsedPrice <= 0) {
-        return res.status(400).json({ error: 'Invalid price' });
+      // Validate file type
+      const allowedMimeTypes = ['image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        return res.status(400).send('Invalid file type. Only PNG, GIF, WEBP, and SVG are allowed');
       }
 
-      // Handle file uploads
-      let pngFileUrl = null;
-      let jsonFileUrl = null;
+      // Store the gift in database
+      const gift = await db.insert(gifts).values({
+        id: crypto.randomUUID(),
+        name,
+        emoji: '🎁', // Default emoji for all gifts
+        price: parseInt(price),
+        category: category || 'populer',
+        pngUrl: `/uploads/${file.filename}`,
+        lottieData: null, // No longer using lottie data
+        createdAt: new Date()
+      }).returning();
 
-      if (files.pngFile && files.pngFile[0]) {
-        pngFileUrl = `/uploads/gifts/${files.pngFile[0].filename}`;
-      }
-
-      if (files.jsonFile && files.jsonFile[0]) {
-        jsonFileUrl = `/uploads/gifts/${files.jsonFile[0].filename}`;
-      }
-
-      // Create gift in database
-      const giftData = {
-        name: name.trim(),
-        price: parsedPrice,
-        emoji: emoji.trim(),
-        category: category.trim(),
-        fileUrl: pngFileUrl,
-        fileType: pngFileUrl ? 'png' : null,
-        description: `${name} - ${category} gift`
-      };
-
-      const newGift = await storage.createGift(giftData);
-
-      res.json({
-        success: true,
-        message: 'Gift added successfully',
-        gift: newGift
-      });
+      res.json(gift[0]);
     } catch (error) {
       console.error('Error adding gift:', error);
-      res.status(500).json({ error: 'Failed to add gift' });
+      res.status(500).send('Failed to add gift');
     }
   });
 
@@ -4142,7 +4124,7 @@ export function registerRoutes(app: Express): Server {
                   });
                 }
 
-                // Broadcast updated member count immediately
+                // Broadcast updated member count
                 const currentCount = roomMembers.size;
                 io.emit('room_member_count_updated', {
                   roomId: roomId,
