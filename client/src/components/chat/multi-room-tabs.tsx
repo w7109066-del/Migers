@@ -148,6 +148,17 @@ export function MultiRoomTabs({
     const threshold = 50; // Reduced threshold for easier swiping
 
     if (Math.abs(diff) > threshold) {
+      // Dismiss keyboard before switching rooms
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.blur) {
+        activeElement.blur();
+      }
+      
+      // Hide virtual keyboard on mobile
+      if (window.innerHeight < window.outerHeight) {
+        window.scrollTo(0, 0);
+      }
+
       if (diff > 0 && safeActiveRoomIndex < rooms.length - 1) {
         // Swipe left - next room (UI switch only, keep connections)
         onSwitchRoom(safeActiveRoomIndex + 1);
@@ -179,6 +190,12 @@ export function MultiRoomTabs({
     const threshold = 50; // Reduced threshold for easier swiping
 
     if (Math.abs(diff) > threshold) {
+      // Dismiss keyboard before switching rooms
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.blur) {
+        activeElement.blur();
+      }
+
       if (diff > 0 && safeActiveRoomIndex < rooms.length - 1) {
         // Swipe left - next room
         onSwitchRoom(safeActiveRoomIndex + 1);
@@ -1214,6 +1231,12 @@ export function MultiRoomTabs({
                                 hasNewMessages.get(tabRoom.id) && activeRoomIndex !== tabIndex ? "animate-blink-tab" : ""
                               )}
                               onClick={() => {
+                                // Dismiss keyboard when switching tabs
+                                const activeElement = document.activeElement as HTMLElement;
+                                if (activeElement && activeElement.blur) {
+                                  activeElement.blur();
+                                }
+
                                 // Save current room messages to localStorage before switching
                                 const currentRoom = rooms[activeRoomIndex];
                                 if (currentRoom && currentRoom.messages && currentRoom.messages.length > 0) {
