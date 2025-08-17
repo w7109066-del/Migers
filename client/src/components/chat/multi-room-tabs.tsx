@@ -18,6 +18,7 @@ interface Room {
   name: string;
   messages: any[];
   typingUsers?: string[]; // Array of usernames who are typing
+  description?: string; // Added description field
 }
 
 interface MultiRoomTabsProps {
@@ -64,10 +65,10 @@ export function MultiRoomTabs({
   if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
     console.log('MultiRoomTabs: No rooms available or invalid rooms prop', rooms);
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className={cn("h-full flex items-center justify-center", isDarkMode ? "bg-gray-900" : "bg-gray-50")}>
         <div className="text-center">
-          <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-500">No rooms available</p>
+          <MessageCircle className={cn("w-12 h-12 mx-auto mb-4", isDarkMode ? "text-gray-600" : "text-gray-400")} />
+          <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-500")}>No rooms available</p>
         </div>
       </div>
     );
@@ -155,7 +156,7 @@ export function MultiRoomTabs({
         if (activeElement && activeElement.blur) {
           activeElement.blur();
         }
-        
+
         // Method 2: Find and blur all input elements
         const inputs = document.querySelectorAll('input, textarea');
         inputs.forEach(input => {
@@ -163,7 +164,7 @@ export function MultiRoomTabs({
             input.blur();
           }
         });
-        
+
         // Method 3: Create and focus a dummy element to force keyboard close
         const dummyElement = document.createElement('input');
         dummyElement.style.position = 'absolute';
@@ -176,7 +177,7 @@ export function MultiRoomTabs({
           dummyElement.blur();
           document.body.removeChild(dummyElement);
         }, 100);
-        
+
         // Method 4: Scroll and viewport manipulation for mobile
         if (window.navigator.userAgent.includes('Mobile') || window.innerHeight < window.outerHeight) {
           window.scrollTo(0, 0);
@@ -232,7 +233,7 @@ export function MultiRoomTabs({
         if (activeElement && activeElement.blur) {
           activeElement.blur();
         }
-        
+
         // Method 2: Find and blur all input elements
         const inputs = document.querySelectorAll('input, textarea');
         inputs.forEach(input => {
@@ -240,7 +241,7 @@ export function MultiRoomTabs({
             input.blur();
           }
         });
-        
+
         // Method 3: Create and focus a dummy element to force keyboard close
         const dummyElement = document.createElement('input');
         dummyElement.style.position = 'absolute';
@@ -715,10 +716,10 @@ export function MultiRoomTabs({
 
   if (rooms.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className={cn("h-full flex items-center justify-center", isDarkMode ? "bg-gray-900" : "bg-gray-50")}>
         <div className="text-center">
-          <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-500">No rooms open</p>
+          <MessageCircle className={cn("w-12 h-12 mx-auto mb-4", isDarkMode ? "text-gray-600" : "text-gray-400")} />
+          <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-500")}>No rooms open</p>
           <p className="text-sm text-gray-400">Join a room to start chatting</p>
         </div>
       </div>
@@ -726,7 +727,7 @@ export function MultiRoomTabs({
   }
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div className={cn("flex flex-col h-full", isDarkMode ? "bg-gray-900" : "bg-gray-50")}>
       {/* Room Content with Swipe Support */}
       <div
         className="flex-1 relative"
@@ -823,10 +824,10 @@ export function MultiRoomTabs({
                             <Settings className="w-5 h-5" />
                           </button>
 
-                          <DialogContent>
+                          <DialogContent className={cn(isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
                             <DialogHeader>
-                              <DialogTitle>Room Settings</DialogTitle>
-                              <DialogDescription>
+                              <DialogTitle className={cn(isDarkMode ? "text-white" : "text-gray-800")}>Room Settings</DialogTitle>
+                              <DialogDescription className={cn(isDarkMode ? "text-gray-400" : "text-gray-500")}>
                                 Manage room settings and preferences
                               </DialogDescription>
                             </DialogHeader>
@@ -855,13 +856,13 @@ export function MultiRoomTabs({
                               {/* Back to Room List - Available for all users */}
                               <Button
                                 variant="outline"
-                                className="w-full justify-start"
+                                className={cn("w-full justify-start", isDarkMode ? "border-gray-700 hover:bg-gray-700/50" : "")}
                                 onClick={() => {
                                   setSettingsOpen(false);
                                   onBackToRoomList();
                                 }}
                               >
-                                <Eye className="w-4 h-4 mr-2" />
+                                <Eye className={cn("w-4 h-4 mr-2", isDarkMode ? "text-gray-300" : "")} />
                                 Back to Room List
                               </Button>
 
@@ -869,17 +870,17 @@ export function MultiRoomTabs({
                               {(user?.level || 0) >= 1 && (
                                 <Sheet>
                                   <SheetTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                                    <Button variant="outline" className={cn("w-full justify-start", isDarkMode ? "text-red-400 hover:bg-red-900/50 border-red-700" : "text-red-600 hover:text-red-700")}>
                                       <Ban className="w-4 h-4 mr-2" />
                                       Block User
                                     </Button>
                                   </SheetTrigger>
-                                  <SheetContent side="right" className="w-64">
+                                  <SheetContent side="right" className={cn("w-64", isDarkMode ? "bg-gray-800 border-gray-700" : "")}>
                                     <SheetHeader>
-                                      <SheetTitle>Block User from Rooms</SheetTitle>
+                                      <SheetTitle className={cn(isDarkMode ? "text-white" : "")}>Block User from Rooms</SheetTitle>
                                     </SheetHeader>
                                     <div className="mt-4 space-y-2">
-                                      <div className="text-sm text-gray-600">
+                                      <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
                                         Select users to block from all chat rooms
                                       </div>
                                       {isLoadingMembers ? (
@@ -895,7 +896,7 @@ export function MultiRoomTabs({
                                                 if (!member || !member.user) return null;
 
                                                 return (
-                                                  <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                                  <Card key={member.user.id} className={cn("p-3 transition-colors", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                                                     <div className="flex items-center justify-between">
                                                       <div className="flex items-center space-x-3">
                                                         <UserAvatar
@@ -935,7 +936,7 @@ export function MultiRoomTabs({
                                                                   </Badge>
                                                                 )}
                                                               </div>
-                                                              <Badge variant="outline" className="text-xs">
+                                                              <Badge variant="outline" className={cn("text-xs", isDarkMode ? "border-gray-600" : "")}>
                                                                 Level {member.user.level || 1}
                                                               </Badge>
                                                             </div>
@@ -955,16 +956,16 @@ export function MultiRoomTabs({
                                                               {(member.user.level || 0) >= 1 ? 'Admin' : 'Block'}
                                                             </Button>
                                                           </AlertDialogTrigger>
-                                                          <AlertDialogContent>
+                                                          <AlertDialogContent className={cn(isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
                                                             <AlertDialogHeader>
-                                                              <AlertDialogTitle>Block User from Rooms</AlertDialogTitle>
-                                                              <AlertDialogDescription>
+                                                              <AlertDialogTitle className={cn(isDarkMode ? "text-white" : "text-gray-800")}>Block User from Rooms</AlertDialogTitle>
+                                                              <AlertDialogDescription className={cn(isDarkMode ? "text-gray-400" : "text-gray-500")}>
                                                                 Are you sure you want to block {member.user.username} from all chat rooms?
                                                                 This action will prevent them from accessing any chat rooms.
                                                               </AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
-                                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                              <AlertDialogCancel className={cn(isDarkMode ? "border-gray-700 hover:bg-gray-700/50" : "")}>Cancel</AlertDialogCancel>
                                                               <AlertDialogAction
                                                                 onClick={() => handleBlockUser(member.user.id, member.user.username)}
                                                                 className="bg-red-600 hover:bg-red-700"
@@ -991,17 +992,17 @@ export function MultiRoomTabs({
                               {(user?.isAdmin || (user?.level || 0) >= 5) && (
                                 <Sheet>
                                   <SheetTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                                    <Button variant="outline" className={cn("w-full justify-start", isDarkMode ? "text-red-400 hover:bg-red-900/50 border-red-700" : "text-red-600 hover:text-red-700")}>
                                       <Ban className="w-4 h-4 mr-2" />
                                       Manage Banned Users
                                     </Button>
                                   </SheetTrigger>
-                                  <SheetContent side="right" className="w-64">
+                                  <SheetContent side="right" className={cn("w-64", isDarkMode ? "bg-gray-800 border-gray-700" : "")}>
                                     <SheetHeader>
-                                      <SheetTitle>Banned Users Management</SheetTitle>
+                                      <SheetTitle className={cn(isDarkMode ? "text-white" : "")}>Banned Users Management</SheetTitle>
                                     </SheetHeader>
                                     <div className="mt-4 space-y-4">
-                                      <div className="text-sm text-gray-600">
+                                      <div className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-600")}>
                                         Users banned from all chat rooms
                                       </div>
                                       {/* This would need a separate API endpoint to fetch banned users */}
@@ -1019,14 +1020,14 @@ export function MultiRoomTabs({
                               {(user?.level || 0) >= 1 && (
                                 <Sheet>
                                   <SheetTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-orange-600 hover:text-orange-700">
+                                    <Button variant="outline" className={cn("w-full justify-start", isDarkMode ? "text-orange-400 hover:bg-orange-900/50 border-orange-700" : "text-orange-600 hover:text-orange-700")}>
                                       <UserMinus className="w-4 h-4 mr-2" />
                                       Kick User
                                     </Button>
                                   </SheetTrigger>
-                                  <SheetContent side="right" className="w-64">
+                                  <SheetContent side="right" className={cn("w-64", isDarkMode ? "bg-gray-800 border-gray-700" : "")}>
                                     <SheetHeader>
-                                      <SheetTitle>Kick User from Room</SheetTitle>
+                                      <SheetTitle className={cn(isDarkMode ? "text-white" : "")}>Kick User from Room</SheetTitle>
                                     </SheetHeader>
                                     <div className="mt-4 space-y-2">
                                       {isLoadingMembers ? (
@@ -1042,7 +1043,7 @@ export function MultiRoomTabs({
                                                 if (!member || !member.user) return null;
 
                                                 return (
-                                                  <Card key={member.user.id} className="p-3 hover:bg-gray-50 transition-colors">
+                                                  <Card key={member.user.id} className={cn("p-3 transition-colors", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                                                     <div className="flex items-center justify-between">
                                                       <div className="flex items-center space-x-3">
                                                         <UserAvatar
@@ -1082,7 +1083,7 @@ export function MultiRoomTabs({
                                                                   </Badge>
                                                                 )}
                                                               </div>
-                                                              <Badge variant="outline" className="text-xs">
+                                                              <Badge variant="outline" className={cn("text-xs", isDarkMode ? "border-gray-600" : "")}>
                                                                 Level {member.user.level || 1}
                                                               </Badge>
                                                             </div>
@@ -1097,8 +1098,8 @@ export function MultiRoomTabs({
                                                           className={cn(
                                                             "text-xs",
                                                             activeKickVotes[member.user.id]?.voters.has(user?.id || '')
-                                                              ? "bg-orange-100 text-orange-600 border-orange-300"
-                                                              : "text-orange-600 hover:bg-orange-50"
+                                                              ? isDarkMode ? "bg-orange-900/50 border-orange-700 text-orange-400" : "bg-orange-100 text-orange-600 border-orange-300"
+                                                              : isDarkMode ? "border-orange-700 hover:bg-orange-900/50" : "text-orange-600 hover:bg-orange-50"
                                                           )}
                                                           onClick={() => {
                                                             if (activeKickVotes[member.user.id]) {
@@ -1125,16 +1126,16 @@ export function MultiRoomTabs({
                                                                 Kick
                                                               </Button>
                                                             </AlertDialogTrigger>
-                                                            <AlertDialogContent>
+                                                            <AlertDialogContent className={cn(isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
                                                               <AlertDialogHeader>
-                                                                <AlertDialogTitle>Kick User</AlertDialogTitle>
-                                                                <AlertDialogDescription>
+                                                                <AlertDialogTitle className={cn(isDarkMode ? "text-white" : "text-gray-800")}>Kick User</AlertDialogTitle>
+                                                                <AlertDialogDescription className={cn(isDarkMode ? "text-gray-400" : "text-gray-500")}>
                                                                   Are you sure you want to kick {member.user.username} from {rooms[safeActiveRoomIndex]?.name}?
                                                                   This action will immediately remove them from the room.
                                                                 </AlertDialogDescription>
                                                               </AlertDialogHeader>
                                                               <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogCancel className={cn(isDarkMode ? "border-gray-700 hover:bg-gray-700/50" : "")}>Cancel</AlertDialogCancel>
                                                                 <AlertDialogAction
                                                                   onClick={() => handleKickUser(member.user.id, member.user.username)}
                                                                   className="bg-red-600 hover:bg-red-700"
@@ -1149,7 +1150,7 @@ export function MultiRoomTabs({
                                                     </div>
                                                     {/* Show active vote status */}
                                                     {activeKickVotes[member.user.id] && (
-                                                      <div className="mt-2 text-xs text-gray-500">
+                                                      <div className={cn("mt-2 text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
                                                         Vote expires in: {activeKickVotes[member.user.id].remainingTime}s
                                                       </div>
                                                     )}
@@ -1167,22 +1168,22 @@ export function MultiRoomTabs({
                               {/* Leave Room - Available for all users */}
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                                  <Button variant="outline" className={cn("w-full justify-start", isDarkMode ? "text-red-400 hover:bg-red-900/50 border-red-700" : "text-red-600 hover:text-red-700")}>
                                     <LogOut className="w-4 h-4 mr-2" />
                                     Leave Room
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className={cn(isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Leave Room</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogTitle className={cn(isDarkMode ? "text-white" : "text-gray-800")}>Leave Room</AlertDialogTitle>
+                                    <AlertDialogDescription className={cn(isDarkMode ? "text-gray-400" : "text-gray-500")}>
                                       Are you sure you want to leave {rooms[safeActiveRoomIndex]?.name}?
                                       {user?.isMentor && " As a mentor, you can rejoin anytime to continue mentoring."}
                                       {!user?.isMentor && " You will need to rejoin to continue chatting."}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel className={cn(isDarkMode ? "border-gray-700 hover:bg-gray-700/50" : "")}>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => {
                                         setSettingsOpen(false);
@@ -1283,11 +1284,12 @@ export function MultiRoomTabs({
                             <div
                               key={`tab-${tabRoom.id}-${tabIndex}`}
                               className={cn(
-                                "flex items-center px-3 py-1.5 rounded-md cursor-pointer transition-all duration-200 relative group flex-shrink-0",
-                                "min-w-[80px] max-w-[120px] text-xs border",
-                                activeRoomIndex === tabIndex
-                                  ? (isDarkMode ? "bg-blue-600 text-white border-blue-500" : "bg-blue-500 text-white border-blue-400")
-                                  : (isDarkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600" : "bg-white text-gray-700 hover:bg-gray-100 border-gray-300"),
+                                "flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 cursor-pointer relative overflow-hidden",
+                                tabIndex === activeRoomIndex
+                                  ? "bg-primary text-white border-primary shadow-md"
+                                  : isDarkMode
+                                    ? "bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600"
+                                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
                                 // Add blinking animation for tabs with new messages
                                 hasNewMessages.get(tabRoom.id) && activeRoomIndex !== tabIndex ? "animate-blink-tab" : ""
                               )}
@@ -1299,7 +1301,7 @@ export function MultiRoomTabs({
                                   if (activeElement && activeElement.blur) {
                                     activeElement.blur();
                                   }
-                                  
+
                                   // Method 2: Find and blur all input elements
                                   const inputs = document.querySelectorAll('input, textarea');
                                   inputs.forEach(input => {
@@ -1307,7 +1309,7 @@ export function MultiRoomTabs({
                                       input.blur();
                                     }
                                   });
-                                  
+
                                   // Method 3: Create dummy element for keyboard dismissal
                                   const dummyElement = document.createElement('input');
                                   dummyElement.style.position = 'absolute';
@@ -1379,7 +1381,9 @@ export function MultiRoomTabs({
 
                               {/* Close button */}
                               {rooms.length > 1 && (
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     // Clear ALL localStorage for the room being closed
@@ -1412,15 +1416,13 @@ export function MultiRoomTabs({
                                     }
                                     onCloseRoom(tabIndex);
                                   }}
-                                  className={cn(
-                                    "ml-1 p-0.5 rounded-full opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0",
-                                    activeRoomIndex === tabIndex
-                                      ? "hover:bg-white/20 text-white/80"
-                                      : (isDarkMode ? "hover:bg-gray-500 text-gray-400" : "hover:bg-gray-200 text-gray-500")
-                                  )}
+                                  className={cn("w-6 h-6 p-0 ml-2",
+                                    isDarkMode
+                                      ? "hover:bg-red-900 hover:text-red-400"
+                                      : "hover:bg-red-100 hover:text-red-600")}
                                 >
-                                  <X className="w-2.5 h-2.5" />
-                                </button>
+                                  <X className="w-4 h-4" />
+                                </Button>
                               )}
                             </div>
                           ))}
@@ -1448,10 +1450,10 @@ export function MultiRoomTabs({
                           />
                         </div>
                       ) : (
-                        <div className="h-full flex items-center justify-center">
-                          <div className="text-center text-gray-500">
-                            <MessageCircle className="w-8 h-8 mx-auto mb-2" />
-                            <p>Loading room...</p>
+                        <div className={cn("h-full flex items-center justify-center", isDarkMode ? "bg-gray-900" : "bg-gray-50")}>
+                          <div className="text-center">
+                            <MessageCircle className={cn("w-8 h-8 mx-auto mb-2", isDarkMode ? "text-gray-600" : "text-primary")} />
+                            <p className={cn("text-sm", isDarkMode ? "text-gray-400" : "text-gray-500")}>Loading room...</p>
                           </div>
                         </div>
                       )}
@@ -1470,17 +1472,17 @@ export function MultiRoomTabs({
           isDarkMode ? "bg-gray-900 border-gray-700 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-500"
         )}>
           <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-1">
-              <span className="font-medium">
+            <div className="flex items-center space-x-2">
+              <span className={cn("font-medium", isDarkMode ? "text-gray-200" : "text-gray-800")}>
                 {(rooms && rooms[safeActiveRoomIndex] && rooms[safeActiveRoomIndex].name) || 'No Room'}
               </span>
               {user?.isMentor && (
-                <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
+                <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
                   M
                 </Badge>
               )}
               {user?.isMerchant && (
-                <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
+                <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0 dark:bg-purple-900/20 dark:text-purple-200">
                   🛍️
                 </Badge>
               )}

@@ -425,10 +425,10 @@ function HomePageContent() {
 
   if (authLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-secondary">
+      <div className={cn("h-screen flex items-center justify-center", isDarkMode ? "bg-gradient-to-br from-gray-900 to-gray-800" : "bg-gradient-to-br from-primary to-secondary")}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-          <p className="text-white text-sm">Loading...</p>
+          <p className={cn("text-sm", isDarkMode ? "text-gray-200" : "text-white")}>Loading...</p>
         </div>
       </div>
     );
@@ -436,9 +436,9 @@ function HomePageContent() {
 
   if (!user) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-secondary">
+      <div className={cn("h-screen flex items-center justify-center", isDarkMode ? "bg-gradient-to-br from-gray-900 to-gray-800" : "bg-gradient-to-br from-primary to-secondary")}>
         <div className="text-center">
-          <p className="text-white text-sm">Authentication required...</p>
+          <p className={cn("text-sm", isDarkMode ? "text-gray-200" : "text-white")}>Authentication required...</p>
         </div>
       </div>
     );
@@ -918,7 +918,7 @@ function HomePageContent() {
                             <ChevronDown className="w-3 h-3 ml-1" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-40">
+                        <DropdownMenuContent align="start" className={cn("w-40", isDarkMode ? "bg-gray-800 border-gray-700" : "")}>
                           <DropdownMenuItem onClick={() => handleStatusChange('online')}>
                             <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
                             Online
@@ -954,7 +954,7 @@ function HomePageContent() {
                 </div>
 
                 {/* Coins Display */}
-                <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 shadow-sm">
+                <div className={cn("flex items-center space-x-1 px-2 py-1 rounded-full shadow-sm", isDarkMode ? "bg-gradient-to-r from-yellow-400 to-orange-400" : "bg-gradient-to-r from-yellow-400 to-orange-400")}>
                   <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.736 6.979C9.208 6.193 9.696 6 10 6s.792.193 1.264.979a1 1 0 001.715-1.029C12.279 4.784 11.232 4 10 4s-2.279.784-2.979 1.95c-.285.475-.507 1.001-.67 1.567.013.043-.024.086-.034.13-.264 1.143-.264 2.4 0 3.543.01.044.021.087.034.13.163.566.385 1.092.67 1.567C7.721 13.216 8.768 14 10 14s2.279-.784 2.979-1.95a1 1 0 10-1.715-1.029C10.792 11.807 10.304 12 10 12s-.792-.193-1.264-.979c-.18-.299-.307-.61-.397-.933a4.484 4.484 0 010-2.176c.09-.323.217-.634.397-.933z" clipRule="evenodd" />
                   </svg>
@@ -1013,7 +1013,7 @@ function HomePageContent() {
 
             {/* Create Post Card */}
             <Card>
-              <CardContent className="p-4">
+              <CardContent className={cn("p-4", isDarkMode ? "bg-gray-800" : "")}>
                 <div className="flex items-start space-x-3">
                   <UserAvatar
                     username={user.username}
@@ -1027,7 +1027,7 @@ function HomePageContent() {
                         placeholder="What's on your mind?"
                         value={postContent || ''}
                         onChange={(e) => setPostContent(e.target.value)}
-                        className={cn("pr-20 border-0 focus:ring-2 focus:ring-primary", isDarkMode ? "focus:bg-gray-700 bg-gray-900" : "focus:bg-white bg-gray-100")}
+                        className={cn("pr-20 border-0 focus:ring-2 focus:ring-primary", isDarkMode ? "focus:bg-gray-700 bg-gray-900 text-white" : "focus:bg-white bg-gray-100")}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -1134,7 +1134,7 @@ function HomePageContent() {
                 {/* Skeleton Loading */}
                 {[1, 2, 3].map((index) => (
                   <Card key={index}>
-                    <CardContent className="p-4">
+                    <CardContent className={cn("p-4", isDarkMode ? "bg-gray-800" : "")}>
                       <div className="flex items-start space-x-3">
                         <div className={cn("w-10 h-10 rounded-full animate-pulse", isDarkMode ? "bg-gray-700" : "bg-gray-200")}></div>
                         <div className="flex-1 space-y-3">
@@ -1174,7 +1174,7 @@ function HomePageContent() {
             ) : feedPosts.length > 0 ? (
               feedPosts.map((post) => (
                 <Card key={post.id}>
-                  <CardContent className="p-4">
+                  <CardContent className={cn("p-4", isDarkMode ? "bg-gray-800" : "")}>
                     <div className="flex items-start space-x-3">
                       <UserAvatar
                         username={post.author?.username || 'Unknown'}
@@ -1255,7 +1255,7 @@ function HomePageContent() {
 
                         <div className="flex items-center space-x-4 mt-2">
                           <button
-                            className="flex items-center space-x-1 hover:text-red-600 transition-colors"
+                            className={cn("flex items-center space-x-1 transition-colors", userLikes[post.id] ? "text-red-500" : (isDarkMode ? "text-gray-400 hover:text-red-500" : "text-gray-500 hover:text-red-600"))}
                             onClick={() => handleLikePost(post.id)}
                           >
                             <Heart
@@ -1268,7 +1268,7 @@ function HomePageContent() {
                             <span className="text-xs text-gray-500">{likeCounts[post.id] || post.likesCount || 0}</span>
                           </button>
                           <button
-                            className="flex items-center space-x-1 hover:text-blue-600"
+                            className={cn("flex items-center space-x-1 transition-colors", isDarkMode ? "text-gray-400 hover:text-blue-500" : "text-gray-500 hover:text-blue-600")}
                             onClick={() => toggleComments(post.id)}
                           >
                             <MessageCircle className="w-4 h-4 text-gray-500" />
@@ -1277,7 +1277,7 @@ function HomePageContent() {
                             </span>
                           </button>
                           <button
-                            className="flex items-center space-x-1 hover:text-green-600"
+                            className={cn("flex items-center space-x-1 transition-colors", isDarkMode ? "text-gray-400 hover:text-green-500" : "text-gray-500 hover:text-green-600")}
                             onClick={() => setShowShareModal({ url: `${window.location.origin}/post/${post.id}`, type: 'post' })}
                           >
                             <Share2 className="w-4 h-4 text-gray-500" />
@@ -1311,11 +1311,11 @@ function HomePageContent() {
                                         profilePhotoUrl={comment.author?.profilePhotoUrl}
                                       />
                                       <div className="flex-1 min-w-0">
-                                        <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
+                                        <div className={cn("rounded-2xl px-4 py-3 shadow-sm border", isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100")}>
                                           <div className="font-semibold text-sm text-gray-800 mb-1">
                                             {comment.author?.username || 'Unknown User'}
                                           </div>
-                                          <div className="text-sm text-gray-700 leading-relaxed">
+                                          <div className={cn("text-sm leading-relaxed", isDarkMode ? "text-gray-300" : "text-gray-700")}>
                                             {comment.content}
                                           </div>
                                         </div>
@@ -1323,21 +1323,21 @@ function HomePageContent() {
                                         {/* Comment Actions */}
                                         <div className="flex items-center justify-between mt-2 px-4">
                                           <div className="flex items-center space-x-4">
-                                            <span className="text-xs text-gray-500">
+                                            <span className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
                                               {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('id-ID', {
                                                 month: '2-digit',
                                                 day: '2-digit'
                                               }) : 'Just now'}
                                             </span>
                                             <button
-                                              className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors"
+                                              className={cn("text-xs font-medium transition-colors", isDarkMode ? "text-gray-300 hover:text-blue-500" : "text-gray-600 hover:text-blue-600")}
                                               onClick={() => handleReply(comment.id)}
                                             >
                                               Reply
                                             </button>
                                             {comment.replies && comment.replies.length > 0 && (
                                               <button
-                                                className="text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors"
+                                                className={cn("text-xs font-medium transition-colors", isDarkMode ? "text-gray-300 hover:text-blue-500" : "text-gray-600 hover:text-blue-600")}
                                                 onClick={() => toggleReplies(comment.id)}
                                               >
                                                 {expandedReplies.includes(comment.id) ? 'Hide' : 'Show'} {comment.replies.length} repl{comment.replies.length > 1 ? 'ies' : 'y'}
@@ -1347,12 +1347,12 @@ function HomePageContent() {
 
                                           <div className="flex items-center space-x-2">
                                             <div className="flex items-center space-x-1">
-                                              <button className="text-gray-500 hover:text-red-500 transition-colors">
+                                              <button className={cn("transition-colors", isDarkMode ? "text-gray-400 hover:text-red-500" : "text-gray-500 hover:text-red-600")}>
                                                 <Heart className="w-4 h-4" />
                                               </button>
-                                              <span className="text-xs text-gray-500">{comment.likesCount || 0}</span>
+                                              <span className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>{comment.likesCount || 0}</span>
                                             </div>
-                                            <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                                            <button className={cn("transition-colors", isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-400 hover:text-gray-600")}>
                                               <MessageCircle className="w-4 h-4 transform scale-x-[-1]" />
                                             </button>
                                           </div>
@@ -1378,7 +1378,7 @@ function HomePageContent() {
                                                       handleAddComment(post.id, replyText[comment.id], comment.id);
                                                     }
                                                   }}
-                                                  className={cn("flex-1 text-sm", isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-200")}
+                                                  className={cn("flex-1 text-sm", isDarkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-100 border-gray-200")}
                                                 />
                                                 <Button
                                                   type="button"
@@ -1406,18 +1406,18 @@ function HomePageContent() {
                                                   profilePhotoUrl={reply.author?.profilePhotoUrl}
                                                 />
                                                 <div className="flex-1 min-w-0">
-                                                  <div className="bg-gray-50 rounded-2xl px-4 py-3 shadow-sm border border-gray-50">
+                                                  <div className={cn("rounded-2xl px-4 py-3 shadow-sm border", isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-50")}>
                                                     <div className="font-semibold text-sm text-gray-800 mb-1">
                                                       {reply.author?.username || 'Unknown User'}
                                                     </div>
-                                                    <div className="text-sm text-gray-700 leading-relaxed">
+                                                    <div className={cn("text-sm leading-relaxed", isDarkMode ? "text-gray-300" : "text-gray-700")}>
                                                       {reply.content}
                                                     </div>
                                                   </div>
 
                                                   <div className="flex items-center justify-between mt-2 px-4">
                                                     <div className="flex items-center space-x-4">
-                                                      <span className="text-xs text-gray-500">
+                                                      <span className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>
                                                         {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('id-ID', {
                                                           month: '2-digit',
                                                           day: '2-digit'
@@ -1427,10 +1427,10 @@ function HomePageContent() {
 
                                                     <div className="flex items-center space-x-2">
                                                       <div className="flex items-center space-x-1">
-                                                        <button className="text-gray-500 hover:text-red-500 transition-colors">
+                                                        <button className={cn("transition-colors", isDarkMode ? "text-gray-400 hover:text-red-500" : "text-gray-500 hover:text-red-600")}>
                                                           <Heart className="w-4 h-4" />
                                                         </button>
-                                                        <span className="text-xs text-gray-500">{reply.likesCount || 0}</span>
+                                                        <span className={cn("text-xs", isDarkMode ? "text-gray-400" : "text-gray-500")}>{reply.likesCount || 0}</span>
                                                       </div>
                                                     </div>
                                                   </div>
@@ -1458,7 +1458,7 @@ function HomePageContent() {
                                 {/* Emoji Picker for Comments */}
                                 {showCommentEmojis === post.id && (
                                   <div className="absolute bottom-full mb-2 z-10">
-                                    <Card className="shadow-lg">
+                                    <Card className={cn("shadow-lg", isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                                       <CardContent className="p-3 w-64 max-h-32 overflow-y-auto">
                                         <div className="grid grid-cols-8 gap-1">
                                           {emojis.map((item, index) => (
@@ -1489,7 +1489,7 @@ function HomePageContent() {
                                     onClick={() => {
                                       setShowCommentEmojis(showCommentEmojis === post.id ? null : post.id);
                                     }}
-                                    className="p-2 text-yellow-500 hover:text-yellow-600"
+                                    className={cn("p-2 transition-colors", isDarkMode ? "text-yellow-400 hover:text-yellow-500" : "text-yellow-500 hover:text-yellow-600")}
                                   >
                                     <Smile className="w-4 h-4" />
                                   </Button>
@@ -1502,7 +1502,7 @@ function HomePageContent() {
                                         handleAddComment(post.id, commentText[post.id]);
                                       }
                                     }}
-                                    className={cn("flex-1 text-sm", isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-200")}
+                                    className={cn("flex-1 text-sm", isDarkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-100 border-gray-200")}
                                   />
                                   <Button
                                     type="button"
@@ -1563,7 +1563,7 @@ function HomePageContent() {
           }}
         />
       ) : (
-        <DMConversationsList onSelectUser={setSelectedDirectMessage} />
+        <DMConversationsList onSelectUser={setSelectedDirectMessage} isDarkMode={isDarkMode} />
       ),
     },
     {
@@ -1577,7 +1577,7 @@ function HomePageContent() {
 
             {/* Profile Section */}
             <Card>
-              <CardContent className="p-4">
+              <CardContent className={cn("p-4", isDarkMode ? "bg-gray-800" : "")}>
                 <div className="flex items-center space-x-4 mb-4">
                   <UserAvatar
                     username={user.username}
@@ -1647,7 +1647,7 @@ function HomePageContent() {
                   </div>
 
                   <button
-                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-50")}
                     onClick={() => setShowPrivacySecurity(true)}
                   >
                     <Shield className="h-5 w-5 text-primary" />
@@ -1655,7 +1655,7 @@ function HomePageContent() {
                   </button>
 
                   <button
-                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-50")}
                     onClick={() => setShowHelpSupport(true)}
                   >
                     <HelpCircle className="h-5 w-5 text-primary" />
@@ -1663,7 +1663,7 @@ function HomePageContent() {
                   </button>
 
                   <button
-                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-50")}
                     onClick={handleCreditsClick}
                   >
                     <svg className="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1675,7 +1675,7 @@ function HomePageContent() {
                   </button>
 
                   <button
-                    className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "text-red-600 hover:bg-red-700" : "text-red-600 hover:bg-red-50")}
+                    className={cn("w-full p-4 text-left flex items-center space-x-3", user?.isMentor ? "text-red-600" : (isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-red-50 text-red-600"))}
                     onClick={() => {
                       setShowMentorPage(true);
                       console.log("Opening Mentor Page");
@@ -1701,7 +1701,7 @@ function HomePageContent() {
 
                   {user?.isAdmin && (
                     <button
-                      className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
+                      className={cn("w-full p-4 text-left flex items-center space-x-3", isDarkMode ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-50")}
                       onClick={() => {
                         console.log('Admin button clicked from settings');
                         handleAdminClick();
@@ -1821,16 +1821,16 @@ function HomePageContent() {
           <AdminPage onBack={() => {
             setShowAdmin(false);
             console.log('Admin panel closed');
-          }} />
+          }} isDarkMode={isDarkMode} />
         )}
 
         {/* Mentor Page */}
-        <MentorPage open={showMentorPage} onClose={() => setShowMentorPage(false)} />
+        <MentorPage open={showMentorPage} onClose={() => setShowMentorPage(false)} isDarkMode={isDarkMode} />
 
         {/* Credits Page - Render at top level */}
         {showCredits && (
           <div className="fixed inset-0 z-50">
-            <CreditsPage onBack={() => setShowCredits(false)} />
+            <CreditsPage onBack={() => setShowCredits(false)} isDarkMode={isDarkMode} />
           </div>
         )}
 
@@ -1839,6 +1839,7 @@ function HomePageContent() {
           <EditProfileModal
             isOpen={showEditProfile}
             onClose={() => setShowEditProfile(false)}
+            isDarkMode={isDarkMode}
           />
         )}
 
@@ -1852,6 +1853,7 @@ function HomePageContent() {
               console.log('Starting DM with user:', user);
               handleStartDirectMessage(user);
             }}
+            isDarkMode={isDarkMode}
           />
         )}
 
@@ -1859,18 +1861,21 @@ function HomePageContent() {
         <StatusUpdateModal
           isOpen={showStatusUpdate}
           onClose={() => setShowStatusUpdate(false)}
+          isDarkMode={isDarkMode}
         />
 
         {/* Privacy & Security Modal */}
         <PrivacySecurityModal
           isOpen={showPrivacySecurity}
           onClose={() => setShowPrivacySecurity(false)}
+          isDarkMode={isDarkMode}
         />
 
         {/* Help Support Modal */}
         <HelpSupportModal
           open={showHelpSupport}
           onOpenChange={setShowHelpSupport}
+          isDarkMode={isDarkMode}
         />
 
       </div>
@@ -1926,6 +1931,7 @@ function HomePageContent() {
           isOpen={showMiniProfile}
           onClose={() => setShowMiniProfile(false)}
           onMessageClick={handleMessageClick}
+          isDarkMode={isDarkMode}
         />
       )}
 
@@ -1972,7 +1978,7 @@ function HomePageContent() {
                   size="sm"
                   className="flex items-center space-x-2"
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <Twitter className="w-4 h-4" />
                   <span>Twitter</span>
                 </Button>
 
@@ -1995,6 +2001,8 @@ function HomePageContent() {
 }
 
 export default function HomePage() {
+  const { user, logout, isDarkMode, toggleDarkMode } = useAuth();
+  const { toast } = useToast();
   return (
     <NotificationProvider>
       <WebSocketProvider>
