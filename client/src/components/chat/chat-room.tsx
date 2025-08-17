@@ -1824,8 +1824,9 @@ export function ChatRoom({
                             return (
                               <div
                                 key={`${member.user.id}-${member.user.username}`}
-                                className={cn("flex items-center space-x-3 p-2 rounded-lg cursor-pointer", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}
-                                onClick={() => {
+                                className={cn("flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md", 
+                                  isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
+                                )} onClick={() => {
                                   try {
                                     const profileData = {
                                       id: member.user.id,
@@ -1857,41 +1858,67 @@ export function ChatRoom({
                                   userLevel={member.user.level || 1}
                                 />
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-2 mb-1">
-                                    <div className="flex items-center space-x-1">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
                                       <span className={cn(
-                                        "font-medium text-sm truncate",
+                                        "font-semibold text-sm truncate",
                                         member.user.isMentor ? "text-red-600" :
-                                        ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-blue-400"
+                                        ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : 
+                                        member.user.isMerchant ? "text-purple-600" : 
+                                        isDarkMode ? "text-gray-200" : "text-gray-800"
                                       )}>
                                         {member.user.username || 'Unknown'}
                                       </span>
-                                      <div className="flex items-center space-x-1">
-                                       {/* Crown only for owner in managed rooms */}
-                                        {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                          <Crown className="w-3 h-3 text-yellow-500" />
-                                        )}
-                                        {/* Mentor badge */}
-                                        {member.user.isMentor && (
-                                          <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
-                                            M
-                                          </Badge>
-                                        )}
-                                        {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
-                                          <Badge variant="destructive" className="text-xs bg-red-600">
-                                            Admin
-                                          </Badge>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Badge variant="outline" className="text-xs">
-                                          Level {member.user.level || 1}
-                                        </Badge>
-                                      </div>
+                                      {/* Crown only for owner in managed rooms */}
+                                      {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                        <Crown className="w-4 h-4 text-yellow-500" />
+                                      )}
+                                    </div>
+                                    <div className={cn("text-xs font-medium", (member.user.isOnline || false) ? "text-green-600" : "text-gray-500")}>
+                                      {(member.user.isOnline || false) ? "Online" : "Offline"}
                                     </div>
                                   </div>
-                                  <div className={cn("text-xs", (member.user.isOnline || false) ? "text-green-600" : "text-gray-500")}>
-                                    {(member.user.isOnline || false) ? "Online" : "Offline"}
+
+                                  {/* Enhanced badges row */}
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    {/* Level Badge with gradient */}
+                                    <Badge className={cn(
+                                      "text-white font-bold text-xs px-2 py-1 shadow-sm",
+                                      (member.user.level || 0) >= 10 ? "bg-gradient-to-r from-purple-600 to-pink-600" :
+                                      (member.user.level || 0) >= 5 ? "bg-gradient-to-r from-orange-500 to-red-600" :
+                                      (member.user.level || 0) >= 3 ? "bg-gradient-to-r from-blue-500 to-purple-500" :
+                                      "bg-gradient-to-r from-gray-500 to-gray-600"
+                                    )}>
+                                      Lv.{member.user.level || 1}
+                                    </Badge>
+
+                                    {/* Admin Badge */}
+                                    {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                      <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                        👑 Admin
+                                      </Badge>
+                                    )}
+
+                                    {/* Mentor Badge */}
+                                    {member.user.isMentor && (
+                                      <Badge className="bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                        🎓 Mentor
+                                      </Badge>
+                                    )}
+
+                                    {/* Merchant Badge */}
+                                    {member.user.isMerchant && (
+                                      <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                        🛍️ Merchant
+                                      </Badge>
+                                    )}
+
+                                    {/* VIP Badge for high level users */}
+                                    {(member.user.level || 0) >= 10 && (
+                                      <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                        ⭐ VIP
+                                      </Badge>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -2024,7 +2051,7 @@ export function ChatRoom({
                                       return null;
                                     }
                                     return (
-                                      <Card key={member.user.id} className={cn("p-3 transition-colors", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
+                                      <Card key={member.user.id} className={cn("p-3 transition-all duration-200 hover:shadow-md", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                                         <div className="flex items-center justify-between">
                                           <div className="flex items-center space-x-3">
                                             <UserAvatar
@@ -2038,37 +2065,62 @@ export function ChatRoom({
                                               userLevel={member.user.level || 1}
                                             />
                                             <div>
-                                              <div className="flex items-center space-x-2 mb-1">
-                                                <div className="flex items-center space-x-1">
-                                                  <span className={cn(
-                                                    "font-medium text-sm truncate",
-                                                    member.user.isMentor ? "text-red-600" :
-                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-blue-400"
-                                                  )}>
-                                                    {member.user.username || 'Unknown'}
-                                                  </span>
-                                                  <div className="flex items-center space-x-1">
-                                                    {/* Crown only for owner in managed rooms */}
-                                                    {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                                      <Crown className="w-3 h-3 text-yellow-500" />
-                                                    )}
-                                                    {/* Mentor badge */}
-                                                    {member.user.isMentor && (
-                                                      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
-                                                        M
-                                                      </Badge>
-                                                    )}
-                                                    {/* Merchant badge */}
-                                                    {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                                        🛍️
-                                                      </Badge>
-                                                    )}
-                                                  </div>
-                                                  <Badge variant="outline" className="text-xs">
-                                                    Level {member.user.level || 1}
+                                              <div className="flex items-center space-x-2 mb-2">
+                                                <span className={cn(
+                                                  "font-semibold text-sm truncate",
+                                                  member.user.isMentor ? "text-red-600" :
+                                                  ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : 
+                                                  member.user.isMerchant ? "text-purple-600" : 
+                                                  isDarkMode ? "text-gray-200" : "text-gray-800"
+                                                )}>
+                                                  {member.user.username || 'Unknown'}
+                                                </span>
+                                                {/* Crown only for owner in managed rooms */}
+                                                {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                                  <Crown className="w-4 h-4 text-yellow-500" />
+                                                )}
+                                              </div>
+
+                                              {/* Enhanced badges row */}
+                                              <div className="flex items-center gap-1 flex-wrap">
+                                                {/* Level Badge with gradient */}
+                                                <Badge className={cn(
+                                                  "text-white font-bold text-xs px-2 py-1 shadow-sm",
+                                                  (member.user.level || 0) >= 10 ? "bg-gradient-to-r from-purple-600 to-pink-600" :
+                                                  (member.user.level || 0) >= 5 ? "bg-gradient-to-r from-orange-500 to-red-600" :
+                                                  (member.user.level || 0) >= 3 ? "bg-gradient-to-r from-blue-500 to-purple-500" :
+                                                  "bg-gradient-to-r from-gray-500 to-gray-600"
+                                                )}>
+                                                  Lv.{member.user.level || 1}
+                                                </Badge>
+
+                                                {/* Admin Badge */}
+                                                {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
+                                                  <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    👑 Admin
                                                   </Badge>
-                                                </div>
+                                                )}
+
+                                                {/* Mentor Badge */}
+                                                {member.user.isMentor && (
+                                                  <Badge className="bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    🎓 Mentor
+                                                  </Badge>
+                                                )}
+
+                                                {/* Merchant Badge */}
+                                                {member.user.isMerchant && (
+                                                  <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    🛍️ Merchant
+                                                  </Badge>
+                                                )}
+
+                                                {/* VIP Badge for high level users */}
+                                                {(member.user.level || 0) >= 10 && (
+                                                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    ⭐ VIP
+                                                  </Badge>
+                                                )}
                                               </div>
                                             </div>
                                           </div>
@@ -2195,7 +2247,7 @@ export function ChatRoom({
                                       return null;
                                     }
                                     return (
-                                      <Card key={member.user.id} className={cn("p-3 transition-colors", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
+                                      <Card key={member.user.id} className={cn("p-3 transition-all duration-200 hover:shadow-md", isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-50")}>
                                         <div className="flex items-center justify-between">
                                           <div className="flex items-center space-x-3">
                                             <UserAvatar
@@ -2208,38 +2260,63 @@ export function ChatRoom({
                                               isMerchant={member.user.isMerchant}
                                               userLevel={member.user.level || 1}
                                             />
-                                            <div>
-                                              <div className="flex items-center space-x-2 mb-1">
-                                                <div className="flex items-center space-x-1">
-                                                  <span className={cn(
-                                                    "font-medium text-sm truncate",
-                                                    member.user.isMentor ? "text-red-600" :
-                                                    ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : "text-blue-400"
-                                                  )}>
-                                                    {member.user.username || 'Unknown'}
-                                                  </span>
-                                                  <div className="flex items-center space-x-1">
-                                                    {/* Crown only for owner in managed rooms */}
-                                                    {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
-                                                      <Crown className="w-3 h-3 text-yellow-500" />
-                                                    )}
-                                                    {/* Mentor badge */}
-                                                    {member.user.isMentor && (
-                                                      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0 dark:bg-red-900/20 dark:text-red-200">
-                                                        M
-                                                      </Badge>
-                                                    )}
-                                                    {/* Merchant badge */}
-                                                    {(member.user.isMerchant === true || member.user.isMerchant) && (
-                                                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                                                        🛍️
-                                                      </Badge>
-                                                    )}
-                                                  </div>
-                                                  <Badge variant="outline" className="text-xs">
-                                                    Level {member.user.level || 1}
+                                            <div className="flex-1">
+                                              <div className="flex items-center space-x-2 mb-2">
+                                                <span className={cn(
+                                                  "font-semibold text-sm truncate",
+                                                  member.user.isMentor ? "text-red-600" :
+                                                  ((member.user.level || 0) >= 5 || member.user.username?.toLowerCase() === 'bob_al') ? "text-orange-600" : 
+                                                  member.user.isMerchant ? "text-purple-600" : 
+                                                  isDarkMode ? "text-gray-200" : "text-gray-800"
+                                                )}>
+                                                  {member.user.username || 'Unknown'}
+                                                </span>
+                                                {/* Crown only for owner in managed rooms */}
+                                                {(member.role === 'owner' || member.user.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(roomId || '') && (
+                                                  <Crown className="w-4 h-4 text-yellow-500" />
+                                                )}
+                                              </div>
+
+                                              {/* Enhanced badges row */}
+                                              <div className="flex items-center gap-1 flex-wrap">
+                                                {/* Level Badge with gradient */}
+                                                <Badge className={cn(
+                                                  "text-white font-bold text-xs px-2 py-1 shadow-sm",
+                                                  (member.user.level || 0) >= 10 ? "bg-gradient-to-r from-purple-600 to-pink-600" :
+                                                  (member.user.level || 0) >= 5 ? "bg-gradient-to-r from-orange-500 to-red-600" :
+                                                  (member.user.level || 0) >= 3 ? "bg-gradient-to-r from-blue-500 to-purple-500" :
+                                                  "bg-gradient-to-r from-gray-500 to-gray-600"
+                                                )}>
+                                                  Lv.{member.user.level || 1}
+                                                </Badge>
+
+                                                {/* Admin Badge */}
+                                                {((member.user.level || 0) >= 5) && (
+                                                  <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    👑 Admin
                                                   </Badge>
-                                                </div>
+                                                )}
+
+                                                {/* Mentor Badge */}
+                                                {member.user.isMentor && (
+                                                  <Badge className="bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    🎓 Mentor
+                                                  </Badge>
+                                                )}
+
+                                                {/* Merchant Badge */}
+                                                {member.user.isMerchant && (
+                                                  <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    🛍️ Merchant
+                                                  </Badge>
+                                                )}
+
+                                                {/* VIP Badge for high level users */}
+                                                {(member.user.level || 0) >= 10 && (
+                                                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                    ⭐ VIP
+                                                  </Badge>
+                                                )}
                                               </div>
                                             </div>
                                           </div>
