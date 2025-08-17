@@ -32,17 +32,34 @@ export function InstallPrompt() {
     
     console.log('PWA Install Status:', { isInstalled, isStandalone });
 
+    // For Android Chrome, show manual install prompt after delay if no beforeinstallprompt
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isChrome = /Chrome/i.test(navigator.userAgent);
+    
+    if (isAndroid && isChrome && !isInstalled) {
+      setTimeout(() => {
+        if (!deferredPrompt) {
+          console.log('Showing manual install prompt for Android Chrome');
+          setShowInstallPrompt(true);
+        }
+      }, 3000);
+    }
+
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowInstallPrompt(false);
+      }
+    } else {
+      // Manual install instructions for Android Chrome
+      alert('To install this app:\n1. Tap the menu (⋮) in Chrome\n2. Select "Add to Home screen"\n3. Tap "Add"');
       setShowInstallPrompt(false);
     }
   };
