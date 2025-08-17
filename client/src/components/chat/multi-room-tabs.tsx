@@ -148,15 +148,50 @@ export function MultiRoomTabs({
     const threshold = 50; // Reduced threshold for easier swiping
 
     if (Math.abs(diff) > threshold) {
-      // Dismiss keyboard before switching rooms
-      const activeElement = document.activeElement as HTMLElement;
-      if (activeElement && activeElement.blur) {
-        activeElement.blur();
-      }
-      
-      // Hide virtual keyboard on mobile
-      if (window.innerHeight < window.outerHeight) {
-        window.scrollTo(0, 0);
+      // Multiple methods to ensure keyboard dismissal
+      try {
+        // Method 1: Blur active element
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && activeElement.blur) {
+          activeElement.blur();
+        }
+        
+        // Method 2: Find and blur all input elements
+        const inputs = document.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+          if (input instanceof HTMLElement) {
+            input.blur();
+          }
+        });
+        
+        // Method 3: Create and focus a dummy element to force keyboard close
+        const dummyElement = document.createElement('input');
+        dummyElement.style.position = 'absolute';
+        dummyElement.style.left = '-9999px';
+        dummyElement.style.opacity = '0';
+        dummyElement.style.pointerEvents = 'none';
+        document.body.appendChild(dummyElement);
+        dummyElement.focus();
+        setTimeout(() => {
+          dummyElement.blur();
+          document.body.removeChild(dummyElement);
+        }, 100);
+        
+        // Method 4: Scroll and viewport manipulation for mobile
+        if (window.navigator.userAgent.includes('Mobile') || window.innerHeight < window.outerHeight) {
+          window.scrollTo(0, 0);
+          // Force viewport refresh
+          const viewport = document.querySelector('meta[name=viewport]') as HTMLMetaElement;
+          if (viewport) {
+            const content = viewport.content;
+            viewport.content = content + ', user-scalable=no';
+            setTimeout(() => {
+              viewport.content = content;
+            }, 100);
+          }
+        }
+      } catch (error) {
+        console.log('Error dismissing keyboard:', error);
       }
 
       if (diff > 0 && safeActiveRoomIndex < rooms.length - 1) {
@@ -190,10 +225,36 @@ export function MultiRoomTabs({
     const threshold = 50; // Reduced threshold for easier swiping
 
     if (Math.abs(diff) > threshold) {
-      // Dismiss keyboard before switching rooms
-      const activeElement = document.activeElement as HTMLElement;
-      if (activeElement && activeElement.blur) {
-        activeElement.blur();
+      // Multiple methods to ensure keyboard dismissal
+      try {
+        // Method 1: Blur active element
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && activeElement.blur) {
+          activeElement.blur();
+        }
+        
+        // Method 2: Find and blur all input elements
+        const inputs = document.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+          if (input instanceof HTMLElement) {
+            input.blur();
+          }
+        });
+        
+        // Method 3: Create and focus a dummy element to force keyboard close
+        const dummyElement = document.createElement('input');
+        dummyElement.style.position = 'absolute';
+        dummyElement.style.left = '-9999px';
+        dummyElement.style.opacity = '0';
+        dummyElement.style.pointerEvents = 'none';
+        document.body.appendChild(dummyElement);
+        dummyElement.focus();
+        setTimeout(() => {
+          dummyElement.blur();
+          document.body.removeChild(dummyElement);
+        }, 100);
+      } catch (error) {
+        console.log('Error dismissing keyboard:', error);
       }
 
       if (diff > 0 && safeActiveRoomIndex < rooms.length - 1) {
@@ -1231,10 +1292,36 @@ export function MultiRoomTabs({
                                 hasNewMessages.get(tabRoom.id) && activeRoomIndex !== tabIndex ? "animate-blink-tab" : ""
                               )}
                               onClick={() => {
-                                // Dismiss keyboard when switching tabs
-                                const activeElement = document.activeElement as HTMLElement;
-                                if (activeElement && activeElement.blur) {
-                                  activeElement.blur();
+                                // Multiple methods to ensure keyboard dismissal
+                                try {
+                                  // Method 1: Blur active element
+                                  const activeElement = document.activeElement as HTMLElement;
+                                  if (activeElement && activeElement.blur) {
+                                    activeElement.blur();
+                                  }
+                                  
+                                  // Method 2: Find and blur all input elements
+                                  const inputs = document.querySelectorAll('input, textarea');
+                                  inputs.forEach(input => {
+                                    if (input instanceof HTMLElement) {
+                                      input.blur();
+                                    }
+                                  });
+                                  
+                                  // Method 3: Create dummy element for keyboard dismissal
+                                  const dummyElement = document.createElement('input');
+                                  dummyElement.style.position = 'absolute';
+                                  dummyElement.style.left = '-9999px';
+                                  dummyElement.style.opacity = '0';
+                                  dummyElement.style.pointerEvents = 'none';
+                                  document.body.appendChild(dummyElement);
+                                  dummyElement.focus();
+                                  setTimeout(() => {
+                                    dummyElement.blur();
+                                    document.body.removeChild(dummyElement);
+                                  }, 50);
+                                } catch (error) {
+                                  console.log('Error dismissing keyboard:', error);
                                 }
 
                                 // Save current room messages to localStorage before switching
