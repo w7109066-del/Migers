@@ -4,6 +4,7 @@ import { ChatRoom } from "./chat-room";
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Crown } from "lucide-react"; // Import Crown for merchant badge
 import { UserAvatar } from '../user/user-avatar'; // Correct path to UserAvatar component
 import { Badge } from "@/components/ui/badge"; // Assuming Badge component exists
