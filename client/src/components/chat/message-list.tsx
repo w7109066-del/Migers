@@ -946,8 +946,8 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
 
         // Render /me action messages or regular messages
         return (
-          <div className="flex items-start space-x-2 group">
-            {/* Level Badge */}
+          <div className="flex items-start space-x-1 group">
+            {/* Smaller Level Badge */}
             <div 
               className="flex-shrink-0 cursor-pointer"
               onClick={() => {
@@ -966,27 +966,20 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
               }}
             >
               <div className={cn(
-                "px-1.5 py-0.5 rounded text-white font-bold text-xs min-w-[24px] text-center flex items-center justify-center",
+                "px-1 py-0.5 rounded text-white font-bold text-[10px] min-w-[16px] text-center flex items-center justify-center",
                 "bg-gradient-to-r shadow-sm border",
                 // Role-based gradient colors with proper hierarchy
                 (() => {
                   // Mentor color - Red gradient (highest priority)
                   if (message.sender.isMentor) return "from-red-500 to-red-600 border-red-400";
-                  // Admin color - Orange gradient 
+                  // Admin color - Orange gradient (check for admin level)
                   if ((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') return "from-orange-500 to-orange-600 border-orange-400";
-                  // Merchant color - Purple gradient
-                  if (message.sender.isMerchant === true || message.sender.isMerchant) return "from-purple-500 to-purple-600 border-purple-400";
-                  // Owner color - Yellow gradient (only in user-created rooms)
-                  const currentRoomId = message.roomId || '1';
-                  if (!['1', '2', '3', '4'].includes(currentRoomId) && message.sender.username.toLowerCase() === roomName?.toLowerCase()) {
-                    return "from-yellow-500 to-yellow-600 border-yellow-400";
-                  }
-                  // Moderator color - Amber gradient (only in user-created rooms)
-                  if (!['1', '2', '3', '4'].includes(currentRoomId) && message.sender.level >= 3 && message.sender.level < 5) {
-                    return "from-amber-500 to-amber-600 border-amber-400";
-                  }
-                  // Default user color - Blue gradient
-                  return "from-blue-500 to-blue-600 border-blue-400";
+                  // Regular user colors based on level
+                  const level = message.sender.level || 1;
+                  if (level >= 4) return "from-purple-500 to-purple-600 border-purple-400";
+                  if (level >= 3) return "from-blue-500 to-blue-600 border-blue-400";
+                  if (level >= 2) return "from-green-500 to-green-600 border-green-400";
+                  return "from-gray-500 to-gray-600 border-gray-400";
                 })()
               )}>
                 {message.sender.level || 1}
@@ -994,7 +987,8 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-baseline space-x-2">
+              {/* Single line format: {badge}{username}: message {time} */}
+              <div className="flex items-baseline flex-wrap gap-1">
                 <button
                   onClick={() => {
                     if (message.senderId !== 'system' && onUserClick) {
@@ -1018,74 +1012,49 @@ export function MessageList({ messages, onUserClick, roomName, isAdmin, currentU
                       // Mentor color - Red (highest priority for mentors)
                       if (message.sender.isMentor) return "text-red-600"; // Mentor red
                       // Admin color - Orange (check for admin level first)
-                      if ((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') return "text-orange-800"; // Admin dark orange
-                      // Merchant color - Purple (check for isMerchant property)
-                      if (message.sender.isMerchant === true || message.sender.isMerchant) return "text-purple-600"; // Merchant purple
-                      // Owner and moderator colors only in user-created rooms (not system rooms 1-4)
-                      if (!['1', '2', '3', '4'].includes(currentRoomId || '')) {
-                        // Check if user is room owner (username matches room name)
-                        if (message.sender.username.toLowerCase() === roomName?.toLowerCase()) return "text-yellow-500"; // Owner
-                        if (message.sender.level >= 3 && message.sender.level < 5) return "text-amber-600"; // Moderator
-                      }
-                      // Default user role color (blue)
-                      return "text-blue-600";
+                      if ((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') return "text-orange-600"; // Admin orange
+                      // Owner color - Gold (for room owners in managed rooms)
+                      if ((message.sender.username?.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(currentRoomId)) return "text-yellow-600"; // Owner gold
+                      // Regular user color - Blue
+                      return "text-blue-400"; // Regular user blue
                     })()
                   )}
                 >
-                  {message.sender.username}:
+                  {message.sender.username}
                 </button>
 
-                {/* Message content on same line as username */}
-                <div className="inline">
-                  {message.messageType === 'gift' && message.metadata?.giftData ? (
-                    <div className="inline-flex items-center space-x-2">
-                      <span className="text-gray-900">sent</span>
-                      <div className="inline-flex items-center space-x-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full px-2 py-1 border border-purple-200">
-                        <span className="text-lg">{message.metadata.giftData.emoji}</span>
-                        <span className="text-sm font-semibold text-purple-700">
-                          {message.metadata.giftData.name}
-                        </span>
-                        <span className="text-xs text-purple-600">
-                          ({message.metadata.giftData.cost})
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-gray-900 whitespace-pre-wrap">
-                      {message.content}
-                    </span>
+                <span className="text-gray-700 dark:text-gray-300 text-sm">:</span>
+
+                {/* Role badges inline */}
+                <div className="flex items-center space-x-1">
+                  {/* Crown only for owner in managed rooms */}
+                  {(message.sender.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(message.roomId || '') && (
+                    <Crown className="w-3 h-3 text-yellow-500" />
+                  )}
+
+                  {/* Merchant badge - check for both boolean and truthy values */}
+                  {(message.sender.isMerchant === true || message.sender.isMerchant) && (
+                    <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
+                      🛍️
+                    </Badge>
+                  )}
+
+                  {((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') && (
+                    <Badge variant="destructive" className="text-xs bg-red-600 px-1 py-0">
+                      Admin
+                    </Badge>
                   )}
                 </div>
-              </div>
 
-              {/* Second line with timestamp and additional info */}
-              <div className="flex items-center space-x-2 mt-1">
-                <div className="ml-0"> {/* Align with the username */}
-                  {/* Role badges and additional info */}
-                  <div className="flex items-center space-x-2">
-                    {/* Crown only for owner in managed rooms */}
-                    {(message.sender.username.toLowerCase() === roomName?.toLowerCase()) && !['1', '2', '3', '4'].includes(message.roomId || '') && (
-                      <Crown className="w-3 h-3 text-yellow-500" />
-                    )}
+                {/* Message content */}
+                <span className="text-gray-700 dark:text-gray-300 text-sm break-words">
+                  {renderMessageContent(message.content)}
+                </span>
 
-                    {/* Merchant badge - check for both boolean and truthy values */}
-                    {(message.sender.isMerchant === true || message.sender.isMerchant) && (
-                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs px-1 py-0">
-                        🛍️
-                      </Badge>
-                    )}
-
-                    {((message.sender.level || 0) >= 5 || message.sender.username?.toLowerCase() === 'bob_al') && (
-                      <Badge variant="destructive" className="text-xs bg-red-600 px-1 py-0">
-                        Admin
-                      </Badge>
-                    )}
-
-                    <span className="text-xs text-gray-500">
-                      {formatMessageTime(message.createdAt)}
-                    </span>
-                  </div>
-                </div>
+                {/* Timestamp at the end */}
+                <span className="text-xs text-gray-500 ml-auto">
+                  {formatMessageTime(message.createdAt)}
+                </span>
               </div>
             </div>
           </div>
