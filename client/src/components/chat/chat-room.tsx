@@ -2095,8 +2095,8 @@ export function ChatRoom({
                                                 </Badge>
 
                                                 {/* Admin Badge */}
-                                                {(member.role === 'admin' || (member.user.level || 0) >= 5) && (
-                                                  <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                {(member.role === 'admin' || (member.user.level || 0) >= 1) && (
+                                                  <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
                                                     👑 Admin
                                                   </Badge>
                                                 )}
@@ -2291,8 +2291,8 @@ export function ChatRoom({
                                                 </Badge>
 
                                                 {/* Admin Badge */}
-                                                {((member.user.level || 0) >= 5) && (
-                                                  <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-xs px-2 py-1 shadow-sm">
+                                                {((member.user.level || 0) >= 1) && (
+                                                  <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold text-xs px-2 py-1 shadow-sm">
                                                     👑 Admin
                                                   </Badge>
                                                 )}

@@ -1221,9 +1221,9 @@ function HomePageContent() {
                               </Badge>
                             </div>
                           )}
-                          {(post.author?.isAdmin || (post.author?.username === 'bob_al') || (post.author?.level && post.author.level >= 5)) && (
-                            <Badge variant="destructive" className="bg-red-600 text-white text-xs font-semibold">
-                              Admin
+                          {(post.author?.isAdmin || (post.author?.username === 'bob_al') || (post.author?.level && post.author.level >= 1)) && (
+                            <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-xs font-semibold">
+                              👑 Admin
                             </Badge>
                           )}
                         </div>

@@ -138,7 +138,7 @@ export function MultiRoomTabs({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    // Prevent default to avoid scrolling during swipe
+    // Prevent scrolling during swipe
     e.preventDefault();
   };
 

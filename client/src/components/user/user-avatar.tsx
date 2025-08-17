@@ -134,10 +134,10 @@ export function UserAvatar({
         />
       )}
 
-      {isAdmin && (
+      {(isAdmin || (userLevel && userLevel >= 1)) && (
         <div 
           className={cn(
-            "absolute -top-1 -right-1 bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-xs border-2 border-white",
+            "absolute -top-1 -right-1 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full flex items-center justify-center font-bold text-xs border-2 border-white",
             {
               'w-4 h-4 text-[8px]': size === 'sm',
               'w-5 h-5 text-[10px]': size === 'md',
@@ -146,7 +146,7 @@ export function UserAvatar({
             }
           )}
         >
-          A
+          👑
         </div>
       )}
     </div>

@@ -1235,9 +1235,9 @@ export function AdminPage({ onBack }: AdminPageProps) {
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
-                        {u.isAdmin && (
-                          <Badge variant="destructive" className="text-xs">
-                            Admin
+                        {(u.isAdmin || (u.level >= 1)) && (
+                          <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-xs font-semibold">
+                            👑 Admin
                           </Badge>
                         )}
                         {u.isMentor && (
