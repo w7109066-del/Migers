@@ -555,43 +555,7 @@ export function MessageInput({ onSendMessage, roomId }: MessageInputProps) {
         <div className="px-4 pb-2">
           <Card>
             <CardContent className="p-3">
-              {/* Custom Emoji Gifts Section */}
-              {customEmojis.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-xs font-semibold text-gray-600 mb-2">Custom Emoji Gifts</h4>
-                  <div className="grid grid-cols-4 gap-2">
-                    {customEmojis.map((emoji) => (
-                      <Button
-                        key={`custom-gift-${emoji.id}`}
-                        variant="ghost"
-                        size="sm"
-                        className="flex flex-col items-center p-2 h-auto hover:bg-gray-100 transition-colors"
-                        onClick={() => handleSendGift({
-                          name: emoji.name,
-                          emoji: emoji.emojiCode,
-                          value: 15, // Default value for custom emojis
-                          fileUrl: emoji.fileUrl,
-                          isCustom: true
-                        })}
-                      >
-                        <div className="w-8 h-8 mb-1 flex items-center justify-center">
-                          <img
-                            src={emoji.fileUrl}
-                            alt={emoji.name}
-                            className="w-8 h-8 object-contain"
-                            onError={(e) => {
-                              console.error('Failed to load custom emoji gift:', emoji.fileUrl);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium text-gray-700">{emoji.name}</span>
-                        <span className="text-xs text-primary font-bold">15</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              
 
               {/* Default Gifts Section */}
               <div>
