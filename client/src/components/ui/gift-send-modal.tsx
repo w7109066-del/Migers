@@ -17,49 +17,23 @@ interface GiftSendModalProps {
   };
 }
 
-// Extended gift categories with prices in coins
-const giftCategories = {
-  populer: [
-    { id: 'rose', name: 'Lucky Rose', price: 10, emoji: '🌹', category: 'populer' },
-    { id: 'heart', name: 'Heart Gift', price: 25, emoji: '💝', category: 'populer' },
-    { id: 'cake', name: 'Birthday Cake', price: 15, emoji: '🍰', category: 'populer' },
-    { id: 'balloon', name: 'Party Balloon', price: 5, emoji: '🎈', category: 'populer' },
-  ],
-  lucky: [
-    { id: 'lucky_rose', name: 'Lucky Rose', price: 10, emoji: '🌹', category: 'lucky', multiplier: 'x50' },
-    { id: 'ionceng', name: 'Ionceng', price: 20, emoji: '🔔', category: 'lucky' },
-    { id: 'lucky_pearls', name: 'Lucky Pearls', price: 50, emoji: '📿', category: 'lucky' },
-    { id: 'kertas_perkamen', name: 'Kertas Perkamen', price: 450, emoji: '📜', category: 'lucky' },
-  ],
-  setKostum: [
-    { id: 'kincir_angin', name: 'Kincir Angin', price: 10000, emoji: '🌪️', category: 'setKostum' },
-    { id: 'cincin_singa', name: 'Cincin Singa', price: 10000, emoji: '💍', category: 'setKostum' },
-    { id: 'dewa_pelindung', name: 'Dewa Pelindung', price: 100000, emoji: '🛡️', category: 'setKostum' },
-    { id: 'fantasi_zodiak_leo', name: 'Fantasi Zodiak Leo', price: 1000000, emoji: '♌', category: 'setKostum' },
-  ],
-  bangsa: [
-    { id: 'dragon', name: 'Dragon', price: 888, emoji: '🐉', category: 'bangsa' },
-    { id: 'phoenix', name: 'Phoenix', price: 999, emoji: '🔥', category: 'bangsa' },
-    { id: 'tiger', name: 'Tiger', price: 777, emoji: '🐅', category: 'bangsa' },
-  ],
-  tasSaya: [
-    { id: 'gift_box', name: 'Gift Box', price: 10, emoji: '🎁', category: 'tasSaya' },
-    { id: 'diamond', name: 'Diamond', price: 50, emoji: '💎', category: 'tasSaya' },
-    { id: 'crown', name: 'Crown', price: 100, emoji: '👑', category: 'tasSaya' },
-  ]
-};
-
-const categoryNames = {
-  populer: 'Populer',
-  lucky: 'Lucky',
-  setKostum: 'Set Kostum',
-  bangsa: 'Bangsa',
-  tasSaya: 'Tas saya'
-};
+// Default gift categories with prices in coins
+const defaultGifts = [
+  { id: 'gift_box', name: 'Gift Box', price: 10, emoji: '🎁' },
+  { id: 'rose', name: 'Rose', price: 5, emoji: '🌹' },
+  { id: 'diamond', name: 'Diamond', price: 50, emoji: '💎' },
+  { id: 'crown', name: 'Crown', price: 100, emoji: '👑' },
+  { id: 'cake', name: 'Cake', price: 15, emoji: '🍰' },
+  { id: 'balloon', name: 'Balloon', price: 3, emoji: '🎈' },
+  { id: 'star', name: 'Star', price: 20, emoji: '⭐' },
+  { id: 'heart', name: 'Heart Gift', price: 25, emoji: '💝' },
+  { id: 'flower', name: 'Flower', price: 8, emoji: '🌸' },
+  { id: 'sparkles', name: 'Sparkles', price: 30, emoji: '✨' },
+];
 
 export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps) {
   const { user } = useAuth();
-  const [activeCategory, setActiveCategory] = useState<keyof typeof giftCategories>('populer');
+  const [activeCategory, setActiveCategory] = useState<keyof typeof defaultGifts>('gift_box'); // Default to the first category
   const [selectedGift, setSelectedGift] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +61,7 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
           quantity: quantity,
           totalCost: totalCost,
           emoji: gift.emoji,
-          category: gift.category
+          category: gift.category // This might need adjustment if categories are removed
         }),
       });
 
@@ -156,41 +130,21 @@ export function GiftSendModal({ isOpen, onClose, recipient }: GiftSendModalProps
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="bg-gray-800 px-4 py-3 border-b border-gray-700">
-          <div className="flex space-x-1 overflow-x-auto">
-            {Object.keys(giftCategories).map((category) => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category as keyof typeof giftCategories)}
-                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                  activeCategory === category
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                {categoryNames[category as keyof typeof categoryNames]}
-              </button>
-            ))}
-          </div>
+        {/* Default Gifts Section */}
+        <div className="bg-gray-800 p-3">
+          <h4 className="text-white font-medium mb-3">Default Gifts</h4>
         </div>
 
         {/* Gift Grid */}
         <div className="bg-gray-900 p-4 max-h-96 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
-            {giftCategories[activeCategory].map((gift) => (
+            {defaultGifts.map((gift) => (
               <Card 
                 key={gift.id}
                 className="bg-gray-800 border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors relative overflow-hidden"
                 onClick={() => handleSendGift(gift)}
               >
                 <CardContent className="p-3">
-                  {gift.multiplier && (
-                    <Badge className="absolute top-2 left-2 bg-pink-500 text-white text-xs">
-                      {gift.multiplier}
-                    </Badge>
-                  )}
-
                   <div className="flex flex-col items-center text-center space-y-2">
                     <div className="w-12 h-12 flex items-center justify-center text-2xl">
                       {gift.emoji}
